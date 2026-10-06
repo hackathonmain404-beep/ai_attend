@@ -19,7 +19,8 @@ describe('1. Gemini Client Credential & Configuration Interception', () => {
     assert.strictEqual(response.success, false);
     assert.strictEqual(response.error?.code, 'MISSING_API_KEY');
     assert.ok(response.error?.message.includes('Gemini API key is not configured'));
-    assert.strictEqual(response.modelUsed, DEFAULT_GEMINI_MODEL);
+    const expectedModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    assert.strictEqual(response.modelUsed, expectedModel);
   });
 
   it('safely intercepts invalid API key without leaking credential in error message', async () => {
@@ -35,12 +36,13 @@ describe('1. Gemini Client Credential & Configuration Interception', () => {
     assert.ok(!response.error?.message.includes(fakeKey));
   });
 
-  it('correctly defaults model to gemini-2.5-flash', async () => {
+  it('correctly resolves model from environment or default', async () => {
+    const expectedModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
     const response = await generateAIResponse(
       { prompt: 'Hello' },
       { apiKey: '' }
     );
-    assert.strictEqual(response.modelUsed, 'gemini-2.5-flash');
+    assert.strictEqual(response.modelUsed, expectedModel);
   });
 
   it('respects custom model parameter override', async () => {

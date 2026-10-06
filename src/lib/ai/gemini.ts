@@ -7,6 +7,15 @@ import { GoogleGenAI } from '@google/genai';
 import type { AIRequest, AIResponse, AIErrorCode, GeminiConfig } from './types.ts';
 import { DEFAULT_GEMINI_MODEL } from './types.ts';
 
+// Safely load local environment variables in standalone Node test runners if available
+try {
+  if (typeof process !== 'undefined' && typeof process.loadEnvFile === 'function') {
+    process.loadEnvFile('.env.local');
+  }
+} catch {
+  // Ignored: .env.local is optional and will fall back gracefully
+}
+
 /**
  * Maps raw provider errors into safe, application-level error codes and messages.
  * Prevents raw secrets or sensitive provider details from leaking to callers.
@@ -77,7 +86,7 @@ export async function generateAIResponse(
   request: AIRequest,
   config?: GeminiConfig
 ): Promise<AIResponse> {
-  const apiKey = config?.apiKey || process.env.GEMINI_API_KEY;
+  const apiKey = config?.apiKey !== undefined ? config.apiKey : process.env.GEMINI_API_KEY;
   const modelName = config?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
 
   // 1. Intercept missing API key safely without network call
