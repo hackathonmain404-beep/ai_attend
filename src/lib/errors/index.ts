@@ -19,20 +19,20 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string) {
-    super(message, 400, 'VALIDATION_ERROR');
+  constructor(message: string, code: StandardErrorCode = 'VALIDATION_ERROR') {
+    super(message, 400, code);
   }
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Authentication required') {
-    super(message, 401, 'UNAUTHORIZED');
+  constructor(message = 'Authentication required', code: StandardErrorCode = 'UNAUTHORIZED') {
+    super(message, 401, code);
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'Access forbidden for your role or credentials') {
-    super(message, 403, 'FORBIDDEN');
+  constructor(message = 'Access forbidden for your role or credentials', code: StandardErrorCode = 'FORBIDDEN') {
+    super(message, 403, code);
   }
 }
 
