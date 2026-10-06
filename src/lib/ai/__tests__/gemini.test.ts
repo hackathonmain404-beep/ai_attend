@@ -54,11 +54,13 @@ describe('1. Gemini Client Credential & Configuration Interception', () => {
   });
 });
 
-describe('2. Live Gemini Probe (Conditional)', () => {
-  it('executes live call if real GEMINI_API_KEY is present in environment', async (t) => {
+describe('2. Live Gemini Probe (Opt-In Integration)', () => {
+  it('executes live call only when RUN_LIVE_GEMINI_TEST=true and valid key is present', async (t) => {
     const realKey = process.env.GEMINI_API_KEY;
-    if (!realKey || realKey === 'your_gemini_api_key_here') {
-      t.skip('Skipping live round-trip probe: GEMINI_API_KEY is not set.');
+    const isOptIn = process.env.RUN_LIVE_GEMINI_TEST === 'true';
+
+    if (!realKey || realKey === 'your_gemini_api_key_here' || !isOptIn) {
+      t.skip('Skipping live round-trip probe: Set RUN_LIVE_GEMINI_TEST=true for live Gemini provider integration test.');
       return;
     }
 

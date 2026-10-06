@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test --experimental-strip-types \"src/lib/**/__tests__/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"src/lib/**/__tests__/**/*.test.ts\"",
+    "test:live": "node --env-file=.env.local -e \"process.env.RUN_LIVE_GEMINI_TEST='true'; import('child_process').then(cp => cp.spawnSync('node', ['--env-file=.env.local', '--test', '--experimental-strip-types', 'src/lib/ai/__tests__/gemini.test.ts'], { stdio: 'inherit', env: process.env }))\"",
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
