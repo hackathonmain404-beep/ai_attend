@@ -31,7 +31,7 @@ const SCENARIOS: { id: DemoScenarioId; name: string; tag: string; badgeColor: st
   {
     id: 'critical',
     name: 'Jordan',
-    tag: 'Critical (78.5%)',
+    tag: 'Critical (81.1%)',
     badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800',
     description: 'C Programming at 68.0%. Requires 7 consecutive classes.',
   },

@@ -54,27 +54,52 @@ export function validateAdvisorResponse(
       continue;
     }
 
-    // Find the closest course mentioned to this percentage
-    let closestSubject: { name: string; percentage: number; dist: number } | null = null;
-    for (const enrolled of enrolledNames) {
-      const subIndex = normalizedText.indexOf(enrolled.lower);
-      if (subIndex !== -1) {
-        const dist = Math.abs(matchIndex - subIndex);
-        if (!closestSubject || dist < closestSubject.dist) {
-          closestSubject = { name: enrolled.name, percentage: enrolled.percentage, dist };
-        }
+    // Check if this percentage refers to overall attendance
+    const windowAround = normalizedText.slice(
+      Math.max(0, matchIndex - 35),
+      Math.min(normalizedText.length, matchIndex + 35)
+    );
+    const isOverallMention = /overall|total|average|cumulative|standing|across/i.test(windowAround);
+
+    if (isOverallMention) {
+      if (Math.abs(foundValue - context.overall.overallPercentage) <= 1.0) {
+        continue;
+      } else {
+        issues.push(
+          `Numerical contradiction for overall attendance: mentioned ${foundValue}%, but verified overall is ${context.overall.overallPercentage}%.`
+        );
+        continue;
       }
     }
 
-    // Find closest ghost course mentioned to this percentage
+    // Direct match with verified overall percentage without subject collision
+    if (Math.abs(foundValue - context.overall.overallPercentage) <= 0.2) {
+      continue;
+    }
+
+    // Find the closest course mentioned to this percentage across all occurrences
+    let closestSubject: { name: string; percentage: number; dist: number } | null = null;
+    for (const enrolled of enrolledNames) {
+      let pos = normalizedText.indexOf(enrolled.lower);
+      while (pos !== -1) {
+        const dist = Math.abs(matchIndex - pos);
+        if (!closestSubject || dist < closestSubject.dist) {
+          closestSubject = { name: enrolled.name, percentage: enrolled.percentage, dist };
+        }
+        pos = normalizedText.indexOf(enrolled.lower, pos + 1);
+      }
+    }
+
+    // Find closest ghost course mentioned to this percentage across all occurrences
     let closestGhost: { name: string; dist: number } | null = null;
     for (const ghost of ghostCoursesMentioned) {
-      const gIndex = normalizedText.indexOf(ghost);
-      if (gIndex !== -1) {
-        const dist = Math.abs(matchIndex - gIndex);
+      let gPos = normalizedText.indexOf(ghost);
+      while (gPos !== -1) {
+        const dist = Math.abs(matchIndex - gPos);
         if (!closestGhost || dist < closestGhost.dist) {
           closestGhost = { name: ghost, dist };
         }
+        gPos = normalizedText.indexOf(ghost, gPos + 1);
       }
     }
 

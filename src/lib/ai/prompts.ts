@@ -69,6 +69,13 @@ export function formatContextForPrompt(
 }
 
 /**
+ * Sanitizes question string against XML/HTML tag breakout attempts.
+ */
+export function sanitizeQuestionText(raw: string): string {
+  return raw.replace(/[<>]/g, '').trim();
+}
+
+/**
  * Builds the complete user prompt payload including formatted context and student inquiry.
  */
 export function buildAdvisorPrompt(
@@ -77,11 +84,12 @@ export function buildAdvisorPrompt(
   studentName?: string
 ): string {
   const contextBlock = formatContextForPrompt(context, studentName);
+  const cleanQuestion = sanitizeQuestionText(question);
 
   return `${contextBlock}
 
 [STUDENT QUESTION]
-${question.trim()}
+${cleanQuestion}
 
 Please provide a helpful, concise answer based strictly on the verified context above.`;
 }

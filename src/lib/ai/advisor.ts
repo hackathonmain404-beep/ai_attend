@@ -21,7 +21,7 @@ export function classifyQuestion(question: string): QuestionCategory {
 
   // Intercept adversarial prompt injection or override attempts
   if (
-    /(ignore|override|pretend|reset|bypass|forget|hack).*(instruction|data|prompt|attendance|rule|record|policy|status)/i.test(
+    /(ignore|override|pretend|reset|bypass|forget|hack|change|update|alter|edit|modify|mark|delete|excuse|remove).*(instruction|data|prompt|attendance|rule|record|policy|status|present|absent)/i.test(
       q
     )
   ) {
@@ -144,7 +144,7 @@ export function generateDeterministicFallback(
 
     case 'UNSUPPORTED': {
       const q = request.question.toLowerCase();
-      if (/(ignore|override|pretend|reset|bypass|forget|hack)/i.test(q)) {
+      if (/(ignore|override|pretend|reset|bypass|forget|hack|change|update|alter|edit|modify|mark|delete|excuse|remove)/i.test(q)) {
         const h = overall.highestRiskSubject;
         const highestRiskText = h
           ? `, with your highest-risk course (${h.subjectName}) at ${h.percentage.toFixed(1)}% (${h.classesNeeded} classes needed to reach 75%)`
@@ -155,6 +155,19 @@ export function generateDeterministicFallback(
     }
 
     default: {
+      const q = request.question.toLowerCase();
+      const enrolledNames = rankedSubjects.map((s) => s.subjectName.toLowerCase());
+      const unlistedMatch = q.match(/(?:in|for|about|my)\s+([a-z]+(?:\s+[a-z]+)?)\s+(?:attendance|class)/i);
+      if (unlistedMatch && unlistedMatch[1]) {
+        const candidate = unlistedMatch[1].trim().toLowerCase();
+        if (
+          !enrolledNames.includes(candidate) &&
+          candidate.length > 3 &&
+          !['overall', 'total', 'class', 'classes', 'general', 'current'].includes(candidate)
+        ) {
+          return `No attendance records found for '${unlistedMatch[1].trim()}'. Your enrolled courses are: ${rankedSubjects.map((s) => s.subjectName).join(', ')}.`;
+        }
+      }
       return `Your overall attendance is ${overall.overallPercentage.toFixed(1)}% (${overall.overallRisk}). Keep attending regularly to maintain your standing.`;
     }
   }
