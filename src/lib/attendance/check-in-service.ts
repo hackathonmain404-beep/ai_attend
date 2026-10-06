@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ValidationError, NotFoundError, ForbiddenError, ConflictError } from '@/lib/errors';
 import { verifyQrChallengeToken } from '@/lib/qr/crypto';
 import { validateDeviceBinding } from '@/lib/device/service';
+import { broadcastStudentCheckIn } from '@/lib/realtime/broadcast';
 
 export interface CheckInParams {
   studentId: string;
@@ -238,6 +239,20 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
 
   const classData: any = session.classes;
   const className = classData ? `${classData.code}: ${classData.name}` : 'Enrolled Course';
+
+  // Broadcast Realtime check-in event to update live headcount
+  await broadcastStudentCheckIn(
+    sessionId,
+    {
+      recordId: record.id,
+      studentId,
+      fullName: 'Enrolled Student',
+      rollNumber: 'STU',
+      checkInTime: record.check_in_time,
+      status: 'present',
+    },
+    adminDb
+  );
 
   return {
     recordId: record.id,

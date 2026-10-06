@@ -9,6 +9,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '@/lib/errors';
 import { validateDeviceBinding } from '@/lib/device/service';
+import { broadcastReverificationPrompt } from '@/lib/realtime/broadcast';
 
 export interface ActiveReverifyChallenge {
   challengeId: string;
@@ -71,6 +72,7 @@ export async function triggerReverificationChallenge(params: TriggerReverifyPara
   // 2. Generate 60-second challenge
   const challengeId = crypto.randomUUID();
   const nowSec = Math.floor(Date.now() / 1000);
+  const nowIso = new Date(nowSec * 1000).toISOString();
   const expiresAtSec = nowSec + 60;
   const expiresAtIso = new Date(expiresAtSec * 1000).toISOString();
 
@@ -85,6 +87,19 @@ export async function triggerReverificationChallenge(params: TriggerReverifyPara
     .from('attendance_sessions')
     .update({ status: 're_verifying' })
     .eq('id', sessionId);
+
+  // 4. Broadcast Realtime prompt to connected student clients
+  await broadcastReverificationPrompt(
+    sessionId,
+    {
+      challengeId,
+      issuedAt: nowIso,
+      expiresAt: expiresAtIso,
+      promptType: 'one_touch_ack',
+      windowSeconds: 60,
+    },
+    supabase
+  );
 
   return {
     sessionId: session.id,

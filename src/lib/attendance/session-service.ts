@@ -7,8 +7,9 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ValidationError, ForbiddenError, NotFoundError, ConflictError } from '@/lib/errors';
-import { Profile } from '@/types/database';
 import { finalizeSessionReverifications } from '@/lib/attendance/reverify-service';
+import { broadcastSessionStatus } from '@/lib/realtime/broadcast';
+import { Profile } from '@/types/database';
 
 export interface StartSessionParams {
   teacherId: string;
@@ -233,6 +234,9 @@ export async function endAttendanceSession(params: EndSessionParams) {
   // 3. Finalize any un-reverified attendees to 're_verify_failed'
   const adminDb = params.adminClient || createAdminClient();
   await finalizeSessionReverifications(sessionId, adminDb);
+
+  // Broadcast session end status change to subscribers
+  await broadcastSessionStatus(sessionId, 'ended', supabase);
 
   // 4. Compute final attendance totals
   const { count: totalEnrolled } = await supabase
