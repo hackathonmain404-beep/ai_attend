@@ -1,5 +1,5 @@
 /**
- * AttendGuard AI Module - Response Validator & Hallucination Guard
+ * AttendGuard AI Module - Hardened Response Validator & Hallucination Guard
  * Member 4: AI Engineer (Intelligence & Analytics)
  */
 
@@ -12,8 +12,8 @@ export interface ValidationResult {
 }
 
 /**
- * Validates AI response text against verified contextual numbers.
- * Detects numerical contradictions, hallucinated percentages, or empty responses.
+ * Hardened validator that inspects AI response text against verified analytics context.
+ * Uses closest-token attribution to accurately detect contradictions and unlisted course hallucinations.
  */
 export function validateAdvisorResponse(
   aiText: string,
@@ -31,38 +31,67 @@ export function validateAdvisorResponse(
   }
 
   const normalizedText = aiText.toLowerCase();
+  const enrolledNames = context.rankedSubjects.map((s) => ({
+    name: s.subjectName,
+    lower: s.subjectName.toLowerCase(),
+    percentage: s.percentage,
+  }));
 
-  // 2. Numerical Consistency Cross-Check
-  // For each course in context, if the course name is mentioned, verify any adjacent percentage claims
-  for (const subject of context.rankedSubjects) {
-    const subNameLower = subject.subjectName.toLowerCase();
+  const potentialGhostCourses = ['biology', 'history', 'sociology', 'economics', 'literature'];
+  const ghostCoursesMentioned = potentialGhostCourses.filter(
+    (g) => !enrolledNames.some((e) => e.lower === g) && normalizedText.includes(g)
+  );
 
-    if (normalizedText.includes(subNameLower)) {
-      // Find numbers followed by '%' in text
-      const percentageMatches = aiText.matchAll(/(\d+(?:\.\d+)?)\s*%/g);
+  // Extract all percentages in the response
+  const percentageMatches = Array.from(aiText.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
 
-      for (const match of percentageMatches) {
-        const foundValue = parseFloat(match[1]);
-        const trueValue = subject.percentage;
+  for (const match of percentageMatches) {
+    const foundValue = parseFloat(match[1]);
+    const matchIndex = match.index ?? 0;
 
-        // If the mentioned percentage is within sentence proximity and contradicts the actual percentage
-        const matchIndex = match.index ?? 0;
-        const subIndex = normalizedText.indexOf(subNameLower);
-        const distance = Math.abs(matchIndex - subIndex);
+    // Is this a standard policy threshold (75% or 80%)?
+    if (foundValue === 75 || foundValue === 80) {
+      continue;
+    }
 
-        // If mentioned in the same phrase/sentence (within 100 chars)
-        if (distance < 100) {
-          // Allow small rounding difference (e.g. 68% vs 68.0%), but reject real contradictions
-          const diff = Math.abs(foundValue - trueValue);
-          const isTargetThreshold = foundValue === 75 || foundValue === 80;
-
-          // If it's neither the true percentage nor the policy threshold (75/80%), it's a conflict
-          if (diff > 1.0 && !isTargetThreshold) {
-            issues.push(
-              `Numerical contradiction for ${subject.subjectName}: mentioned ${foundValue}%, but true attendance is ${trueValue}%.`
-            );
-          }
+    // Find the closest course mentioned to this percentage
+    let closestSubject: { name: string; percentage: number; dist: number } | null = null;
+    for (const enrolled of enrolledNames) {
+      const subIndex = normalizedText.indexOf(enrolled.lower);
+      if (subIndex !== -1) {
+        const dist = Math.abs(matchIndex - subIndex);
+        if (!closestSubject || dist < closestSubject.dist) {
+          closestSubject = { name: enrolled.name, percentage: enrolled.percentage, dist };
         }
+      }
+    }
+
+    // Find closest ghost course mentioned to this percentage
+    let closestGhost: { name: string; dist: number } | null = null;
+    for (const ghost of ghostCoursesMentioned) {
+      const gIndex = normalizedText.indexOf(ghost);
+      if (gIndex !== -1) {
+        const dist = Math.abs(matchIndex - gIndex);
+        if (!closestGhost || dist < closestGhost.dist) {
+          closestGhost = { name: ghost, dist };
+        }
+      }
+    }
+
+    // Check if closest is a ghost course
+    if (closestGhost && (!closestSubject || closestGhost.dist < closestSubject.dist)) {
+      if (closestGhost.dist < 80) {
+        issues.push(
+          `Hallucination detected: AI fabricated attendance percentage (${foundValue}%) for unlisted course '${closestGhost.name}'.`
+        );
+      }
+    } else if (closestSubject && closestSubject.dist < 100) {
+      // Numerical contradiction check for enrolled course
+      const diff = Math.abs(foundValue - closestSubject.percentage);
+      if (diff > 1.0) {
+        issues.push(
+          `Numerical contradiction for ${closestSubject.name}: mentioned ${foundValue}%, but verified attendance is ${closestSubject.percentage}%.`
+        );
       }
     }
   }
@@ -70,7 +99,7 @@ export function validateAdvisorResponse(
   if (issues.length > 0) {
     return {
       isValid: false,
-      reason: 'Numerical contradiction detected in AI response.',
+      reason: 'Numerical contradiction or hallucination detected in AI response.',
       flaggedIssues: issues,
     };
   }

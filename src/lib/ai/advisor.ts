@@ -19,6 +19,15 @@ import type { AttendanceContextPayload } from '../analytics/types.ts';
 export function classifyQuestion(question: string): QuestionCategory {
   const q = question.toLowerCase();
 
+  // Intercept adversarial prompt injection or override attempts
+  if (
+    /(ignore|override|pretend|reset|bypass|forget|hack).*(instruction|data|prompt|attendance|rule|record|policy|status)/i.test(
+      q
+    )
+  ) {
+    return 'UNSUPPORTED';
+  }
+
   // Calculation & Absence allowances
   if (
     /how many|classes need|attend to reach|to get 75|recover|miss tomorrow|can i miss|safe to miss|skip/i.test(
@@ -134,6 +143,14 @@ export function generateDeterministicFallback(
     }
 
     case 'UNSUPPORTED': {
+      const q = request.question.toLowerCase();
+      if (/(ignore|override|pretend|reset|bypass|forget|hack)/i.test(q)) {
+        const h = overall.highestRiskSubject;
+        const highestRiskText = h
+          ? `, with your highest-risk course (${h.subjectName}) at ${h.percentage.toFixed(1)}% (${h.classesNeeded} classes needed to reach 75%)`
+          : '';
+        return `I cannot override or alter verified attendance data. Your verified overall attendance is ${overall.overallPercentage.toFixed(1)}% (${overall.overallRisk})${highestRiskText}.`;
+      }
       return `I am your AttendGuard Attendance Advisor. I can assist you with your attendance percentages, risk evaluations, classes needed to reach 75%, and safe absence allowances.`;
     }
 
