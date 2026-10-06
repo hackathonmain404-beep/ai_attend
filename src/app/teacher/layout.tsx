@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const teacherNavItems = [
   {
@@ -97,16 +98,17 @@ export default function TeacherLayout({
         </div>
 
         {/* Faculty Profile Footer */}
-        <div className="p-4 border-t border-slate-800/60 bg-slate-950/40">
+        <div className="p-4 border-t border-slate-800/60 bg-slate-950/40 space-y-2">
           <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-800">
             <div className="h-9 w-9 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">
               PROF
             </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-white truncate">Prof. Harrison</p>
+            <div className="overflow-hidden flex-1">
+              <p className="text-xs font-semibold text-white truncate">Prof. Turing</p>
               <p className="text-[10px] text-slate-400 truncate">Computer Science Dept.</p>
             </div>
           </div>
+          <LogoutButton variant="ghost" size="sm" className="w-full justify-start text-xs h-8" />
         </div>
       </aside>
 

@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+import { getCurrentUserProfile } from "@/lib/auth/auth-client";
+import * as React from "react";
 
 const navItems = [
   {
@@ -74,9 +77,7 @@ export default function StudentLayout({
             <Badge variant="emerald" className="hidden sm:inline-flex text-[11px] py-0.5">
               Verified Device
             </Badge>
-            <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
-              <User className="h-4 w-4" />
-            </div>
+            <LogoutButton variant="ghost" size="sm" showText={false} className="h-8 w-8 p-0" title="Sign Out" />
           </div>
         </div>
       </header>
