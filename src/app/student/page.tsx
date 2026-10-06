@@ -11,9 +11,24 @@ import { LowAttendanceWarningBanner } from "@/components/student/LowAttendanceWa
 import { TodayLecturesCard } from "@/components/student/TodayLecturesCard";
 import { SubjectAttendanceCard } from "@/components/student/SubjectAttendanceCard";
 import { StudentDashboardSkeleton } from "@/components/student/StudentDashboardSkeleton";
+import { ReVerifyAlertModal } from "@/components/student/ReVerifyAlertModal";
+import { getActiveReVerifyChallenge } from "@/mocks/verification";
+import type { ReVerifyChallenge } from "@/types/verification";
 
 export default function StudentDashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStudentSummary();
+  const [activeChallenge, setActiveChallenge] = React.useState<ReVerifyChallenge | null>(null);
+
+  React.useEffect(() => {
+    const check = () => {
+      const challenge = getActiveReVerifyChallenge();
+      setActiveChallenge(challenge);
+    };
+
+    check();
+    const interval = setInterval(check, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (isLoading) {
     return <StudentDashboardSkeleton />;
@@ -66,6 +81,13 @@ export default function StudentDashboardPage() {
 
       {/* 5. Subject-Wise Course Breakdown */}
       <SubjectAttendanceCard classes={data.classes} />
+
+      {/* 6. Surprise In-Class Re-Verification Modal */}
+      <ReVerifyAlertModal
+        challenge={activeChallenge}
+        onCompleted={() => setActiveChallenge(null)}
+        onDismiss={() => setActiveChallenge(null)}
+      />
     </div>
   );
 }

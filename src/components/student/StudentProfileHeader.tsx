@@ -1,6 +1,8 @@
 import * as React from "react";
-import { Smartphone, ShieldCheck, GraduationCap, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { Smartphone, ShieldCheck, GraduationCap, CheckCircle2, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { StudentProfileSummary } from "@/types/student";
 
 interface StudentProfileHeaderProps {
@@ -29,15 +31,19 @@ export function StudentProfileHeader({ student }: StudentProfileHeaderProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto">
+      <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-medium">
           <Smartphone className="h-3.5 w-3.5 text-emerald-400" />
           <span>{student.device.deviceName || "Primary Device"}</span>
           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 ml-0.5" />
         </div>
-        <Badge variant="emerald" className="text-[11px]">
-          Bound & Verified
-        </Badge>
+
+        <Button asChild variant="outline" size="sm" className="border-slate-800 text-xs text-slate-300 hover:text-white">
+          <Link href="/student/history">
+            <History className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
+            Attendance History
+          </Link>
+        </Button>
       </div>
     </div>
   );

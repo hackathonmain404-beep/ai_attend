@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { filterAttendees } from "@/lib/services/teacher-service";
 import { DeviceResetDialog } from "@/components/teacher/DeviceResetDialog";
+import { ReVerifyTriggerButton } from "@/components/teacher/ReVerifyTriggerButton";
 import type { SessionAttendee } from "@/types/teacher";
 
 interface LiveAttendeeTableProps {
@@ -45,14 +46,17 @@ export function LiveAttendeeTable({
           </CardDescription>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500 pointer-events-none" />
-          <Input
-            placeholder="Search student or roll number..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-10 text-xs bg-slate-950/60 border-slate-800"
-          />
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <ReVerifyTriggerButton />
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500 pointer-events-none" />
+            <Input
+              placeholder="Search student or roll number..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-10 text-xs bg-slate-950/60 border-slate-800"
+            />
+          </div>
         </div>
       </div>
 
