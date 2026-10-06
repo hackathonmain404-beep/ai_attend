@@ -5,8 +5,10 @@
 
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ValidationError, ForbiddenError, NotFoundError, ConflictError } from '@/lib/errors';
 import { Profile } from '@/types/database';
+import { finalizeSessionReverifications } from '@/lib/attendance/reverify-service';
 
 export interface StartSessionParams {
   teacherId: string;
@@ -26,6 +28,7 @@ export interface EndSessionParams {
   teacherId: string;
   sessionId: string;
   client?: SupabaseClient;
+  adminClient?: SupabaseClient;
 }
 
 /**
@@ -227,7 +230,11 @@ export async function endAttendanceSession(params: EndSessionParams) {
     throw new Error(`Failed to end session: ${updateError.message}`);
   }
 
-  // 3. Compute final attendance totals
+  // 3. Finalize any un-reverified attendees to 're_verify_failed'
+  const adminDb = params.adminClient || createAdminClient();
+  await finalizeSessionReverifications(sessionId, adminDb);
+
+  // 4. Compute final attendance totals
   const { count: totalEnrolled } = await supabase
     .from('class_enrollments')
     .select('*', { count: 'exact', head: true })
