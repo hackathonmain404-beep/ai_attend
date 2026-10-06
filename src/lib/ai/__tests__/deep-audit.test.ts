@@ -1,16 +1,18 @@
 /**
- * AttendGuard AI & Analytics Module - Deep Integration Audit Test Suite (Phase 7.5)
+ * AttendGuard AI & Analytics Module - Deep Integration Audit Test Suite (Phase 7.5 / Final Audit)
  * Member 4: AI Engineer (Intelligence & Analytics)
  *
  * Verifies fixes for:
  * 1. Validator overall percentage matching without false positive collisions
  * 2. API route in-memory rate limiting (HTTP 429)
- * 3. Role/auth boundary enforcement (Teacher 403, Logged-out 401)
- * 4. Tag breakout sanitization
- * 5. Adversarial change/alter interception
- * 6. Unlisted course explicit clarification
- * 7. Mathematical boundary auditing across 10 profiles
- * 8. Concurrent cross-user isolation
+ * 3. Fail-secure session auth (rejecting unauthenticated, expired, and spoofed headers with 401)
+ * 4. Role boundary enforcement (Teacher 403)
+ * 5. Cross-user data isolation & IDOR prevention (HTTP 403)
+ * 6. Tag breakout sanitization
+ * 7. Adversarial change/alter interception
+ * 8. Unlisted course explicit clarification
+ * 9. Mathematical boundary auditing across 10 profiles
+ * 10. Concurrent cross-user isolation
  */
 
 import { describe, it } from 'node:test';
@@ -105,29 +107,12 @@ describe('4. Unlisted Course Missing Data Clarification', () => {
   });
 });
 
-describe('5. API Route Auth, Role & Rate Limiting Enforcement', () => {
-  it('rejects teacher accounts with HTTP 403 and instructional redirect', async () => {
+describe('5. API Route Auth, Role, IDOR & Rate Limiting Enforcement', () => {
+  it('rejects unauthenticated requests without session credentials with HTTP 401 (Default Deny)', async () => {
     const req = new Request('http://localhost:3000/api/student/advisor', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-role': 'teacher',
-      },
-      body: JSON.stringify({ question: 'How am I doing?' }),
-    });
-
-    const res = await POST(req);
-    assert.equal(res.status, 403);
-    const data = await res.json();
-    assert.equal(data.error.code, 'TEACHER_ROLE_RESTRICTED');
-  });
-
-  it('rejects unauthenticated requests with HTTP 401 when marked unauthenticated', async () => {
-    const req = new Request('http://localhost:3000/api/student/advisor', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-authenticated': 'false',
       },
       body: JSON.stringify({ question: 'How am I doing?' }),
     });
@@ -138,10 +123,99 @@ describe('5. API Route Auth, Role & Rate Limiting Enforcement', () => {
     assert.equal(data.error.code, 'UNAUTHORIZED');
   });
 
+  it('rejects client attempting to spoof x-authenticated or x-user-role headers without session', async () => {
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-authenticated': 'true',
+        'x-user-role': 'student',
+      },
+      body: JSON.stringify({ question: 'How am I doing?' }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 401, 'Must reject spoofed headers when session token is missing');
+    const data = await res.json();
+    assert.equal(data.error.code, 'UNAUTHORIZED');
+  });
+
+  it('rejects invalid or expired session tokens with HTTP 401', async () => {
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer expired',
+      },
+      body: JSON.stringify({ question: 'How am I doing?' }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 401);
+    const data = await res.json();
+    assert.equal(data.error.code, 'UNAUTHORIZED');
+  });
+
+  it('rejects teacher accounts with HTTP 403 and instructional redirect', async () => {
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer teacher_jwt_session',
+      },
+      body: JSON.stringify({ question: 'How am I doing?' }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 403);
+    const data = await res.json();
+    assert.equal(data.error.code, 'TEACHER_ROLE_RESTRICTED');
+  });
+
+  it('blocks IDOR attempt when Student A queries Student B data', async () => {
+    // Authenticated as Jordan, but attempting to inspect Alex's attendance
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer session_jordan',
+      },
+      body: JSON.stringify({
+        question: 'Which subject is at risk?',
+        studentId: 'alex',
+      }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 403);
+    const data = await res.json();
+    assert.equal(data.error.code, 'IDOR_ATTEMPT_BLOCKED');
+  });
+
+  it('accepts authenticated student request and supports query field from docs/API.md', async () => {
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer session_alex',
+      },
+      body: JSON.stringify({ query: 'Summarize my status' }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.ok(data.answer);
+  });
+
   it('rejects empty/malformed question payloads with HTTP 400', async () => {
     const req = new Request('http://localhost:3000/api/student/advisor', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer student_demo_session',
+      },
       body: JSON.stringify({ question: '   ' }),
     });
 
@@ -149,6 +223,22 @@ describe('5. API Route Auth, Role & Rate Limiting Enforcement', () => {
     assert.equal(res.status, 400);
     const data = await res.json();
     assert.equal(data.error.code, 'INVALID_REQUEST');
+  });
+
+  it('rejects oversized question exceeding 1000 characters with HTTP 400', async () => {
+    const req = new Request('http://localhost:3000/api/student/advisor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer student_demo_session',
+      },
+      body: JSON.stringify({ question: 'A'.repeat(1005) }),
+    });
+
+    const res = await POST(req);
+    assert.equal(res.status, 400);
+    const data = await res.json();
+    assert.equal(data.error.code, 'QUESTION_TOO_LONG');
   });
 
   it('enforces rate limit when client floods the endpoint', async () => {
@@ -161,6 +251,7 @@ describe('5. API Route Auth, Role & Rate Limiting Enforcement', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer student_flooder_token',
           'x-forwarded-for': clientIp,
         },
         body: JSON.stringify({ question: 'Summarize my status', scenarioId: 'healthy' }),

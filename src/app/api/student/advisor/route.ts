@@ -2,12 +2,18 @@
  * AttendGuard API - Student Attendance Advisor Endpoint
  * Route: POST /api/student/advisor
  * Member 4: AI Engineer (Intelligence & Analytics)
+ *
+ * Implements strict, fail-secure authentication and cross-user data isolation.
+ * Resolves student identity exclusively from verified session credentials.
  */
 
 import { answerAttendanceQuestion } from '../../../../lib/ai/advisor.ts';
 import { fetchStudentAttendance } from '../../../../lib/analytics/data-adapter.ts';
+import { resolveAuthenticatedUser } from '../../../../lib/ai/auth-resolver.ts';
 
 // In-memory sliding window rate limiter (30 requests / 60 seconds per client)
+// NOTE: Prototype/single-instance implementation. In distributed multi-instance production,
+// replace with distributed Redis / Upstash sliding-window rate limiting.
 interface RateLimitRecord {
   count: number;
   resetAt: number;
@@ -42,9 +48,28 @@ function checkRateLimit(clientId: string): boolean {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    // 1. Role & Auth Boundary Checks
-    const userRole = request.headers.get('x-user-role');
-    if (userRole === 'teacher') {
+    // 1. Cryptographic Authentication & Role Verification (Default Deny)
+    const session = await resolveAuthenticatedUser(request);
+
+    if (!session.isAuthenticated || !session.user) {
+      return Response.json(
+        {
+          success: false,
+          answer: 'You must be signed in to view your attendance advisor.',
+          source: 'DETERMINISTIC_FALLBACK',
+          category: 'UNSUPPORTED',
+          referencedSubjects: [],
+          error: {
+            code: session.errorCode || 'UNAUTHORIZED',
+            message: session.errorMessage || 'Authentication required to access student attendance data.',
+          },
+        },
+        { status: 401 }
+      );
+    }
+
+    // Role-based boundary enforcement: Teachers must use the Instructor Portal
+    if (session.user.role === 'teacher' || session.errorCode === 'TEACHER_ROLE_RESTRICTED') {
       return Response.json(
         {
           success: false,
@@ -55,36 +80,17 @@ export async function POST(request: Request): Promise<Response> {
           referencedSubjects: [],
           error: {
             code: 'TEACHER_ROLE_RESTRICTED',
-            message: 'Instructor accounts cannot access personal student attendance advisor.',
+            message: session.errorMessage || 'Instructor accounts cannot access personal student attendance advisor.',
           },
         },
         { status: 403 }
       );
     }
 
-    const authHeader = request.headers.get('authorization');
-    const authStatus = request.headers.get('x-authenticated');
-    if (authStatus === 'false' || authHeader === 'Bearer invalid') {
-      return Response.json(
-        {
-          success: false,
-          answer: 'You must be signed in to view your attendance advisor.',
-          source: 'DETERMINISTIC_FALLBACK',
-          category: 'UNSUPPORTED',
-          referencedSubjects: [],
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required to access student attendance data.',
-          },
-        },
-        { status: 401 }
-      );
-    }
-
-    // 2. Client Rate Limiting
+    // 2. Client Rate Limiting (keyed on verified user ID or client IP)
     const clientIdentifier =
+      session.user.id ||
       request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-student-id') ||
       'anonymous_client';
 
     if (!checkRateLimit(clientIdentifier)) {
@@ -105,10 +111,30 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // 3. Body Parsing & Input Validation
-    const body = await request.json();
-    const { question, studentName } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json(
+        {
+          success: false,
+          answer: 'Invalid request payload. Expected JSON body.',
+          source: 'DETERMINISTIC_FALLBACK',
+          category: 'UNSUPPORTED',
+          referencedSubjects: [],
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'Malformed JSON payload.',
+          },
+        },
+        { status: 400 }
+      );
+    }
 
-    if (!question || typeof question !== 'string' || question.trim() === '') {
+    // Support both 'question' and docs/API.md standard 'query'
+    const rawQuestion = (body.question ?? body.query) as string | undefined;
+
+    if (!rawQuestion || typeof rawQuestion !== 'string' || rawQuestion.trim() === '') {
       return Response.json(
         {
           success: false,
@@ -125,17 +151,59 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // 4. Retrieve trusted attendance data via resilient data adapter
-    const effectiveStudentId = request.headers.get('x-student-id') || body.studentId;
+    if (rawQuestion.length > 1000) {
+      return Response.json(
+        {
+          success: false,
+          answer: 'Question is too long. Please ask a concise attendance question (under 1000 characters).',
+          source: 'DETERMINISTIC_FALLBACK',
+          category: 'UNSUPPORTED',
+          referencedSubjects: [],
+          error: {
+            code: 'QUESTION_TOO_LONG',
+            message: 'Question exceeds maximum allowed length of 1000 characters.',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // 4. Cross-User Data Isolation & IDOR Defense
+    // Prevent malicious clients from inspecting other students' records by supplying a different studentId
+    const requestedStudentId = typeof body.studentId === 'string' ? body.studentId.trim().toLowerCase() : null;
+    const verifiedStudentId = session.user.id.toLowerCase();
+
+    if (requestedStudentId && requestedStudentId !== verifiedStudentId) {
+      // In demo environments, allow scenarioId switching if explicitly requested via scenarioId,
+      // but strictly block arbitrary studentId tampering as an IDOR attempt.
+      return Response.json(
+        {
+          success: false,
+          answer: 'Access denied. You can only inspect your own verified attendance records.',
+          source: 'DETERMINISTIC_FALLBACK',
+          category: 'UNSUPPORTED',
+          referencedSubjects: [],
+          error: {
+            code: 'IDOR_ATTEMPT_BLOCKED',
+            message: 'Cross-student attendance query rejected. Identity must match verified session.',
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // Retrieve authoritative attendance data strictly using the verified student ID
+    const effectiveScenarioId = typeof body.scenarioId === 'string' ? body.scenarioId : undefined;
     const { profile, context } = await fetchStudentAttendance({
-      studentId: effectiveStudentId,
-      scenarioId: body.scenarioId,
+      studentId: verifiedStudentId,
+      scenarioId: effectiveScenarioId,
     });
 
     // 5. Process question through AI Attendance Advisor
+    const studentName = session.user.name || profile.studentName;
     const advisorResponse = await answerAttendanceQuestion({
-      question,
-      studentName: studentName || profile.studentName,
+      question: rawQuestion,
+      studentName,
       attendanceContext: context,
     });
 
