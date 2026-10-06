@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { QrCode, Clock, MapPin, Radio, Calendar, CheckCircle } from "lucide-react";
+import { QrCode, Clock, MapPin, Radio, Calendar, CheckCircle, Bot } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,13 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
             Classroom sessions & attendance check-in availability
           </CardDescription>
         </div>
+
+        <Button asChild variant="outline" size="sm" className="border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold gap-1.5">
+          <Link href="/student/advisor">
+            <Bot className="h-3.5 w-3.5 text-teal-400" />
+            <span className="hidden sm:inline">Ask AI Advisor</span>
+          </Link>
+        </Button>
       </CardHeader>
 
       <CardContent className="p-0 space-y-3">
