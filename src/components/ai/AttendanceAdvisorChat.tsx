@@ -12,6 +12,7 @@ import { queryAttendanceAdvisor, queryAttendanceAdvisorLocal } from '../../lib/a
 
 interface AttendanceAdvisorChatProps {
   studentName?: string;
+  scenarioId?: string;
   fallbackContext?: AttendanceContextPayload;
 }
 
@@ -24,6 +25,7 @@ const SUGGESTED_QUESTIONS = [
 
 export function AttendanceAdvisorChat({
   studentName,
+  scenarioId,
   fallbackContext,
 }: AttendanceAdvisorChatProps): React.JSX.Element {
   const [question, setQuestion] = useState('');
@@ -43,7 +45,7 @@ export function AttendanceAdvisorChat({
 
       // In browser with live API route
       if (typeof window !== 'undefined' && window.location?.origin) {
-        result = await queryAttendanceAdvisor(q, studentName);
+        result = await queryAttendanceAdvisor(q, studentName, scenarioId);
 
         // If network/offline occurred but we have local context, fall back locally
         if (!result.success && fallbackContext) {
@@ -53,7 +55,7 @@ export function AttendanceAdvisorChat({
         // Direct local evaluation (SSR / Test / Storybook)
         result = await queryAttendanceAdvisorLocal(q, fallbackContext, studentName);
       } else {
-        result = await queryAttendanceAdvisor(q, studentName);
+        result = await queryAttendanceAdvisor(q, studentName, scenarioId);
       }
 
       setResponse(result);

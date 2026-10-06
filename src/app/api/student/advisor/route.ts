@@ -5,8 +5,7 @@
  */
 
 import { answerAttendanceQuestion } from '@/lib/ai/advisor.ts';
-import { generateAttendanceContext } from '@/lib/analytics/insights.ts';
-import { getStudentAttendanceRecords } from '@/lib/analytics/mock-data.ts';
+import { fetchStudentAttendance } from '@/lib/analytics/data-adapter.ts';
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -30,17 +29,17 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // 1. Retrieve trusted attendance data (swappable for live backend DB query)
-    const rawAttendance = getStudentAttendanceRecords();
+    // 1. Retrieve trusted attendance data via resilient data adapter
+    const { profile, context } = await fetchStudentAttendance({
+      studentId: body.studentId,
+      scenarioId: body.scenarioId,
+    });
 
-    // 2. Compute authoritative context deterministically
-    const attendanceContext = generateAttendanceContext(rawAttendance);
-
-    // 3. Process question through AI Attendance Advisor
+    // 2. Process question through AI Attendance Advisor
     const advisorResponse = await answerAttendanceQuestion({
       question,
-      studentName,
-      attendanceContext,
+      studentName: studentName || profile.studentName,
+      attendanceContext: context,
     });
 
     return Response.json(advisorResponse, { status: 200 });

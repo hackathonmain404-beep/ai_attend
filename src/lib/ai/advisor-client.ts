@@ -13,7 +13,8 @@ import { answerAttendanceQuestion } from './advisor.ts';
  */
 export async function queryAttendanceAdvisor(
   question: string,
-  studentName?: string
+  studentName?: string,
+  scenarioId?: string
 ): Promise<AttendanceAdvisorResponse> {
   try {
     const response = await fetch('/api/student/advisor', {
@@ -24,6 +25,7 @@ export async function queryAttendanceAdvisor(
       body: JSON.stringify({
         question,
         studentName,
+        scenarioId,
       }),
     });
 
