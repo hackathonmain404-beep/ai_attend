@@ -125,6 +125,7 @@ The portal includes an interactive persona selector for live evaluations:
 ## 🛡 Security & Verification Guarantees
 
 Comprehensive documentation on threat models and evaluation metrics can be found in:
+- [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) — Complete AI architecture, deterministic math engine, grounding pipeline, and validator guardrails.
 - [docs/SECURITY.md](docs/SECURITY.md) — Security model, prompt injection defense, credential isolation, and fuzzing tests.
 - [docs/AI.md](docs/AI.md) — LLM evaluation report, anti-hallucination benchmarks, latency, and token efficiency.
 - [docs/DEMO.md](docs/DEMO.md) — 3-minute hackathon judge pitch script and live demonstration guide.
@@ -142,7 +143,9 @@ Comprehensive documentation on threat models and evaluation metrics can be found
 
 ```
 AttendGuard/
+├── AI_ARCHITECTURE.md            # Comprehensive AI architecture & intelligence specification
 ├── docs/
+│   ├── AI_ARCHITECTURE.md        # Comprehensive AI architecture & intelligence specification
 │   ├── AI.md                     # AI evaluation report & performance metrics
 │   ├── DEMO.md                   # Live hackathon judging guide & demo script
 │   └── SECURITY.md               # Security hardening & injection threat model

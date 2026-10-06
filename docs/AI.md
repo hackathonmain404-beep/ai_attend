@@ -1,6 +1,7 @@
 # AttendGuard — AI Architecture & Evaluation Specification
 **Module:** Member 4 (AI Engineer: Intelligence & Analytics)  
-**Version:** 1.0 (Hackathon MVP)
+**Version:** 1.0 (Hackathon MVP)  
+**Comprehensive Specification:** [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) (or root [AI_ARCHITECTURE.md](../AI_ARCHITECTURE.md))
 
 ---
 
