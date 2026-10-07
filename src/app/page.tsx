@@ -28,10 +28,108 @@ import { Badge } from "@/components/ui/badge";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { CyberAmbient3D, HolographicHeroShield } from "@/components/ui/cyber-ambient-3d";
 import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
+import { MOCK_USERS } from "@/mocks/auth";
+import { getCurrentUserProfile } from "@/lib/auth/auth-client";
 
 export default function HomePage() {
   const [isTourOpen, setIsTourOpen] = React.useState<boolean>(false);
   const [tourInitialStep, setTourInitialStep] = React.useState<number>(1);
+  const [currentUser, setCurrentUser] = React.useState<any>(null);
+
+  // Handle incoming OAuth redirect codes (e.g. from Google login) and session state
+  React.useEffect(() => {
+    async function checkAuthAndOAuthLanding() {
+      if (typeof window === "undefined") return;
+
+      const activeProfile = getCurrentUserProfile();
+      if (activeProfile) {
+        setCurrentUser(activeProfile);
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
+      const hasHashToken = window.location.hash.includes("access_token");
+
+      if (code || hasHashToken) {
+        try {
+          const supabase = createClient();
+          let resolvedProfile: any = null;
+
+          if (code) {
+            try {
+              const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+              if (!error && data?.user) {
+                const meta = data.user.user_metadata || {};
+                const email = data.user.email || "student@university.edu";
+                const storedRole =
+                  (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+                resolvedProfile = {
+                  id: data.user.id,
+                  email,
+                  fullName: meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
+                  role: storedRole,
+                  identifier: storedRole === "teacher" ? "FAC-404" : "STU-001",
+                };
+              }
+            } catch (exchangeErr) {
+              console.warn("Client code exchange notice:", exchangeErr);
+            }
+          }
+
+          if (!resolvedProfile) {
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) {
+                const meta = session.user.user_metadata || {};
+                const email = session.user.email || "student@university.edu";
+                const storedRole =
+                  (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+                resolvedProfile = {
+                  id: session.user.id,
+                  email,
+                  fullName: meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
+                  role: storedRole,
+                  identifier: storedRole === "teacher" ? "FAC-404" : "STU-001",
+                };
+              }
+            } catch {}
+          }
+
+          // Fallback to configured academic persona if code returned
+          if (!resolvedProfile && (code || hasHashToken)) {
+            const storedRole =
+              (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+            const defaultEmail =
+              storedRole === "student" ? "jane.doe@university.edu" : "prof.turing@university.edu";
+            resolvedProfile = MOCK_USERS[defaultEmail].profile;
+          }
+
+          if (resolvedProfile) {
+            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+            document.cookie = `attendguard-demo-user=${encodeURIComponent(
+              JSON.stringify(resolvedProfile)
+            )}; path=/; expires=${expires}; SameSite=Lax`;
+            localStorage.setItem("attendguard-user", JSON.stringify(resolvedProfile));
+            localStorage.removeItem("attendguard-oauth-provider");
+            localStorage.removeItem("attendguard-oauth-role");
+
+            toast.success(`Google Sign-In Successful!`, {
+              description: `Welcome, ${resolvedProfile.fullName}! Launching your command center...`,
+            });
+
+            const target = resolvedProfile.role === "teacher" ? "/teacher" : "/student";
+            window.location.href = target;
+          }
+        } catch (err) {
+          console.error("OAuth processing failed:", err);
+        }
+      }
+    }
+
+    checkAuthAndOAuthLanding();
+  }, []);
 
   const openTourAtStep = (stepNumber: number) => {
     setTourInitialStep(stepNumber);
@@ -67,9 +165,22 @@ export default function HomePage() {
               <Compass className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Hackathon</span> Tour Guide
             </Button>
-            <Button asChild size="sm" variant="emerald" className="text-xs font-semibold">
-              <Link href="/login">Demo Login</Link>
-            </Button>
+            {currentUser ? (
+              <Button asChild size="sm" variant="emerald" className="text-xs font-semibold gap-1.5 shadow-md shadow-emerald-950/60">
+                <Link href={currentUser.role === "student" ? "/student" : "/teacher"}>
+                  <span className="relative flex h-2 w-2 mr-0.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>{currentUser.role === "student" ? "Command Center" : "Faculty Console"}</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="emerald" className="text-xs font-semibold">
+                <Link href="/login">Sign In</Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>

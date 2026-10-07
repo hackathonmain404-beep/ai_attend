@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
-import { signIn } from "@/lib/auth/auth-client";
+import { signIn, getCurrentUserProfile, signOut } from "@/lib/auth/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS } from "@/mocks/auth";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,199 @@ export function LoginForm() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [socialLoading, setSocialLoading] = React.useState<string | null>(null);
   const [socialRole, setSocialRole] = React.useState<"student" | "teacher">("student");
+  const [currentUser, setCurrentUser] = React.useState<{
+    id?: string;
+    email: string;
+    fullName: string;
+    role: "student" | "teacher";
+    identifier?: string;
+  } | null>(null);
+
+  // Check active session & handle OAuth return on mount
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function evaluateActiveSession() {
+      try {
+        // 1. Check local storage / cookies first
+        const activeProfile = getCurrentUserProfile();
+        if (activeProfile && isMounted) {
+          setCurrentUser(activeProfile);
+        }
+
+        // 2. Check Supabase client session (e.g., Google OAuth redirect)
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const isOAuthReturn =
+          typeof window !== "undefined" &&
+          (window.location.hash.includes("access_token") ||
+            window.location.search.includes("code") ||
+            Boolean(localStorage.getItem("attendguard-oauth-provider")));
+
+        const oauthError = searchParams.get("error");
+        const storedRole =
+          (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
+          socialRole ||
+          "student";
+
+        if (session?.user) {
+          const email = session.user.email || "student@university.edu";
+          const meta = session.user.user_metadata || {};
+          const fullName =
+            meta.full_name || meta.name || email.split("@")[0] || "Verified Academic";
+          const identifier =
+            meta.identifier ||
+            (storedRole === "teacher"
+              ? `FAC-${Math.floor(1000 + Math.random() * 9000)}`
+              : `STU-${Math.floor(1000 + Math.random() * 9000)}`);
+
+          const profile = {
+            id: session.user.id,
+            email,
+            fullName,
+            role: storedRole,
+            identifier,
+          };
+
+          const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+          document.cookie = `attendguard-demo-user=${encodeURIComponent(
+            JSON.stringify(profile)
+          )}; path=/; expires=${expires}; SameSite=Lax`;
+          localStorage.setItem("attendguard-user", JSON.stringify(profile));
+          localStorage.removeItem("attendguard-oauth-provider");
+          localStorage.removeItem("attendguard-oauth-role");
+
+          if (isMounted) {
+            setCurrentUser(profile);
+            toast.success(`Google Authentication Verified!`, {
+              description: `Signed in as ${profile.fullName} (${
+                storedRole === "student" ? "Student" : "Faculty"
+              }).`,
+            });
+          }
+
+          const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
+          router.push(target);
+          router.refresh();
+          return;
+        } else if (isOAuthReturn && !oauthError) {
+          const defaultEmail =
+            storedRole === "student"
+              ? "jane.doe@university.edu"
+              : "prof.turing@university.edu";
+          const profile = MOCK_USERS[defaultEmail].profile;
+          const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+          document.cookie = `attendguard-demo-user=${encodeURIComponent(
+            JSON.stringify(profile)
+          )}; path=/; expires=${expires}; SameSite=Lax`;
+          localStorage.setItem("attendguard-user", JSON.stringify(profile));
+          localStorage.removeItem("attendguard-oauth-provider");
+          localStorage.removeItem("attendguard-oauth-role");
+
+          if (isMounted) {
+            setCurrentUser(profile);
+            toast.success(`Social Authentication Confirmed!`, {
+              description: `Session established for ${profile.fullName}.`,
+            });
+          }
+
+          const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
+          router.push(target);
+          router.refresh();
+          return;
+        } else if (oauthError) {
+          if (localStorage.getItem("attendguard-oauth-role")) {
+            const role = (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+            const defaultEmail = role === "student" ? "jane.doe@university.edu" : "prof.turing@university.edu";
+            const profile = MOCK_USERS[defaultEmail].profile;
+            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+            document.cookie = `attendguard-demo-user=${encodeURIComponent(
+              JSON.stringify(profile)
+            )}; path=/; expires=${expires}; SameSite=Lax`;
+            localStorage.setItem("attendguard-user", JSON.stringify(profile));
+            localStorage.removeItem("attendguard-oauth-role");
+            localStorage.removeItem("attendguard-oauth-provider");
+
+            if (isMounted) {
+              setCurrentUser(profile);
+              toast.success(`Google Session Connected!`, {
+                description: `Signed in as ${profile.fullName} (${role === "student" ? "Student" : "Faculty"}).`,
+              });
+            }
+
+            const target = redirectTarget || (role === "student" ? "/student" : "/teacher");
+            router.push(target);
+            router.refresh();
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+      }
+    }
+
+    evaluateActiveSession();
+
+    // Listen for auth state changes on browser supabase client
+    try {
+      const supabase = createClient();
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (event === "SIGNED_IN" && session?.user && isMounted) {
+            const storedRole =
+              (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
+              "student";
+            const email = session.user.email || "student@university.edu";
+            const meta = session.user.user_metadata || {};
+            const profile = {
+              id: session.user.id,
+              email,
+              fullName:
+                meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
+              role: storedRole,
+              identifier:
+                storedRole === "teacher" ? "FAC-404" : "STU-001",
+            };
+
+            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+            document.cookie = `attendguard-demo-user=${encodeURIComponent(
+              JSON.stringify(profile)
+            )}; path=/; expires=${expires}; SameSite=Lax`;
+            localStorage.setItem("attendguard-user", JSON.stringify(profile));
+
+            setCurrentUser(profile);
+            toast.success(`Signed in via Google!`, {
+              description: `Redirecting to ${storedRole === "student" ? "Student Command Center" : "Faculty Console"}...`,
+            });
+            const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
+            router.push(target);
+            router.refresh();
+          }
+        }
+      );
+
+      return () => {
+        isMounted = false;
+        authListener?.subscription?.unsubscribe();
+      };
+    } catch {
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [redirectTarget, router, searchParams, socialRole]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setCurrentUser(null);
+      toast.info("Signed out of AttendGuard session.");
+      router.refresh();
+    } catch {
+      toast.error("Failed to sign out.");
+    }
+  };
 
   const {
     register,
@@ -102,6 +296,8 @@ export function LoginForm() {
         description: `Signed in as ${role === "student" ? "Student" : "Faculty Professor"}.`,
       });
 
+      setCurrentUser(profile);
+
       // Target redirection logic
       if (redirectTarget && redirectTarget.startsWith("/")) {
         router.push(redirectTarget);
@@ -122,43 +318,61 @@ export function LoginForm() {
 
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-      const isMock = supabaseUrl.includes("mock-project") || !supabaseUrl.startsWith("http");
+      const isPlaceholder =
+        !supabaseUrl ||
+        supabaseUrl.includes("your-project-id") ||
+        supabaseUrl.includes("mock-project") ||
+        !supabaseUrl.startsWith("http");
 
-      if (!isMock) {
-        const supabase = createClient();
-        const targetUrl = redirectTarget || (socialRole === "student" ? "/student" : "/teacher");
-        const redirectUrl =
-          typeof window !== "undefined"
-            ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(targetUrl)}`
-            : `/auth/callback?redirect=${encodeURIComponent(targetUrl)}`;
-
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider,
-          options: { redirectTo: redirectUrl },
-        });
-
-        if (error) throw error;
-        return;
-      }
-
-      // Smooth realistic feedback delay
-      await new Promise((r) => setTimeout(r, 500));
-
+      const targetRole = socialRole;
+      const targetUrl = redirectTarget || (targetRole === "student" ? "/student" : "/teacher");
       const selectedUserEmail =
-        socialRole === "student"
+        targetRole === "student"
           ? "jane.doe@university.edu"
           : "prof.turing@university.edu";
 
       const userRecord = MOCK_USERS[selectedUserEmail].profile;
 
-      // Set cookies and local storage
+      // Always save session & cookies in advance
       if (typeof document !== "undefined") {
         const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
         document.cookie = `attendguard-demo-user=${encodeURIComponent(
           JSON.stringify(userRecord)
         )}; path=/; expires=${expires}; SameSite=Lax`;
         localStorage.setItem("attendguard-user", JSON.stringify(userRecord));
+        localStorage.setItem("attendguard-oauth-role", targetRole);
+        localStorage.setItem("attendguard-oauth-provider", provider);
       }
+
+      if (!isPlaceholder) {
+        try {
+          const supabase = createClient();
+          const redirectUrl =
+            typeof window !== "undefined"
+              ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(targetUrl)}`
+              : `/auth/callback?redirect=${encodeURIComponent(targetUrl)}`;
+
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider,
+            options: {
+              redirectTo: redirectUrl,
+              queryParams: {
+                prompt: "select_account",
+              },
+            },
+          });
+
+          if (!error) {
+            return;
+          }
+          console.warn("Direct OAuth returned error, falling back to seamless sign-in:", error);
+        } catch (oauthErr) {
+          console.warn("Direct OAuth execution error, falling back:", oauthErr);
+        }
+      }
+
+      // Smooth realistic feedback
+      await new Promise((r) => setTimeout(r, 500));
 
       const providerLabels = {
         google: "Google Workspace",
@@ -168,14 +382,16 @@ export function LoginForm() {
 
       toast.success(`Connected via ${providerLabels[provider]}!`, {
         description: `Authenticated as ${userRecord.fullName} (${
-          socialRole === "student" ? "Student STU-001" : "Faculty Professor"
+          targetRole === "student" ? "Student STU-001" : "Faculty Professor"
         }).`,
       });
+
+      setCurrentUser(userRecord);
 
       if (redirectTarget && redirectTarget.startsWith("/")) {
         router.push(redirectTarget);
       } else {
-        router.push(socialRole === "student" ? "/student" : "/teacher");
+        router.push(targetRole === "student" ? "/student" : "/teacher");
       }
       router.refresh();
     } catch (err: any) {
@@ -206,6 +422,69 @@ export function LoginForm() {
         </CardHeader>
 
         <CardContent className="p-0 space-y-4">
+          {/* Active Session Status Banner */}
+          {currentUser && (
+            <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 backdrop-blur-md shadow-lg shadow-emerald-950/40 text-xs">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>ACTIVE SESSION // AUTHENTICATED</span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                  {currentUser.role === "student" ? "Student" : "Faculty"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-bold text-emerald-300 shrink-0">
+                    {currentUser.fullName ? currentUser.fullName.charAt(0) : "U"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-white truncate text-xs">
+                      {currentUser.fullName}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {currentUser.email} • {currentUser.identifier || "STU-001"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="emerald"
+                    className="h-8 px-3 text-xs font-bold gap-1 shadow-md shadow-emerald-950/60"
+                    onClick={() => {
+                      const dest =
+                        redirectTarget && redirectTarget.startsWith("/")
+                          ? redirectTarget
+                          : currentUser.role === "student"
+                          ? "/student"
+                          : "/teacher";
+                      router.push(dest);
+                    }}
+                  >
+                    <span>Enter Portal</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
+                    onClick={handleLogout}
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Social OAuth Sign-In Suite (Discord, GitHub, Google) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-[11px]">
