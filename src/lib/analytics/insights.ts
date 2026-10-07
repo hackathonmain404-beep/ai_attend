@@ -1,5 +1,6 @@
 /**
  * AttendGuard Urgency Prioritization & High-Level Insight Generation
+ * Unified analytics service supporting both Course and Subject insight models.
  */
 
 import {
@@ -10,6 +11,14 @@ import {
   DEFAULT_POLICY,
   RiskLevel,
   AttendanceTrend,
+  PriorityLevel,
+  SubjectInsightInput,
+  SubjectInsight,
+  OverallInsights,
+  AttendanceContextPayload,
+  SubjectAttendanceContextPayload,
+  AnalyticsPolicyConfig,
+  DEFAULT_ANALYTICS_POLICY,
 } from './types';
 import { calculateAttendance } from './attendance';
 import { calculateRequiredClasses, calculateSafeMisses } from './projections';
@@ -27,32 +36,68 @@ export interface PriorityScoreParams {
  * Computes an explainable multi-factor urgency score U:
  * U = U_base + Delta_deficit + Delta_trend
  * 
- * Where:
- * - CRITICAL base: 1000 + 10 * (R_% - P) + 5 * C
- * - AT_RISK base: 500 + 5 * (80 - P)
- * - SAFE base: max(0, 100 - P)
- * - Trend adjustment: +50 if declining, -25 if improving
+ * Supports both object params and positional arguments.
  */
-export function calculatePriorityScore(params: PriorityScoreParams): number {
-  const { risk, percentage, requiredClasses, trend, targetPct = 75.0 } = params;
+export function calculatePriorityScore(
+  riskOrParams: RiskLevel | PriorityScoreParams,
+  percentage?: number,
+  requiredPercentage?: number,
+  classesNeeded?: number,
+  trend?: AttendanceTrend
+): number {
+  let r: RiskLevel;
+  let p: number;
+  let req: number;
+  let needed: number;
+  let tr: AttendanceTrend;
 
-  let base = 0;
-  if (risk === 'CRITICAL') {
-    base = 1000 + 10 * Math.max(0, targetPct - percentage) + 5 * requiredClasses;
-  } else if (risk === 'AT_RISK') {
-    base = 500 + 5 * Math.max(0, 80.0 - percentage);
+  if (typeof riskOrParams === 'object') {
+    r = riskOrParams.risk;
+    p = riskOrParams.percentage;
+    req = riskOrParams.targetPct ?? 75.0;
+    needed = riskOrParams.requiredClasses;
+    tr = riskOrParams.trend;
   } else {
-    base = Math.max(0, 100.0 - percentage);
+    r = riskOrParams;
+    p = percentage ?? 0;
+    req = requiredPercentage ?? 75.0;
+    needed = classesNeeded ?? 0;
+    tr = trend ?? 'stable';
   }
 
-  let trendAdj = 0;
-  if (trend === 'declining') {
-    trendAdj = 50;
-  } else if (trend === 'improving') {
-    trendAdj = -25;
+  let score = 0;
+  switch (r) {
+    case 'CRITICAL':
+      score = 1000 + Math.max(0, req - p) * 10 + needed * 5;
+      break;
+    case 'AT_RISK':
+      score = 500 + Math.max(0, 80.0 - p) * 5;
+      break;
+    case 'SAFE':
+      score = Math.max(0, 100.0 - p);
+      break;
   }
 
-  return Math.round((base + trendAdj) * 10) / 10;
+  if (tr === 'declining') {
+    score += 50;
+  } else if (tr === 'improving') {
+    score -= 25;
+  }
+
+  return Math.round((score + Number.EPSILON) * 10) / 10;
+}
+
+/**
+ * Maps numeric priority score into categorical priority tiers.
+ */
+export function getPriorityLevel(priorityScore: number): PriorityLevel {
+  if (priorityScore >= 1000) {
+    return 'HIGH';
+  }
+  if (priorityScore >= 500) {
+    return 'MEDIUM';
+  }
+  return 'LOW';
 }
 
 /**
@@ -98,7 +143,6 @@ export function generateCourseInsights(
     };
   });
 
-  // Sort descending by urgency score
   return insights.sort((a, b) => b.urgencyScore - a.urgencyScore);
 }
 
@@ -127,7 +171,6 @@ export function generateAttendanceSummary(
   const atRiskCourses = courseInsights.filter((c) => c.risk === 'AT_RISK');
   const safeCourses = courseInsights.filter((c) => c.risk === 'SAFE');
 
-  // Overall trajectory
   const decliningCount = courseInsights.filter((c) => c.trend === 'declining').length;
   const improvingCount = courseInsights.filter((c) => c.trend === 'improving').length;
 
@@ -140,7 +183,6 @@ export function generateAttendanceSummary(
 
   const highestRiskCourse = courseInsights.length > 0 ? courseInsights[0].courseName : null;
 
-  // Synthesize explainable recommendations
   const recommendations: string[] = [];
   const minPct = Math.round(policy.minimumThreshold * 100);
 
@@ -178,5 +220,217 @@ export function generateAttendanceSummary(
     highestRiskCourse,
     courses: courseInsights,
     recommendations,
+  };
+}
+
+/**
+ * Generates an insight profile for an individual subject by composing Phase 2 calculations.
+ */
+export function generateSubjectInsight(
+  input: SubjectInsightInput,
+  policy: AnalyticsPolicyConfig = DEFAULT_ANALYTICS_POLICY
+): SubjectInsight {
+  const requiredPercentage = input.requiredPercentage ?? policy.defaultRequiredPercentage;
+  const percentage = calculateAttendance(input.attended, input.total);
+  const riskLevel = calculateRiskLevel(percentage, requiredPercentage, policy);
+
+  const trend: AttendanceTrend =
+    input.previousPercentage !== undefined
+      ? calculateAttendanceTrend(percentage, input.previousPercentage, policy.trendTolerancePercentage)
+      : 'stable';
+
+  const classesNeeded = calculateRequiredClasses(input.attended, input.total, requiredPercentage);
+  const safeMisses = calculateSafeMisses(input.attended, input.total, requiredPercentage);
+
+  const priorityScore = calculatePriorityScore(
+    riskLevel,
+    percentage,
+    requiredPercentage,
+    classesNeeded,
+    trend
+  );
+  const priorityLevel = getPriorityLevel(priorityScore);
+
+  let summary = '';
+  if (riskLevel === 'CRITICAL') {
+    summary = `Immediate attention required: attend next ${classesNeeded} consecutive class(es) to reach ${requiredPercentage}%.`;
+  } else if (riskLevel === 'AT_RISK') {
+    summary = `Near minimum threshold: maintain attendance (can miss at most ${safeMisses} class(es)).`;
+  } else {
+    summary = `Attendance is healthy: can safely miss up to ${safeMisses} class(es).`;
+  }
+
+  if (trend === 'declining') {
+    summary += ' Trajectory is declining.';
+  } else if (trend === 'improving') {
+    summary += ' Trajectory is improving.';
+  }
+
+  return {
+    subjectId: input.subjectId,
+    subjectName: input.subjectName,
+    attended: input.attended,
+    total: input.total,
+    percentage,
+    requiredPercentage,
+    riskLevel,
+    trend,
+    classesNeeded,
+    safeMisses,
+    priorityScore,
+    priorityLevel,
+    summary,
+  };
+}
+
+/**
+ * Sorts subject insights by priority score descending (highest urgency first).
+ */
+export function rankSubjectsByUrgency(insights: SubjectInsight[]): SubjectInsight[] {
+  return [...insights].sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+/**
+ * Aggregates all subject data into holistic overall attendance intelligence.
+ */
+export function generateOverallInsights(
+  subjects: SubjectInsightInput[],
+  customPolicy?: Partial<AnalyticsPolicyConfig>
+): OverallInsights {
+  const policy: AnalyticsPolicyConfig = {
+    ...DEFAULT_ANALYTICS_POLICY,
+    ...customPolicy,
+  };
+
+  if (subjects.length === 0) {
+    return {
+      totalAttended: 0,
+      totalClasses: 0,
+      overallPercentage: 0,
+      overallRisk: 'SAFE',
+      criticalSubjectsCount: 0,
+      atRiskSubjectsCount: 0,
+      safeSubjectsCount: 0,
+      highestRiskSubject: null,
+      overallTrend: 'stable',
+    };
+  }
+
+  const subjectInsights = subjects.map((s) => generateSubjectInsight(s, policy));
+  const ranked = rankSubjectsByUrgency(subjectInsights);
+
+  let totalAttended = 0;
+  let totalClasses = 0;
+  let improvingCount = 0;
+  let decliningCount = 0;
+
+  for (const s of subjects) {
+    totalAttended += s.attended;
+    totalClasses += s.total;
+  }
+
+  let criticalCount = 0;
+  let atRiskCount = 0;
+  let safeCount = 0;
+
+  for (const item of subjectInsights) {
+    if (item.riskLevel === 'CRITICAL') criticalCount++;
+    else if (item.riskLevel === 'AT_RISK') atRiskCount++;
+    else safeCount++;
+
+    if (item.trend === 'improving') improvingCount++;
+    else if (item.trend === 'declining') decliningCount++;
+  }
+
+  const overallPercentage = calculateAttendance(totalAttended, totalClasses);
+  const overallRisk = calculateRiskLevel(overallPercentage, policy.defaultRequiredPercentage, policy);
+
+  let overallTrend: AttendanceTrend = 'stable';
+  if (decliningCount > improvingCount) {
+    overallTrend = 'declining';
+  } else if (improvingCount > decliningCount) {
+    overallTrend = 'improving';
+  }
+
+  const highestRisk = ranked.length > 0 ? ranked[0] : null;
+
+  return {
+    totalAttended,
+    totalClasses,
+    overallPercentage,
+    overallRisk,
+    criticalSubjectsCount: criticalCount,
+    atRiskSubjectsCount: atRiskCount,
+    safeSubjectsCount: safeCount,
+    highestRiskSubject: highestRisk,
+    overallTrend,
+  };
+}
+
+/**
+ * Generates deterministic, actionable recommendation statements based on structured insights.
+ */
+export function generateActionableRecommendations(
+  overall: OverallInsights,
+  rankedSubjects: SubjectInsight[]
+): string[] {
+  const recommendations: string[] = [];
+
+  if (rankedSubjects.length === 0) {
+    return ['No course enrollment data found. Please register for subjects to track attendance.'];
+  }
+
+  if (overall.criticalSubjectsCount > 0 && overall.highestRiskSubject) {
+    recommendations.push(
+      `${overall.highestRiskSubject.subjectName} requires immediate focus: attend the next ${overall.highestRiskSubject.classesNeeded} class(es) to regain the ${overall.highestRiskSubject.requiredPercentage}% requirement.`
+    );
+  }
+
+  const decliningSubjects = rankedSubjects.filter((s) => s.trend === 'declining');
+  if (decliningSubjects.length > 0) {
+    const names = decliningSubjects.map((s) => s.subjectName).join(', ');
+    recommendations.push(
+      `Attendance trajectory is slipping in: ${names}. Avoid unexcused absences in these courses.`
+    );
+  }
+
+  const atRiskSubjects = rankedSubjects.filter((s) => s.riskLevel === 'AT_RISK');
+  if (atRiskSubjects.length > 0 && overall.criticalSubjectsCount === 0) {
+    recommendations.push(
+      `Attendance is near the minimum threshold in ${atRiskSubjects.length} course(s). You have minimal absence allowance remaining.`
+    );
+  }
+
+  if (overall.criticalSubjectsCount === 0 && overall.atRiskSubjectsCount === 0) {
+    recommendations.push(
+      'All enrolled courses currently meet or exceed attendance targets. Keep up the consistent attendance.'
+    );
+  }
+
+  return recommendations;
+}
+
+/**
+ * Packages all calculated intelligence into a complete, structured context payload.
+ */
+export function generateAttendanceContext(
+  subjects: SubjectInsightInput[],
+  customPolicy?: Partial<AnalyticsPolicyConfig>
+): SubjectAttendanceContextPayload {
+  const policy: AnalyticsPolicyConfig = {
+    ...DEFAULT_ANALYTICS_POLICY,
+    ...customPolicy,
+  };
+
+  const subjectInsights = subjects.map((s) => generateSubjectInsight(s, policy));
+  const rankedSubjects = rankSubjectsByUrgency(subjectInsights);
+  const overall = generateOverallInsights(subjects, policy);
+  const recommendations = generateActionableRecommendations(overall, rankedSubjects);
+
+  return {
+    overall,
+    rankedSubjects,
+    recommendations,
+    generatedAt: new Date().toISOString(),
   };
 }

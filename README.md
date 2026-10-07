@@ -384,30 +384,34 @@ For complete database schema specifications, see [docs/DATABASE.md](docs/DATABAS
 
 | Command | Description |
 | :--- | :--- |
-| `npm run dev` | Starts local Next.js development server at `http://localhost:3000`. |
-| `npm run build` | Compiles the production build (validates TypeScript & Next.js routes). |
-| `npm run start` | Starts the production server. |
-| `npm run lint` | Runs Next.js ESLint rules across the repository. |
-| `npm run typecheck` | Runs `tsc --noEmit` to verify type safety across all files. |
-| `npm test` | Runs the test suite (unit and integration tests via Vitest/Jest). |
+| Execute tests locally:
 
----
-
-## Testing
-
-AttendGuard incorporates a multi-layer test strategy:
-
-- **Unit Tests**: Verifies deterministic mathematical calculations (attendance percentages, required classes formula), QR HMAC signature generator, token expiry validation, and device fingerprint parser.
-- **Integration Tests**: Tests Next.js Route Handlers (`/api/attendance/check-in`, `/api/sessions/start`) ensuring valid inputs produce correct records and unauthorized roles are blocked.
-- **Security Tests**: Simulates replay attacks, expired QR challenges, duplicate scans, and unregistered device spoofing.
-- **UI Tests**: Validates QR camera stream handling, loading skeletons, and responsive teacher projection displays.
-
-Execute tests locally:
 ```bash
 npm test
 ```
 
 Read the full test specifications and testing matrix in [docs/TESTING.md](docs/TESTING.md).
+
+---
+
+## AI & Attendance Intelligence Engine
+
+AttendGuard incorporates a deterministic risk analytics engine and a conversational AI Attendance Advisor:
+
+### Architecture & Design Principles
+1. **Deterministic Analytics is the Single Authority**: All percentages, risk tiers, and projections are computed algebraically in pure TypeScript. An LLM is never allowed to guess or compute attendance metrics.
+2. **AI as an Empathetic Explainer**: Gemini 2.5 Flash translates pre-computed mathematical facts into encouraging, actionable guidance.
+3. **No Direct Database Writes by AI**: The advisor operates in a read-only environment; prompt injection attacks cannot alter institutional records.
+4. **Server-Side API Security**: The `GEMINI_API_KEY` is strictly confined to server-side execution.
+5. **Fail-Safe Offline Operation**: If Gemini is unreachable or rate-limited, the system transparently serves deterministic fallback responses with zero disruption.
+
+### Demo Personas for Presentation
+
+| Persona | Status | Highlight Feature | Recovery Needed |
+| :--- | :--- | :--- | :--- |
+| **Alex** | **Healthy (90.3%)** | All courses $\ge 88\%$; ample safe misses available. | 0 classes |
+| **Maya** | **At-Risk (80.0%)** | Mathematics is slipping to 74.0% ($< 75\%$). | 2 classes in Math |
+| **Jordan** | **Critical (78.5%)** | C Programming at 68.0%; high recovery burden. | 7 classes in C Prog |
 
 ---
 
@@ -486,3 +490,58 @@ Explore the detailed architecture and implementation contracts:
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+intelligence specification
+├── docs/
+│   ├── AI_ARCHITECTURE.md        # Comprehensive AI architecture & intelligence specification
+│   ├── AI.md                     # AI evaluation report & performance metrics
+│   ├── DEMO.md                   # Live hackathon judging guide & demo script
+│   └── SECURITY.md               # Security hardening & injection threat model
+├── src/
+│   ├── app/
+│   │   ├── api/student/advisor/
+│   │   │   └── route.ts          # POST endpoint with input validation & fallback
+│   │   └── student/advisor/
+│   │       └── page.tsx          # Student analytics page with persona selector
+│   ├── components/
+│   │   ├── ai/
+│   │   │   └── AttendanceAdvisorChat.tsx  # Natural-language chat interface
+│   │   └── analytics/
+│   │       ├── AttendanceOverviewCard.tsx # Key metrics & risk badge
+│   │       ├── SubjectCard.tsx            # Individual course card with progress bar
+│   │       └── SubjectList.tsx            # Ranked urgency course breakdown
+│   └── lib/
+│       ├── ai/
+│       │   ├── __tests__/        # AI unit, security, and e2e demo test suites
+│       │   ├── advisor-client.ts # Browser API caller (no credentials leaked)
+│       │   ├── advisor.ts        # Intent router & deterministic fallback engine
+│       │   ├── gemini.ts         # Secure server-side Gemini 2.5 Flash client
+│       │   ├── prompts.ts        # Grounded system prompts & injection filters
+│       │   ├── types.ts          # AI response and error types
+│       │   └── validator.ts      # Anti-hallucination numerical validator
+│       └── analytics/
+│           ├── __tests__/        # Deterministic math & insight test suites
+│           ├── attendance.ts     # Exact percentage calculation & bounds
+│           ├── data-adapter.ts   # Resilient data retrieval & demo loader
+│           ├── demo-scenarios.ts # Alex, Maya, Jordan verified profiles
+│           ├── insights.ts       # Prioritization ranking & recommendation engine
+│           ├── mock-data.ts      # Trusted default fixtures
+│           ├── projections.ts    # Recovery classes and safe misses algebra
+│           ├── risk.ts           # Risk classification & trend analysis
+│           └── types.ts          # Core analytics schemas
+```
+
+---
+
+## 🤝 Teammate Integration Surface
+
+| Area | Integration Point | Status |
+| :--- | :--- | :--- |
+| **Backend / Supabase** | `fetchStudentAttendance()` in `src/lib/analytics/data-adapter.ts` | Ready for live query plug-in |
+| **QR Attendance** | Receives updated counts via standard `SubjectInsightInput` | Unchanged API contract |
+| **Student Frontend** | Accessible directly at `/student/advisor` route | Fully self-contained |
+
+---
+
+## License
+MIT License. Built for AttendGuard Hackathon 2026.
+

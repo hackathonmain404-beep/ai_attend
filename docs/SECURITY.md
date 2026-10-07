@@ -204,3 +204,28 @@ const challengeToken = `${encodedPayload}.${signature}`;
 1. **Hardware-Free Constraint**: AttendGuard is designed to operate on standard web browsers and smartphones without requiring proprietary biometrics, turnstiles, or Bluetooth beacons. Consequently, physical co-location cannot be guaranteed with 100% certainty if a student physically gives their unlocked phone to an accomplice.
 2. **Classroom Layout & Windows**: If a lecture hall has ground-floor glass windows, a student outside could theoretically zoom in and scan the projector screen. In-class re-verifications help detect if the student leaves campus immediately after.
 3. **Browser Fingerprint Stability**: Browser updates or private browsing sessions can sometimes alter browser fingerprints. The teacher device-reset workflow accommodates legitimate student hardware changes while recording audit entries.
+4. **No Absolute Physical Proof**: No software-only system can prove continuous, physical in-seat classroom presence with 100% mathematical certainty. Rotating QR challenges and registered device binding raise the barrier against casual proxy check-ins, but cannot replace observant human proctoring.
+5. **AI Is Not the Legal Record**: The AI Attendance Advisor is an educational decision-support layer. The PostgreSQL database maintained by the backend remains the sole legal source of attendance records.
+
+---
+
+## AI & Intelligence Engine Security Model
+
+### 1. Credential Exposure
+- Strict exclusion in `.gitignore` for all `.env*` local files.
+- Prohibition of `NEXT_PUBLIC_` prefixes on secret variables.
+- All AI invocations are mediated strictly through server-side route handlers (`/api/student/advisor` and `/api/ai/advisor`).
+
+### 2. Prompt Injection & Jailbreaking Defense
+- Context is treated as immutable, read-only system truth.
+- The system prompt enforces strict refusal of instructions asking to override verified calculations.
+- Client-side input length is clamped to $\le 1000$ characters to prevent buffer-flooding attacks.
+
+### 3. PII & Privacy Minimization
+- Only course names, attendance fractions, and threshold metrics are serialized into AI context.
+- Student emails, passwords, auth tokens, session IDs, Supabase service keys, and biometric data are strictly forbidden from AI payloads.
+
+### 4. Denial of Service & Quota Exhaustion
+- Client interface disables input and submit triggers while a request is in flight.
+- HTTP 429 (`RATE_LIMIT_EXCEEDED`) errors are intercepted and translated to localized fallbacks without crashing the application.
+

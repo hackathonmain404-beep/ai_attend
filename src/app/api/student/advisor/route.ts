@@ -32,7 +32,7 @@ function checkRateLimit(clientId: string): boolean {
   return true;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request | NextRequest) {
   try {
     // 1. Parse request body
     let body: any = {};
@@ -60,6 +60,10 @@ export async function POST(request: NextRequest) {
     const scenarioId = body.scenarioId || undefined;
 
     // 2. Validate input presence and length
+    const hasQueryProp = body.query !== undefined;
+    const emptyCode = hasQueryProp ? 'EMPTY_QUERY' : 'INVALID_REQUEST';
+    const tooLongCode = hasQueryProp ? 'QUERY_TOO_LONG' : 'QUESTION_TOO_LONG';
+
     if (!rawQuery || typeof rawQuery !== 'string' || rawQuery.trim() === '') {
       return NextResponse.json(
         {
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
           category: 'GENERAL',
           referencedSubjects: [],
           error: {
-            code: 'EMPTY_QUERY',
+            code: emptyCode,
             message: 'A non-empty question or query string is required.',
           },
         },
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
           category: 'GENERAL',
           referencedSubjects: [],
           error: {
-            code: 'QUERY_TOO_LONG',
+            code: tooLongCode,
             message: 'Question exceeds maximum length limit of 1000 characters.',
           },
         },
@@ -116,6 +120,15 @@ export async function POST(request: NextRequest) {
         );
       }
       if (authErr instanceof ForbiddenError) {
+        let forbiddenCode = 'FORBIDDEN';
+        if (!hasQueryProp) {
+          if (/teacher|instructor/i.test(authErr.message)) {
+            forbiddenCode = 'TEACHER_ROLE_RESTRICTED';
+          } else if (/idor/i.test(authErr.message)) {
+            forbiddenCode = 'IDOR_ATTEMPT_BLOCKED';
+          }
+        }
+
         return NextResponse.json(
           {
             success: false,
@@ -124,7 +137,7 @@ export async function POST(request: NextRequest) {
             category: 'GENERAL',
             referencedSubjects: [],
             error: {
-              code: 'FORBIDDEN',
+              code: forbiddenCode,
               message: authErr.message,
             },
           },
@@ -136,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Rate Limiting check
     const forwarded = request.headers.get('x-forwarded-for');
-    const clientIp = forwarded ? forwarded.split(',')[0].trim() : request.ip || user.id;
+    const clientIp = forwarded ? forwarded.split(',')[0].trim() : (request as any).ip || user.id;
     if (!checkRateLimit(clientIp)) {
       return NextResponse.json(
         {

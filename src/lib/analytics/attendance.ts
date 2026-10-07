@@ -4,21 +4,28 @@
  */
 
 /**
- * Calculates attendance percentage:
- * P = 0.0 if T = 0
- * P = round((A / T) * 100, 1) if T > 0
+ * Calculates deterministic attendance percentage rounded to 1 decimal place.
  * 
- * Boundary constraints:
- * - Throws RangeError if attended < 0
- * - Throws RangeError if total < 0
- * - Throws RangeError if attended > total
+ * @param attended - Number of verified classes attended
+ * @param total - Total number of classes conducted
+ * @returns Attendance percentage between 0 and 100 (e.g. 68.0)
+ * 
+ * @throws {RangeError} If attended or total are negative, not finite, or attended > total
  */
 export function calculateAttendance(attended: number, total: number): number {
-  if (attended < 0 || !Number.isFinite(attended)) {
+  if (typeof attended !== 'number' || typeof total !== 'number' || !Number.isFinite(attended)) {
     throw new RangeError(`Attended classes (${attended}) must be a non-negative finite number.`);
   }
 
-  if (total < 0 || !Number.isFinite(total)) {
+  if (!Number.isFinite(total)) {
+    throw new RangeError(`Total classes (${total}) must be a non-negative finite number.`);
+  }
+
+  if (attended < 0) {
+    throw new RangeError(`Attended classes (${attended}) must be a non-negative finite number.`);
+  }
+
+  if (total < 0) {
     throw new RangeError(`Total classes (${total}) must be a non-negative finite number.`);
   }
 
@@ -33,5 +40,5 @@ export function calculateAttendance(attended: number, total: number): number {
   }
 
   const raw = (attended / total) * 100;
-  return Math.round(raw * 10) / 10;
+  return Math.round((raw + Number.EPSILON) * 10) / 10;
 }

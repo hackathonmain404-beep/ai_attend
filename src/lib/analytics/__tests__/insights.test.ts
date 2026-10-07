@@ -3,8 +3,13 @@ import {
   calculatePriorityScore,
   generateCourseInsights,
   generateAttendanceSummary,
+  generateSubjectInsight,
+  rankSubjectsByUrgency,
+  generateOverallInsights,
+  generateActionableRecommendations,
+  generateAttendanceContext,
 } from '../insights';
-import { CourseAttendance } from '../types';
+import type { CourseAttendance, SubjectInsightInput } from '../types';
 
 describe('Deterministic Analytics Engine — Urgency Scoring & Insights', () => {
   describe('calculatePriorityScore()', () => {
@@ -109,6 +114,190 @@ describe('Deterministic Analytics Engine — Urgency Scoring & Insights', () => 
       expect(summary.highestRiskCourse).toBe('C Programming');
       expect(summary.recommendations.length).toBeGreaterThan(0);
       expect(summary.recommendations[0]).toContain('C Programming requires immediate focus: attend the next 7 class(es)');
+    });
+  });
+
+  describe('generateSubjectInsight() & Subject Analysis', () => {
+    it('combines calculations accurately for a critical subject with declining trend', () => {
+      const input: SubjectInsightInput = {
+        subjectId: 'cs-101',
+        subjectName: 'C Programming',
+        attended: 17,
+        total: 25,
+        requiredPercentage: 75,
+        previousPercentage: 72,
+      };
+
+      const insight = generateSubjectInsight(input);
+
+      expect(insight.subjectName).toBe('C Programming');
+      expect(insight.percentage).toBe(68.0);
+      expect(insight.riskLevel).toBe('CRITICAL');
+      expect(insight.trend).toBe('declining');
+      expect(insight.classesNeeded).toBe(7);
+      expect(insight.safeMisses).toBe(0);
+      expect(insight.priorityLevel).toBe('HIGH');
+      expect(insight.priorityScore).toBeGreaterThanOrEqual(1000);
+      expect(insight.summary).toContain('Immediate attention required');
+      expect(insight.summary).toContain('Trajectory is declining');
+    });
+  });
+
+  describe('Multiple Subjects Prioritization (rankSubjectsByUrgency)', () => {
+    it('ranks subjects in correct urgency order: Critical -> At-Risk -> Safe', () => {
+      const inputs: SubjectInsightInput[] = [
+        { subjectId: '1', subjectName: 'Chemistry', attended: 91, total: 100, requiredPercentage: 75 },
+        { subjectId: '2', subjectName: 'Mathematics', attended: 37, total: 50, requiredPercentage: 75 },
+        { subjectId: '3', subjectName: 'Physics', attended: 42, total: 50, requiredPercentage: 75 },
+        { subjectId: '4', subjectName: 'C Programming', attended: 17, total: 25, requiredPercentage: 75 },
+      ];
+
+      const context = generateAttendanceContext(inputs);
+      const ranked = context.rankedSubjects;
+
+      expect(ranked.length).toBe(4);
+      expect(ranked[0].subjectName).toBe('C Programming');
+      expect(ranked[1].subjectName).toBe('Mathematics');
+      expect(ranked[2].subjectName).toBe('Physics');
+      expect(ranked[3].subjectName).toBe('Chemistry');
+    });
+  });
+
+  describe('Trend Trajectory Detections', () => {
+    it('detects improving trend', () => {
+      const input: SubjectInsightInput = {
+        subjectId: '1',
+        subjectName: 'Electronics',
+        attended: 40,
+        total: 50,
+        previousPercentage: 75,
+      };
+      const insight = generateSubjectInsight(input);
+      expect(insight.trend).toBe('improving');
+      expect(insight.summary).toContain('Trajectory is improving');
+    });
+
+    it('detects declining trend', () => {
+      const input: SubjectInsightInput = {
+        subjectId: '1',
+        subjectName: 'Electronics',
+        attended: 35,
+        total: 50,
+        previousPercentage: 75,
+      };
+      const insight = generateSubjectInsight(input);
+      expect(insight.trend).toBe('declining');
+      expect(insight.summary).toContain('Trajectory is declining');
+    });
+
+    it('detects stable trend within deadband', () => {
+      const input: SubjectInsightInput = {
+        subjectId: '1',
+        subjectName: 'Electronics',
+        attended: 38,
+        total: 50,
+        previousPercentage: 76.2,
+      };
+      const insight = generateSubjectInsight(input);
+      expect(insight.trend).toBe('stable');
+    });
+  });
+
+  describe('Safe Cohort (Zero False Warnings)', () => {
+    it('handles cohort where all subjects are safe without alarmist recommendations', () => {
+      const inputs: SubjectInsightInput[] = [
+        { subjectId: '1', subjectName: 'Physics', attended: 45, total: 50, requiredPercentage: 75 },
+        { subjectId: '2', subjectName: 'Algorithms', attended: 44, total: 50, requiredPercentage: 75 },
+      ];
+
+      const context = generateAttendanceContext(inputs);
+
+      expect(context.overall.criticalSubjectsCount).toBe(0);
+      expect(context.overall.atRiskSubjectsCount).toBe(0);
+      expect(context.overall.safeSubjectsCount).toBe(2);
+      expect(context.overall.overallRisk).toBe('SAFE');
+      expect(context.recommendations[0]).toContain('All enrolled courses currently meet or exceed attendance targets');
+    });
+  });
+
+  describe('Multiple Critical Subjects Ranking', () => {
+    it('prioritizes the subject with the larger deficit and recovery burden', () => {
+      const inputs: SubjectInsightInput[] = [
+        { subjectId: '1', subjectName: 'Subject A', attended: 36, total: 50, requiredPercentage: 75 },
+        { subjectId: '2', subjectName: 'Subject B', attended: 10, total: 20, requiredPercentage: 75 },
+      ];
+
+      const context = generateAttendanceContext(inputs);
+      expect(context.rankedSubjects[0].subjectName).toBe('Subject B');
+      expect(context.rankedSubjects[1].subjectName).toBe('Subject A');
+    });
+  });
+
+  describe('Edge Cases & Boundary Conditions', () => {
+    it('handles empty subject list gracefully', () => {
+      const context = generateAttendanceContext([]);
+      expect(context.overall.totalClasses).toBe(0);
+      expect(context.overall.overallPercentage).toBe(0);
+      expect(context.rankedSubjects.length).toBe(0);
+      expect(context.overall.highestRiskSubject).toBeNull();
+      expect(context.recommendations[0]).toContain('No course enrollment data found');
+    });
+
+    it('handles subject with zero total classes conducted', () => {
+      const input: SubjectInsightInput = {
+        subjectId: 'new-1',
+        subjectName: 'Seminar',
+        attended: 0,
+        total: 0,
+        requiredPercentage: 75,
+      };
+      const insight = generateSubjectInsight(input);
+      expect(insight.percentage).toBe(0);
+      expect(insight.classesNeeded).toBe(0);
+      expect(insight.safeMisses).toBe(0);
+    });
+
+    it('differentiates exact threshold boundaries (74.9% vs 75.0% vs 79.9% vs 80.0%)', () => {
+      const subCritical: SubjectInsightInput = {
+        subjectId: '1',
+        subjectName: 'SubCrit',
+        attended: 749,
+        total: 1000,
+        requiredPercentage: 75,
+      };
+      const subAtRisk: SubjectInsightInput = {
+        subjectId: '2',
+        subjectName: 'SubRisk',
+        attended: 750,
+        total: 1000,
+        requiredPercentage: 75,
+      };
+      const subSafe: SubjectInsightInput = {
+        subjectId: '3',
+        subjectName: 'SubSafe',
+        attended: 800,
+        total: 1000,
+        requiredPercentage: 75,
+      };
+
+      expect(generateSubjectInsight(subCritical).riskLevel).toBe('CRITICAL');
+      expect(generateSubjectInsight(subAtRisk).riskLevel).toBe('AT_RISK');
+      expect(generateSubjectInsight(subSafe).riskLevel).toBe('SAFE');
+    });
+
+    it('handles 100% attendance student', () => {
+      const input: SubjectInsightInput = {
+        subjectId: '1',
+        subjectName: 'Ethics',
+        attended: 30,
+        total: 30,
+        requiredPercentage: 75,
+      };
+      const insight = generateSubjectInsight(input);
+      expect(insight.percentage).toBe(100.0);
+      expect(insight.riskLevel).toBe('SAFE');
+      expect(insight.classesNeeded).toBe(0);
+      expect(insight.safeMisses).toBe(10);
     });
   });
 });

@@ -22,56 +22,111 @@ export function sanitizeQuestionText(query: string): string {
     return '';
   }
 
-  // Strip HTML / XML tags to prevent tag breakout
   const stripped = query.replace(/[<>]/g, '');
   const trimmed = stripped.trim();
-
-  // Clamp to max 1000 characters
   return trimmed.slice(0, 1000);
 }
 
 /**
+ * Formats structured AttendanceContextPayload into a compact, token-efficient factual text block.
+ */
+export function formatContextForPrompt(
+  payload: AttendanceContextPayload,
+  studentName?: string
+): string {
+  const name = studentName || payload.studentName || 'Student';
+  const minReq = payload.policy?.minimumRequirement ?? 75;
+  const safeReq = payload.policy?.safeThreshold ?? 80;
+
+  const lines: string[] = [
+    `[STUDENT PROFILE]`,
+    `Name: ${name}`,
+    ``,
+    `[INSTITUTIONAL ATTENDANCE POLICY]`,
+    `Minimum Requirement: ${minReq}%`,
+    `Safe Threshold: >= ${safeReq}%`,
+    ``,
+  ];
+
+  if (payload.summary) {
+    const s = payload.summary;
+    lines.push(
+      `[OVERALL ATTENDANCE SUMMARY]`,
+      `Overall Attendance: ${s.overallPercentage}% (${s.totalAttended}/${s.totalClasses} classes attended)`,
+      `Overall Risk Status: ${s.overallRisk}`,
+      `Critical Courses: ${s.criticalCoursesCount}`,
+      `At-Risk Courses: ${s.atRiskCoursesCount}`,
+      `Safe Courses: ${s.safeCoursesCount}`,
+      `Trajectory Trend: ${s.trajectoryTrend}`,
+      `Highest Risk Course: ${s.highestRiskCourse || 'None'}`,
+      ``
+    );
+  } else if (payload.overall) {
+    const o = payload.overall;
+    lines.push(
+      `[OVERALL ATTENDANCE SUMMARY]`,
+      `Overall Attendance: ${o.overallPercentage.toFixed(1)}% (${o.totalAttended}/${o.totalClasses} classes attended)`,
+      `Overall Risk Status: ${o.overallRisk}`,
+      `Critical Courses: ${o.criticalSubjectsCount}`,
+      `At-Risk Courses: ${o.atRiskSubjectsCount}`,
+      `Safe Courses: ${o.safeSubjectsCount}`,
+      `Trajectory Trend: ${o.overallTrend}`,
+      `Highest Risk Course: ${o.highestRiskSubject ? o.highestRiskSubject.subjectName : 'None'}`,
+      ``
+    );
+  }
+
+  lines.push(`[COURSE DETAILS (ORDERED BY URGENCY)]`);
+
+  if (payload.courses && payload.courses.length > 0) {
+    payload.courses.forEach((c, idx) => {
+      lines.push(
+        `${idx + 1}. ${c.courseName}: Attended ${c.attended}/${c.totalHeld} (${c.currentPercentage}%) | Risk: ${c.risk} | Trend: ${c.trend} | Classes needed to reach ${minReq}%: ${c.classesNeededForThreshold} | Safe absences remaining: ${c.safeMissesRemaining}`
+      );
+    });
+  } else if (payload.rankedSubjects && payload.rankedSubjects.length > 0) {
+    payload.rankedSubjects.forEach((s, idx) => {
+      lines.push(
+        `${idx + 1}. ${s.subjectName}: Attended ${s.attended}/${s.total} (${s.percentage.toFixed(1)}%) | Risk: ${s.riskLevel} | Trend: ${s.trend} | Classes needed to reach ${minReq}%: ${s.classesNeeded} | Safe absences remaining: ${s.safeMisses}`
+      );
+    });
+  } else {
+    lines.push(`No course enrollment data found.`);
+  }
+
+  const recs = payload.summary?.recommendations || payload.recommendations || [];
+  if (recs.length > 0) {
+    lines.push(``, `[PRE-COMPUTED RECOMMENDATIONS]`);
+    recs.forEach((r) => lines.push(`- ${r}`));
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Builds the compact, factual markdown prompt block for the LLM.
+ * Supports both buildAdvisorPrompt(context, query) and buildAdvisorPrompt(query, context, studentName).
  */
 export function buildAdvisorPrompt(
-  context: AttendanceContextPayload,
-  query: string
+  firstArg: AttendanceContextPayload | string,
+  secondArg: string | AttendanceContextPayload,
+  studentName?: string
 ): string {
+  let context: AttendanceContextPayload;
+  let query: string;
+
+  if (typeof firstArg === 'object' && firstArg !== null) {
+    context = firstArg;
+    query = typeof secondArg === 'string' ? secondArg : '';
+  } else {
+    query = firstArg;
+    context = typeof secondArg === 'object' ? secondArg : ({} as AttendanceContextPayload);
+  }
+
   const sanitizedQuery = sanitizeQuestionText(query);
+  const contextBlock = formatContextForPrompt(context, studentName);
 
-  const courseLines = context.courses
-    .map(
-      (c, idx) =>
-        `${idx + 1}. ${c.courseName}: Attended ${c.attended}/${c.totalHeld} (${c.currentPercentage}%) | Risk: ${c.risk} | Trend: ${c.trend} | Classes needed to reach ${context.policy.minimumRequirement}%: ${c.classesNeededForThreshold} | Safe absences remaining: ${c.safeMissesRemaining}`
-    )
-    .join('\n');
-
-  const recLines =
-    context.summary.recommendations.length > 0
-      ? context.summary.recommendations.map((r) => `- ${r}`).join('\n')
-      : '- All attendance requirements are currently met.';
-
-  return `[STUDENT PROFILE]
-Name: ${context.studentName}
-
-[INSTITUTIONAL ATTENDANCE POLICY]
-Minimum Requirement: ${context.policy.minimumRequirement}%
-Safe Threshold: >= ${context.policy.safeThreshold}%
-
-[OVERALL ATTENDANCE SUMMARY]
-Overall Attendance: ${context.summary.overallPercentage}% (${context.summary.totalAttended}/${context.summary.totalClasses} classes attended)
-Overall Risk Status: ${context.summary.overallRisk}
-Critical Courses: ${context.summary.criticalCoursesCount}
-At-Risk Courses: ${context.summary.atRiskCoursesCount}
-Safe Courses: ${context.summary.safeCoursesCount}
-Trajectory Trend: ${context.summary.trajectoryTrend}
-Highest Risk Course: ${context.summary.highestRiskCourse || 'None'}
-
-[COURSE DETAILS (ORDERED BY URGENCY)]
-${courseLines}
-
-[PRE-COMPUTED RECOMMENDATIONS]
-${recLines}
+  return `${contextBlock}
 
 [STUDENT QUESTION]
 ${sanitizedQuery}`;

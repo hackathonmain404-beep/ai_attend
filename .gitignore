@@ -1,21 +1,28 @@
 # Dependencies
+node_modules/
 /node_modules
 /.pnp
+.pnp
 .pnp.js
 
 # Testing
 /coverage
+coverage/
 
 # Next.js build output
 /.next/
+.next/
 /out/
+out/
 
 # Production build artifacts
 /build
+build/
 /dist
+dist/
 *.tsbuildinfo
 
-# Environment variables
+# Environment variables (NEVER commit secrets!)
 .env
 .env.local
 .env.development.local
@@ -38,3 +45,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local/Nested repos
+ai_attend/
