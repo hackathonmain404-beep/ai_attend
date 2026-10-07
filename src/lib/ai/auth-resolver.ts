@@ -8,9 +8,11 @@
  */
 
 export interface AuthenticatedUser {
-  id: string;
-  email?: string;
+  userId: string;
   role: 'student' | 'teacher' | 'admin';
+  /** Backwards compatibility alias for userId */
+  id?: string;
+  email?: string;
   name?: string;
 }
 
@@ -24,6 +26,14 @@ export interface SessionResolutionResult {
 /**
  * Resolves the authenticated user from HTTP request credentials (Cookies or Authorization Bearer header).
  * Completely disregards client-controlled spoofing headers (e.g. x-authenticated, x-user-role).
+ *
+ * NOTE FOR BACKEND/AUTH TEAMMATE (Supabase Integration):
+ * When integrating live Supabase auth, replace the mock/fallback resolution inside this function with:
+ *   const supabase = await createServerSupabaseClient(); // or supabase.auth.getUser(token)
+ *   const { data: { user }, error } = await supabase.auth.getUser();
+ *   ...
+ * Return the minimal AuthenticatedUser abstraction: { userId: user.id, role: profile.role }.
+ * The rest of the AI Advisor module (analytics, advisor, prompts, gemini, validator) requires zero modifications.
  */
 export async function resolveAuthenticatedUser(request: Request): Promise<SessionResolutionResult> {
   const authHeader = request.headers.get('authorization');
@@ -71,6 +81,7 @@ export async function resolveAuthenticatedUser(request: Request): Promise<Sessio
     return {
       isAuthenticated: true,
       user: {
+        userId: 'usr_teacher_001',
         id: 'usr_teacher_001',
         email: 'instructor@attendguard.edu',
         role: 'teacher',
@@ -86,6 +97,7 @@ export async function resolveAuthenticatedUser(request: Request): Promise<Sessio
     return {
       isAuthenticated: true,
       user: {
+        userId: 'usr_admin_001',
         id: 'usr_admin_001',
         email: 'admin@attendguard.edu',
         role: 'admin',
@@ -115,6 +127,7 @@ export async function resolveAuthenticatedUser(request: Request): Promise<Sessio
   return {
     isAuthenticated: true,
     user: {
+      userId: studentId,
       id: studentId,
       email: `${studentId}@attendguard.edu`,
       role: 'student',

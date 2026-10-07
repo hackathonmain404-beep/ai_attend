@@ -89,6 +89,7 @@ export async function POST(request: Request): Promise<Response> {
 
     // 2. Client Rate Limiting (keyed on verified user ID or client IP)
     const clientIdentifier =
+      session.user.userId ||
       session.user.id ||
       request.headers.get('x-forwarded-for') ||
       'anonymous_client';
@@ -169,9 +170,20 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // 4. Cross-User Data Isolation & IDOR Defense
-    // Prevent malicious clients from inspecting other students' records by supplying a different studentId
-    const requestedStudentId = typeof body.studentId === 'string' ? body.studentId.trim().toLowerCase() : null;
-    const verifiedStudentId = session.user.id.toLowerCase();
+    // Prevent malicious clients from inspecting other students' records by supplying a different studentId or arbitrary identity fields
+    const candidateClientIdentity =
+      typeof body.studentId === 'string'
+        ? body.studentId
+        : typeof body.student_id === 'string'
+        ? body.student_id
+        : typeof body.userId === 'string'
+        ? body.userId
+        : typeof body.user_id === 'string'
+        ? body.user_id
+        : null;
+
+    const requestedStudentId = candidateClientIdentity ? candidateClientIdentity.trim().toLowerCase() : null;
+    const verifiedStudentId = (session.user.userId || session.user.id || '').toLowerCase();
 
     if (requestedStudentId && requestedStudentId !== verifiedStudentId) {
       // In demo environments, allow scenarioId switching if explicitly requested via scenarioId,
