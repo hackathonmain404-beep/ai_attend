@@ -99,12 +99,53 @@ const config: Config = {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.7", transform: "scale(1.03)" },
         },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "spin-reverse": {
+          from: { transform: "rotate(360deg)" },
+          to: { transform: "rotate(0deg)" },
+        },
+        "float-3d": {
+          "0%, 100%": { transform: "translateY(0px) rotateX(0deg) rotateY(0deg)" },
+          "50%": { transform: "translateY(-14px) rotateX(8deg) rotateY(-8deg)" },
+        },
+        "spin-3d": {
+          "0%": { transform: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)" },
+          "100%": { transform: "rotateX(360deg) rotateY(360deg) rotateZ(0deg)" },
+        },
+        "spin-3d-reverse": {
+          "0%": { transform: "rotateX(360deg) rotateY(0deg) rotateZ(0deg)" },
+          "100%": { transform: "rotateX(0deg) rotateY(360deg) rotateZ(360deg)" },
+        },
+        "grid-flow": {
+          "0%": { backgroundPosition: "0 0" },
+          "100%": { backgroundPosition: "0 60px" },
+        },
+        "laser-sweep": {
+          "0%": { top: "0%", opacity: "0.2" },
+          "50%": { opacity: "1" },
+          "100%": { top: "96%", opacity: "0.2" },
+        },
+        "hologram-pulse": {
+          "0%, 100%": { opacity: "0.85", filter: "drop-shadow(0 0 15px rgba(16,185,129,0.3))" },
+          "50%": { opacity: "1", filter: "drop-shadow(0 0 30px rgba(16,185,129,0.7))" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 2s infinite",
         "pulse-glow": "pulseGlow 2.5s ease-in-out infinite",
+        "spin-slow": "spin-slow 16s linear infinite",
+        "spin-reverse": "spin-reverse 20s linear infinite",
+        "float-3d": "float-3d 6s ease-in-out infinite",
+        "spin-3d": "spin-3d 24s linear infinite",
+        "spin-3d-reverse": "spin-3d-reverse 20s linear infinite",
+        "grid-flow": "grid-flow 8s linear infinite",
+        "laser-sweep": "laser-sweep 2.8s ease-in-out infinite",
+        "hologram-pulse": "hologram-pulse 3s ease-in-out infinite",
       },
     },
   },

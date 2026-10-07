@@ -243,11 +243,10 @@ describe('5. API Route Auth, Role, IDOR & Rate Limiting Enforcement', () => {
 
   it('enforces rate limit when client floods the endpoint', async () => {
     const clientIp = 'audit-flooder-192.168.1.100';
-    let hitRateLimit = false;
 
     // Send 35 requests rapidly to trigger the 30 req/min limit
-    for (let i = 0; i < 35; i++) {
-      const req = new Request('http://localhost:3000/api/student/advisor', {
+    const requests = Array.from({ length: 35 }, () =>
+      new Request('http://localhost:3000/api/student/advisor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -255,18 +254,16 @@ describe('5. API Route Auth, Role, IDOR & Rate Limiting Enforcement', () => {
           'x-forwarded-for': clientIp,
         },
         body: JSON.stringify({ question: 'Summarize my status', scenarioId: 'healthy' }),
-      });
-      const res = await POST(req);
-      if (res.status === 429) {
-        hitRateLimit = true;
-        const data = await res.json();
-        assert.equal(data.error.code, 'RATE_LIMIT_EXCEEDED');
-        break;
-      }
-    }
+      })
+    );
 
-    assert.equal(hitRateLimit, true, 'Should have triggered HTTP 429 rate limit');
-  });
+    const responses = await Promise.all(requests.map((req) => POST(req)));
+    const rateLimited = responses.find((res) => res.status === 429);
+
+    assert.ok(rateLimited, 'Should have triggered HTTP 429 rate limit');
+    const data = await rateLimited.json();
+    assert.equal(data.error.code, 'RATE_LIMIT_EXCEEDED');
+  }, 10000);
 });
 
 describe('6. 10 Context Mathematical Boundary Audit', () => {

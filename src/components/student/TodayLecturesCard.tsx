@@ -50,10 +50,10 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
             return (
               <div
                 key={lecture.classId}
-                className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                className={`p-4 rounded-xl border transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover-lift-3d ${
                   isActive
-                    ? "border-emerald-500/40 bg-emerald-950/20 shadow-lg shadow-emerald-950/30"
-                    : "border-slate-800/80 bg-slate-950/40"
+                    ? "border-emerald-500/40 bg-emerald-950/20 shadow-lg shadow-emerald-950/30 hover:border-emerald-500/60"
+                    : "border-slate-800/80 bg-slate-950/40 hover:border-slate-700"
                 }`}
               >
                 <div className="space-y-1">

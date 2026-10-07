@@ -25,6 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TiltCard } from "@/components/ui/tilt-card";
+import { CyberAmbient3D, HolographicHeroShield } from "@/components/ui/cyber-ambient-3d";
 import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal";
 
 export default function HomePage() {
@@ -73,12 +75,13 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-6 pt-12 pb-10 flex-1 flex flex-col justify-center">
-        <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium text-emerald-300">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Verified Attendance & Proxy Prevention System</span>
-          </div>
+      <section className="relative max-w-6xl mx-auto px-6 pt-10 pb-10 flex-1 flex flex-col justify-center overflow-hidden">
+        {/* 3D Perspective Cyber Mesh Background */}
+        <CyberAmbient3D />
+
+        <div className="relative z-10 text-center max-w-3xl mx-auto mb-12 space-y-4">
+          {/* Interactive 3D Holographic Shield */}
+          <HolographicHeroShield />
 
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.1]">
             Next-Gen Attendance. <br />
@@ -97,12 +100,12 @@ export default function HomePage() {
               size="lg"
               variant="emerald"
               onClick={() => openTourAtStep(1)}
-              className="gap-2 font-semibold shadow-lg shadow-emerald-950/50"
+              className="gap-2 font-semibold shadow-xl shadow-emerald-950/60 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300"
             >
               <Compass className="h-4 w-4" />
               Start Interactive Demo Tour
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-slate-700 hover:bg-slate-800 text-white gap-2 font-medium">
+            <Button asChild size="lg" variant="outline" className="border-slate-700 hover:border-slate-500 hover:bg-slate-800 text-white gap-2 font-medium transition-all duration-300">
               <Link href="/login">
                 <KeyRound className="h-4 w-4 text-emerald-400" />
                 Select Demo Persona
@@ -112,119 +115,122 @@ export default function HomePage() {
         </div>
 
         {/* 1-Click Demo Persona Fast-Track */}
-        <div className="max-w-5xl mx-auto w-full mb-12">
-          <div className="text-center mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-              Instant Hackathon Persona Access
-            </h2>
-            <p className="text-xs text-slate-500">
-              Jump straight into any role with pre-configured cryptographic state
-            </p>
-          </div>
-
+        <div className="relative z-10 max-w-5xl mx-auto w-full mb-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Student Persona Card */}
-            <Card className="border-emerald-500/30 bg-slate-900/70 hover:border-emerald-500/60 transition-all duration-300 shadow-xl shadow-emerald-950/20">
-              <CardHeader className="p-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                      <GraduationCap className="h-6 w-6" />
+            {/* Student Persona 3D Tilt Card */}
+            <TiltCard glowColor="emerald" maxTilt={7} scale={1.02} className="h-full">
+              <Card className="h-full border-emerald-500/30 bg-slate-900/80 hover:border-emerald-500/60 transition-all duration-300 shadow-xl shadow-emerald-950/30">
+                <CardHeader className="p-6 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-md shadow-emerald-950/40"
+                        style={{ transform: "translateZ(25px)" }}
+                      >
+                        <GraduationCap className="h-6 w-6" />
+                      </div>
+                      <div style={{ transform: "translateZ(15px)" }}>
+                        <CardTitle className="text-lg text-white">Jane Doe</CardTitle>
+                        <CardDescription className="text-xs text-slate-400">
+                          Roll: 2024-CS-0042 • Overall 85.0% Attendance
+                        </CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg text-white">Jane Doe</CardTitle>
-                      <CardDescription className="text-xs text-slate-400">
-                        Roll: 2024-CS-0042 • Overall 85.0% Attendance
-                      </CardDescription>
-                    </div>
+                    <Badge variant="emerald" className="shadow-sm" style={{ transform: "translateZ(20px)" }}>
+                      Student Role
+                    </Badge>
                   </div>
-                  <Badge variant="emerald">Student Role</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-3">
-                <p className="text-xs text-slate-300">
-                  Access mobile viewfinder scanner, inspect 75% margin buffers, query the AI advisor, and view bound device status.
-                </p>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button asChild size="sm" variant="emerald" className="text-xs">
-                    <Link href="/student">Dashboard Overview</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/student/scanner">
-                      <Scan className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-                      QR Scanner
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/student/advisor">
-                      <Sparkles className="h-3.5 w-3.5 mr-1 text-teal-400" />
-                      AI Advisor
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/student/device">
-                      <Smartphone className="h-3.5 w-3.5 mr-1 text-amber-400" />
-                      Hardware Lock
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent className="p-6 pt-0 space-y-3">
+                  <p className="text-xs text-slate-300" style={{ transform: "translateZ(10px)" }}>
+                    Access mobile viewfinder scanner, inspect 75% margin buffers, query the AI advisor, and view bound device status.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 pt-1" style={{ transform: "translateZ(20px)" }}>
+                    <Button asChild size="sm" variant="emerald" className="text-xs">
+                      <Link href="/student">Dashboard Overview</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/student/scanner">
+                        <Scan className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                        QR Scanner
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/student/advisor">
+                        <Sparkles className="h-3.5 w-3.5 mr-1 text-teal-400" />
+                        AI Advisor
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/student/device">
+                        <Smartphone className="h-3.5 w-3.5 mr-1 text-amber-400" />
+                        Hardware Lock
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TiltCard>
 
-            {/* Teacher Persona Card */}
-            <Card className="border-teal-500/30 bg-slate-900/70 hover:border-teal-500/60 transition-all duration-300 shadow-xl shadow-teal-950/20">
-              <CardHeader className="p-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
-                      <Presentation className="h-6 w-6" />
+            {/* Teacher Persona 3D Tilt Card */}
+            <TiltCard glowColor="teal" maxTilt={7} scale={1.02} className="h-full">
+              <Card className="h-full border-teal-500/30 bg-slate-900/80 hover:border-teal-500/60 transition-all duration-300 shadow-xl shadow-teal-950/30">
+                <CardHeader className="p-6 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-12 w-12 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center shadow-md shadow-teal-950/40"
+                        style={{ transform: "translateZ(25px)" }}
+                      >
+                        <Presentation className="h-6 w-6" />
+                      </div>
+                      <div style={{ transform: "translateZ(15px)" }}>
+                        <CardTitle className="text-lg text-white">Prof. Alan Turing</CardTitle>
+                        <CardDescription className="text-xs text-slate-400">
+                          Staff: FAC-CS-01 • Dept. of Computer Science
+                        </CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg text-white">Prof. Alan Turing</CardTitle>
-                      <CardDescription className="text-xs text-slate-400">
-                        Staff: FAC-CS-01 • Dept. of Computer Science
-                      </CardDescription>
-                    </div>
+                    <Badge variant="outline" className="border-teal-500/30 text-teal-300" style={{ transform: "translateZ(20px)" }}>
+                      Teacher Role
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="border-teal-500/30 text-teal-300">
-                    Teacher Role
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-3">
-                <p className="text-xs text-slate-300">
-                  Broadcast rotating dynamic QR codes, monitor live attendee headcounts, fire random re-verifications, and manage device perimeters.
-                </p>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button asChild size="sm" variant="outline" className="text-xs border-teal-500/40 bg-teal-950/30 text-teal-200 hover:bg-teal-900/40">
-                    <Link href="/teacher">Teacher Console</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/teacher/sessions">
-                      <QrCode className="h-3.5 w-3.5 mr-1 text-teal-400" />
-                      Projector Display
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/teacher/devices">
-                      <ShieldCheck className="h-3.5 w-3.5 mr-1 text-amber-400" />
-                      Device Perimeter
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
-                    <Link href="/teacher/reports">
-                      <FileSpreadsheet className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-                      CSV Reports
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent className="p-6 pt-0 space-y-3">
+                  <p className="text-xs text-slate-300" style={{ transform: "translateZ(10px)" }}>
+                    Broadcast rotating dynamic QR codes, monitor live attendee headcounts, fire random re-verifications, and manage device perimeters.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 pt-1" style={{ transform: "translateZ(20px)" }}>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-teal-500/40 bg-teal-950/30 text-teal-200 hover:bg-teal-900/40">
+                      <Link href="/teacher">Teacher Console</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/teacher/sessions">
+                        <QrCode className="h-3.5 w-3.5 mr-1 text-teal-400" />
+                        Projector Display
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/teacher/devices">
+                        <ShieldCheck className="h-3.5 w-3.5 mr-1 text-amber-400" />
+                        Device Perimeter
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="text-xs border-slate-700 hover:bg-slate-800 text-slate-200">
+                      <Link href="/teacher/reports">
+                        <FileSpreadsheet className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                        CSV Reports
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TiltCard>
           </div>
         </div>
 
-        {/* The 4 Anti-Proxy Defense Pillars */}
-        <div className="max-w-5xl mx-auto w-full mb-12">
+        {/* The 4 Anti-Proxy Defense Pillars with 3D Tilt */}
+        <div className="relative z-10 max-w-5xl mx-auto w-full mb-12">
           <div className="text-center mb-6">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
               4 Cryptographic Pillars Against Attendance Fraud
@@ -236,85 +242,117 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Pillar 1 */}
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/50 flex flex-col justify-between hover:border-emerald-500/40 transition-colors">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center mb-3">
-                  <QrCode className="h-5 w-5" />
+            <TiltCard glowColor="emerald" maxTilt={8} scale={1.03} className="h-full">
+              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between">
+                <div>
+                  <div
+                    className="h-10 w-10 rounded-xl bg-slate-800/90 text-emerald-400 flex items-center justify-center mb-3 shadow-md shadow-emerald-950/40"
+                    style={{ transform: "translateZ(20px)" }}
+                  >
+                    <QrCode className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                    1. Dynamic HMAC QR
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                    Tokens rotate every 15–20s with SVG circular countdown. Photo sharing across messaging apps expires before scanning.
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-1.5">1. Dynamic HMAC QR</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  Tokens rotate every 15–20s with SVG circular countdown. Photo sharing across messaging apps expires before scanning.
-                </p>
+                <button
+                  onClick={() => openTourAtStep(2)}
+                  className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                  style={{ transform: "translateZ(18px)" }}
+                >
+                  Inspect Pillar 2 <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
-              <button
-                onClick={() => openTourAtStep(2)}
-                className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 self-start"
-              >
-                Inspect Pillar 2 <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
+            </TiltCard>
 
             {/* Pillar 2 */}
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/50 flex flex-col justify-between hover:border-amber-500/40 transition-colors">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center mb-3">
-                  <Smartphone className="h-5 w-5" />
+            <TiltCard glowColor="amber" maxTilt={8} scale={1.03} className="h-full">
+              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between">
+                <div>
+                  <div
+                    className="h-10 w-10 rounded-xl bg-slate-800/90 text-amber-400 flex items-center justify-center mb-3 shadow-md shadow-amber-950/40"
+                    style={{ transform: "translateZ(20px)" }}
+                  >
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                    2. Hardware Fingerprint
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                    Student accounts bind 1:1 to a SHA-256 device fingerprint (WebGL/Canvas/Audio). Logging in on a friend's phone triggers 403 Forbidden.
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-1.5">2. Hardware Fingerprint</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  Student accounts bind 1:1 to a SHA-256 device fingerprint (WebGL/Canvas/Audio). Logging in on a friend's phone triggers 403 Forbidden.
-                </p>
+                <button
+                  onClick={() => openTourAtStep(3)}
+                  className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                  style={{ transform: "translateZ(18px)" }}
+                >
+                  Inspect Pillar 3 <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
-              <button
-                onClick={() => openTourAtStep(3)}
-                className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 self-start"
-              >
-                Inspect Pillar 3 <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
+            </TiltCard>
 
             {/* Pillar 3 */}
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/50 flex flex-col justify-between hover:border-rose-500/40 transition-colors">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-slate-800 text-rose-400 flex items-center justify-center mb-3">
-                  <Activity className="h-5 w-5" />
+            <TiltCard glowColor="rose" maxTilt={8} scale={1.03} className="h-full">
+              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between">
+                <div>
+                  <div
+                    className="h-10 w-10 rounded-xl bg-slate-800/90 text-rose-400 flex items-center justify-center mb-3 shadow-md shadow-rose-950/40"
+                    style={{ transform: "translateZ(20px)" }}
+                  >
+                    <Activity className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                    3. Random Re-Verify
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                    Mid-lecture 60-second surprise prompts challenge students to re-confirm physical presence, defeating "scan & ditch" fraud.
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-1.5">3. Random Re-Verify</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  Mid-lecture 60-second surprise prompts challenge students to re-confirm physical presence, defeating "scan & ditch" fraud.
-                </p>
+                <button
+                  onClick={() => openTourAtStep(5)}
+                  className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                  style={{ transform: "translateZ(18px)" }}
+                >
+                  Inspect Pillar 5 <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
-              <button
-                onClick={() => openTourAtStep(5)}
-                className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 self-start"
-              >
-                Inspect Pillar 5 <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
+            </TiltCard>
 
             {/* Pillar 4 */}
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/50 flex flex-col justify-between hover:border-teal-500/40 transition-colors">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-slate-800 text-teal-400 flex items-center justify-center mb-3">
-                  <Cpu className="h-5 w-5" />
+            <TiltCard glowColor="teal" maxTilt={8} scale={1.03} className="h-full">
+              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between">
+                <div>
+                  <div
+                    className="h-10 w-10 rounded-xl bg-slate-800/90 text-teal-400 flex items-center justify-center mb-3 shadow-md shadow-teal-950/40"
+                    style={{ transform: "translateZ(20px)" }}
+                  >
+                    <Cpu className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                    4. Grounded AI Advisor
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                    Zero hallucination policy calculator that provides mathematically deterministic 75% margin formulas before generating recommendations.
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-1.5">4. Grounded AI Advisor</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  Zero hallucination policy calculator that provides mathematically deterministic 75% margin formulas before generating recommendations.
-                </p>
+                <button
+                  onClick={() => openTourAtStep(6)}
+                  className="text-[11px] font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                  style={{ transform: "translateZ(18px)" }}
+                >
+                  Inspect Pillar 6 <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
-              <button
-                onClick={() => openTourAtStep(6)}
-                className="text-[11px] font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 self-start"
-              >
-                Inspect Pillar 6 <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
+            </TiltCard>
           </div>
         </div>
 
         {/* Quick Navigation Teleport Hub */}
-        <div className="max-w-5xl mx-auto w-full p-6 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-sm">
+        <div className="relative z-10 max-w-5xl mx-auto w-full p-6 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md shadow-xl">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-emerald-400" />
@@ -327,62 +365,62 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
             <Link
               href="/student"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Student Overview</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Student Overview</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
             </Link>
             <Link
               href="/student/scanner"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Viewfinder Scanner</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Viewfinder Scanner</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
             </Link>
             <Link
               href="/student/history"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Attendance Ledger</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Attendance Ledger</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
             </Link>
             <Link
               href="/student/advisor"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>AI Policy Advisor</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">AI Policy Advisor</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
             </Link>
             <Link
               href="/student/device"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Device Binding</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Device Binding</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
             </Link>
             <Link
               href="/teacher"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-teal-500/40 hover:text-teal-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:text-teal-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Teacher Console</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Teacher Console</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
             </Link>
             <Link
               href="/teacher/sessions"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-teal-500/40 hover:text-teal-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:text-teal-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>Projector Dynamic QR</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Projector Dynamic QR</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
             </Link>
             <Link
               href="/teacher/reports"
-              className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-teal-500/40 hover:text-teal-300 text-slate-300 flex items-center justify-between"
+              className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:text-teal-300 text-slate-300 flex items-center justify-between hover-lift-3d group shadow-md"
             >
-              <span>RFC-4180 Reports</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">RFC-4180 Reports</span>
+              <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
             </Link>
           </div>
         </div>
