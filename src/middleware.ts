@@ -63,17 +63,36 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
-    authRole = profile?.role;
+      .maybeSingle();
+
+    const explicitRoleCookie = request.cookies.get('attendguard-role')?.value;
+    if (explicitRoleCookie === 'teacher' || explicitRoleCookie === 'student') {
+      authRole = explicitRoleCookie;
+    } else if (profile?.role) {
+      authRole = profile.role;
+    } else {
+      const demoCookie = request.cookies.get('attendguard-demo-user')?.value;
+      let fallbackRole = user.user_metadata?.role;
+      if (!fallbackRole && demoCookie) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(demoCookie));
+          fallbackRole = parsed?.role;
+        } catch {}
+      }
+      authRole = fallbackRole === 'teacher' ? 'teacher' : 'student';
+    }
   } else {
     // Contract-compatible fallback when running with demo credentials
+    const explicitRoleCookie = request.cookies.get('attendguard-role')?.value;
     const demoCookie = request.cookies.get('attendguard-demo-user')?.value;
     if (demoCookie) {
       try {
         const parsed = JSON.parse(decodeURIComponent(demoCookie));
         if (parsed?.id && parsed?.role) {
           authUser = { id: parsed.id, email: parsed.email } as any;
-          authRole = parsed.role;
+          authRole = (explicitRoleCookie === 'teacher' || explicitRoleCookie === 'student')
+            ? explicitRoleCookie
+            : parsed.role;
         }
       } catch {}
     }
