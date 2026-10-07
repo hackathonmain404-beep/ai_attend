@@ -32,11 +32,15 @@ export function StudentProfileHeader({ student }: StudentProfileHeaderProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-medium">
+        <Link
+          href="/student/device"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-medium hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-colors"
+          title="Manage Bound Hardware Security"
+        >
           <Smartphone className="h-3.5 w-3.5 text-emerald-400" />
           <span>{student.device.deviceName || "Primary Device"}</span>
           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 ml-0.5" />
-        </div>
+        </Link>
 
         <Button asChild variant="outline" size="sm" className="border-slate-800 text-xs text-slate-300 hover:text-white">
           <Link href="/student/history">

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { PlusCircle, ShieldCheck, GraduationCap, MapPin, Building2 } from "lucide-react";
+import Link from "next/link";
+import { PlusCircle, ShieldCheck, GraduationCap, MapPin, Building2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { TeacherProfile } from "@/types/teacher";
@@ -42,12 +43,19 @@ export function TeacherProfileHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 w-full lg:w-auto">
+      <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <Button asChild variant="outline" size="lg" className="flex-1 lg:flex-none border-slate-700 text-xs font-semibold text-slate-300 hover:text-white">
+          <Link href="/teacher/devices">
+            <Smartphone className="h-4 w-4 mr-1.5 text-teal-400" />
+            Device Perimeter
+          </Link>
+        </Button>
+
         <Button
           onClick={onStartSessionClick}
           variant="emerald"
           size="lg"
-          className="w-full lg:w-auto gap-2 font-bold shadow-lg shadow-emerald-950/50"
+          className="flex-1 lg:flex-none gap-2 font-bold shadow-lg shadow-emerald-950/50"
         >
           <PlusCircle className="h-5 w-5" />
           Start Attendance Session
