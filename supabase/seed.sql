@@ -3,6 +3,9 @@
 -- Development and test cohort: 1 Teacher, 4 Students, 2 Classes, Devices & Past Records.
 -- ==============================================================================
 
+-- Enable pgcrypto for password hashing if not already available
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. Deterministic UUID Constants
 -- (Using deterministic UUIDs so foreign key relations match reliably across setups)
 DO $$
@@ -24,8 +27,67 @@ DECLARE
   v_past_sess1 UUID := '44444444-4444-4444-4444-444444444441';
 BEGIN
 
-  -- 1. Insert Profiles (Normally created via Supabase Auth triggers)
-  -- Note: If running with Supabase Auth, mock auth.users IDs would match these.
+  -- 0. Insert Auth Users (Satisfies profiles_id_fkey constraint)
+  -- Remove stale users with these emails if they have different IDs
+  DELETE FROM auth.users 
+  WHERE email IN (
+    'prof.turing@university.edu',
+    'jane.doe@university.edu',
+    'john.smith@university.edu',
+    'alice.j@university.edu',
+    'bob.brown@university.edu'
+  ) 
+  AND id NOT IN (v_teacher_id, v_stu1_id, v_stu2_id, v_stu3_id, v_stu4_id);
+
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  )
+  VALUES 
+    ('00000000-0000-0000-0000-000000000000', v_teacher_id, 'authenticated', 'authenticated', 'prof.turing@university.edu', crypt('teacher123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Prof. Alan Turing","role":"teacher"}', NOW(), NOW(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_stu1_id,    'authenticated', 'authenticated', 'jane.doe@university.edu',    crypt('student123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Jane Doe","role":"student"}',           NOW(), NOW(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_stu2_id,    'authenticated', 'authenticated', 'john.smith@university.edu',  crypt('student123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"John Smith","role":"student"}',         NOW(), NOW(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_stu3_id,    'authenticated', 'authenticated', 'alice.j@university.edu',     crypt('student123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Alice Johnson","role":"student"}',      NOW(), NOW(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_stu4_id,    'authenticated', 'authenticated', 'bob.brown@university.edu',   crypt('student123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Bob Brown","role":"student"}',          NOW(), NOW(), '', '', '', '')
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Optional: Link identities so users can also authenticate through Supabase Auth
+  BEGIN
+    INSERT INTO auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      provider_id,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    )
+    VALUES 
+      (v_teacher_id::text, v_teacher_id, json_build_object('sub', v_teacher_id, 'email', 'prof.turing@university.edu')::jsonb, 'email', 'prof.turing@university.edu', NOW(), NOW(), NOW()),
+      (v_stu1_id::text,    v_stu1_id,    json_build_object('sub', v_stu1_id,    'email', 'jane.doe@university.edu')::jsonb,    'email', 'jane.doe@university.edu',    NOW(), NOW(), NOW()),
+      (v_stu2_id::text,    v_stu2_id,    json_build_object('sub', v_stu2_id,    'email', 'john.smith@university.edu')::jsonb,  'email', 'john.smith@university.edu',  NOW(), NOW(), NOW()),
+      (v_stu3_id::text,    v_stu3_id,    json_build_object('sub', v_stu3_id,    'email', 'alice.j@university.edu')::jsonb,     'email', 'alice.j@university.edu',     NOW(), NOW(), NOW()),
+      (v_stu4_id::text,    v_stu4_id,    json_build_object('sub', v_stu4_id,    'email', 'bob.brown@university.edu')::jsonb,   'email', 'bob.brown@university.edu',   NOW(), NOW(), NOW())
+    ON CONFLICT DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+
+  -- 1. Insert Profiles (Linked 1:1 with Supabase auth.users)
   INSERT INTO profiles (id, email, full_name, role, identifier)
   VALUES 
     (v_teacher_id, 'prof.turing@university.edu', 'Prof. Alan Turing', 'teacher', 'FAC-2026-001'),
