@@ -62,7 +62,11 @@ export default function StudentDashboardPage() {
   return (
     <div className="space-y-6">
       {/* 1. Student Identity & Hardware Device Header */}
-      <StudentProfileHeader student={data.student} />
+      <StudentProfileHeader
+        student={data.student}
+        overallPercentage={data.overallPercentage}
+        streakDays={data.streakDays}
+      />
 
       {/* 2. Key Metrics Row */}
       <AttendanceSummaryCard

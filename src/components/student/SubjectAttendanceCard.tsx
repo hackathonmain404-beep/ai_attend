@@ -24,9 +24,9 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-white tracking-tight">Subject-Wise Breakdown</h2>
-          <p className="text-xs text-slate-400">Course attendance, margin math, and leave simulation</p>
+          <p className="text-xs text-slate-400">Course attendance telemetry, 75% margin formulas, and leave simulation</p>
         </div>
-        <span className="text-xs text-slate-500 font-mono">
+        <span className="text-xs text-emerald-400 font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
           {classes.length} Enrolled Courses
         </span>
       </div>
@@ -35,12 +35,13 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
         {classes.map((course) => {
           const isSafe = course.percentage >= 75;
           const isCritical = course.percentage < 65;
+          const courseXp = Math.round(course.percentage * 10);
 
           const progressColor = isSafe
-            ? "bg-emerald-500"
+            ? "bg-gradient-to-r from-teal-400 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
             : isCritical
-            ? "bg-rose-500"
-            : "bg-amber-500";
+            ? "bg-gradient-to-r from-rose-500 to-red-500"
+            : "bg-gradient-to-r from-amber-500 to-orange-400";
 
           const badgeVariant = isSafe
             ? "emerald"
@@ -55,21 +56,26 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
               className="block group focus:outline-none h-full"
             >
               <TiltCard glowColor={isSafe ? "emerald" : "amber"} maxTilt={5} scale={1.02} className="h-full">
-                <Card className="h-full border-slate-800 bg-slate-900/70 backdrop-blur-md group-hover:border-slate-700/90 transition-all p-5 flex flex-col justify-between shadow-xl shadow-slate-950/50">
+                <Card className="h-full border-slate-800 bg-slate-900/80 backdrop-blur-md group-hover:border-slate-700/90 transition-all p-5 flex flex-col justify-between shadow-xl shadow-slate-950/50">
                   <div>
                     {/* Header: Course Code & Status Badge */}
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div style={{ transform: "translateZ(14px)" }}>
-                        <span className="text-xs font-mono font-bold text-slate-400 block mb-0.5 group-hover:text-teal-400 transition-colors">
+                        <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 inline-block mb-1.5 group-hover:text-teal-300 transition-colors">
                           {course.code}
                         </span>
                         <h3 className="text-base font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">
                           {course.className}
                         </h3>
                       </div>
-                      <Badge variant={badgeVariant} className="text-[11px] font-bold shrink-0" style={{ transform: "translateZ(12px)" }}>
-                        {course.percentage.toFixed(1)}%
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1" style={{ transform: "translateZ(12px)" }}>
+                        <Badge variant={badgeVariant} className="text-[11px] font-bold shrink-0">
+                          {course.percentage.toFixed(1)}%
+                        </Badge>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {courseXp} XP
+                        </span>
+                      </div>
                     </div>
 
                     {/* Counter & Progress Bar */}
@@ -79,7 +85,7 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
                           Attended <strong className="text-slate-200">{course.attended}</strong> of{" "}
                           <strong className="text-slate-200">{course.totalHeld}</strong> lectures
                         </span>
-                        <span className="font-semibold text-slate-300">
+                        <span className="font-semibold text-slate-300 font-mono">
                           {course.percentage.toFixed(1)}%
                         </span>
                       </div>
@@ -93,7 +99,7 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
                   </div>
 
                   {/* Attendance Math Callout Pill */}
-                  <div className="pt-2 border-t border-slate-800/60 mt-2 space-y-2" style={{ transform: "translateZ(16px)" }}>
+                  <div className="pt-2 border-t border-slate-800/70 mt-2 space-y-2" style={{ transform: "translateZ(16px)" }}>
                     {isSafe ? (
                       <div className="flex items-center gap-2 text-xs text-emerald-400/90 font-medium bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 group-hover:border-emerald-500/40 transition-colors">
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
@@ -114,7 +120,7 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-end text-[11px] text-slate-500 group-hover:text-emerald-400 transition-colors">
+                    <div className="flex items-center justify-end text-[11px] text-slate-400 group-hover:text-emerald-300 transition-colors">
                       <span>View Analytics & Leave Simulator</span>
                       <ChevronRight className="h-3 w-3 ml-0.5 group-hover:translate-x-1 transition-transform" />
                     </div>
