@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS, type MockUserProfile } from "@/mocks/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
+export type { MockUserProfile };
+
 export interface AuthSession {
   user: MockUserProfile | null;
   role: "student" | "teacher" | null;
@@ -147,9 +149,38 @@ export async function signOut(): Promise<void> {
     } catch {}
   }
 
-  removeCookie(DEMO_COOKIE_NAME);
+  clearCurrentUserProfile();
+}
+
+let inMemoryProfile: MockUserProfile | null = null;
+
+/**
+ * Saves user profile to local storage and cookies, and notifies listeners.
+ */
+export function saveCurrentUserProfile(profile: MockUserProfile) {
+  inMemoryProfile = profile;
   if (typeof window !== "undefined") {
-    localStorage.removeItem(STORAGE_KEY);
+    setCookie(DEMO_COOKIE_NAME, JSON.stringify(profile));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    } catch {}
+    window.dispatchEvent(new CustomEvent("attendguard-user-changed", { detail: profile }));
+  }
+}
+
+/**
+ * Clears all user session and credentials from local storage and cookies.
+ */
+export function clearCurrentUserProfile() {
+  inMemoryProfile = null;
+  if (typeof window !== "undefined") {
+    removeCookie(DEMO_COOKIE_NAME);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("attendguard-oauth-role");
+      localStorage.removeItem("attendguard-oauth-provider");
+    } catch {}
+    window.dispatchEvent(new CustomEvent("attendguard-user-changed", { detail: null }));
   }
 }
 
@@ -157,18 +188,90 @@ export async function signOut(): Promise<void> {
  * Retrieves the currently active user profile from client storage or cookie.
  */
 export function getCurrentUserProfile(): MockUserProfile | null {
+  if (typeof window !== "undefined") {
+    try {
+      const rawStorage = localStorage.getItem(STORAGE_KEY);
+      if (rawStorage) {
+        return JSON.parse(rawStorage) as MockUserProfile;
+      }
+      const rawCookie = getCookie(DEMO_COOKIE_NAME);
+      if (rawCookie) {
+        return JSON.parse(rawCookie) as MockUserProfile;
+      }
+    } catch {}
+  }
+
+  return inMemoryProfile;
+}
+
+/**
+ * Asynchronously resolves the authentic user profile:
+ * 1. Checks synchronous storage/cookie.
+ * 2. Checks authoritative GET /api/auth/me endpoint.
+ * 3. Checks browser Supabase client live session.
+ * Automatically synchronizes authentic profile to client storage.
+ */
+export async function resolveCurrentUserProfile(): Promise<MockUserProfile | null> {
+  // 1. Check synchronous cache first
+  const cached = getCurrentUserProfile();
+  if (cached) return cached;
+
   if (typeof window === "undefined") return null;
 
+  // 2. Try fetching from /api/auth/me to get the authoritative server profile
   try {
-    const rawStorage = localStorage.getItem(STORAGE_KEY);
-    if (rawStorage) {
-      return JSON.parse(rawStorage) as MockUserProfile;
+    const me = await apiFetch<any>("/api/auth/me");
+    if (me && me.id && me.role) {
+      const liveProfile: MockUserProfile = {
+        id: me.id,
+        email: me.email,
+        fullName: me.fullName || me.full_name || me.email?.split("@")[0] || "Authenticated User",
+        role: me.role,
+        identifier: me.identifier,
+        device: me.device,
+      };
+      saveCurrentUserProfile(liveProfile);
+      return liveProfile;
     }
-    const rawCookie = getCookie(DEMO_COOKIE_NAME);
-    if (rawCookie) {
-      return JSON.parse(rawCookie) as MockUserProfile;
+  } catch {
+    // /api/auth/me might 401 or fail in mock/offline mode
+  }
+
+  // 3. Try checking Supabase client session in browser (e.g., OAuth return)
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const meta = session.user.user_metadata || {};
+      const email = session.user.email || "";
+      const storedRole =
+        (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
+        meta.role ||
+        "student";
+      const fullName =
+        meta.full_name || meta.name || (email ? email.split("@")[0] : "Academic User");
+      const identifier =
+        meta.identifier ||
+        (storedRole === "teacher"
+          ? `FAC-${session.user.id.slice(0, 4)}`
+          : `STU-${session.user.id.slice(0, 4)}`);
+
+      const liveProfile: MockUserProfile = {
+        id: session.user.id,
+        email,
+        fullName,
+        role: storedRole,
+        identifier,
+      };
+      saveCurrentUserProfile(liveProfile);
+      return liveProfile;
     }
   } catch {}
+
+  // 4. Return cached if available
+  if (cached) {
+    return cached;
+  }
 
   return null;
 }

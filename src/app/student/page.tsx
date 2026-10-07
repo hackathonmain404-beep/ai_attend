@@ -38,29 +38,49 @@ export default function StudentDashboardPage() {
   }
 
   if (isError || !data) {
+    const isUnauthenticated =
+      (error as any)?.status === 401 ||
+      (error as any)?.code === "UNAUTHENTICATED" ||
+      (error as any)?.message?.toLowerCase().includes("session");
+
     return (
       <Card className="p-8 border-rose-500/30 bg-slate-900/80 text-center space-y-4 max-w-lg mx-auto my-12">
         <div className="mx-auto h-12 w-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
           <AlertCircle className="h-6 w-6" />
         </div>
-        <h2 className="text-xl font-bold text-white">Failed to Load Attendance Records</h2>
+        <h2 className="text-xl font-bold text-white">
+          {isUnauthenticated ? "Authentication Required" : "Failed to Load Attendance Records"}
+        </h2>
         <p className="text-xs text-slate-400">
           {(error as any)?.message || "A network or server error occurred while retrieving your academic ledger."}
         </p>
-        <Button
-          onClick={() => refetch()}
-          variant="outline"
-          className="border-slate-700 hover:bg-slate-800 text-white gap-2"
-          disabled={isFetching}
-        >
-          <RotateCcw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Retry Connection
-        </Button>
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            className="border-slate-700 hover:bg-slate-800 text-white gap-2"
+            disabled={isFetching}
+          >
+            <RotateCcw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            Retry Connection
+          </Button>
+          {isUnauthenticated && (
+            <Button
+              onClick={() => {
+                window.location.href = "/login";
+              }}
+              variant="emerald"
+              className="font-bold text-xs"
+            >
+              Go to Sign In
+            </Button>
+          )}
+        </div>
       </Card>
     );
   }
 
-  const atRiskClasses = data.classes.filter((c) => c.percentage < 75);
+  const atRiskClasses = (data.classes || []).filter((c) => (c.percentage ?? 0) < 75);
 
   return (
     <div className="space-y-6">

@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { LogoutButton } from "@/components/auth/LogoutButton";
-import { getCurrentUserProfile } from "@/lib/auth/auth-client";
+import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import * as React from "react";
 
 const navItems = [
@@ -53,12 +53,29 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [userProfile, setUserProfile] = React.useState<any>(null);
+  const [userProfile, setUserProfile] = React.useState<any>(() => {
+    return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+  });
 
   React.useEffect(() => {
-    const profile = getCurrentUserProfile();
-    setUserProfile(profile);
-  }, []);
+    let isMounted = true;
+    if (!userProfile) {
+      resolveCurrentUserProfile().then((p) => {
+        if (isMounted && p) setUserProfile(p);
+      });
+    }
+
+    const handleUserChange = (e: Event) => {
+      const custom = e as CustomEvent<any>;
+      if (isMounted) setUserProfile(custom.detail);
+    };
+
+    window.addEventListener("attendguard-user-changed", handleUserChange);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("attendguard-user-changed", handleUserChange);
+    };
+  }, [userProfile]);
 
   return (
     <div className="min-h-screen bg-[#070b12] text-slate-100 flex flex-col pb-24 md:pb-8">
@@ -119,14 +136,14 @@ export default function StudentLayout({
 
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-800/80">
               <div className="h-8 w-8 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center justify-center shadow-md shadow-emerald-950/40">
-                {userProfile?.fullName ? userProfile.fullName[0] : "J"}
+                {userProfile?.fullName ? userProfile.fullName.trim()[0].toUpperCase() : "U"}
               </div>
               <div className="hidden lg:flex flex-col text-left font-mono">
                 <span className="text-xs font-bold text-slate-200 leading-tight">
-                  {userProfile?.fullName || "Jane Doe"}
+                  {userProfile?.fullName || (userProfile === null ? "Loading..." : "Student")}
                 </span>
                 <span className="text-[10px] text-cyan-400 font-bold">
-                  {userProfile?.identifier || "2024-CS-0042"}
+                  {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
                 </span>
               </div>
             </div>

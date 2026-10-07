@@ -31,7 +31,7 @@ import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS } from "@/mocks/auth";
-import { getCurrentUserProfile } from "@/lib/auth/auth-client";
+import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 
 export default function HomePage() {
   const [isTourOpen, setIsTourOpen] = React.useState<boolean>(false);
@@ -97,25 +97,12 @@ export default function HomePage() {
             } catch {}
           }
 
-          // Fallback to configured academic persona if code returned
-          if (!resolvedProfile && (code || hasHashToken)) {
-            const storedRole =
-              (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
-            const defaultEmail =
-              storedRole === "student" ? "jane.doe@university.edu" : "prof.turing@university.edu";
-            resolvedProfile = MOCK_USERS[defaultEmail].profile;
-          }
-
           if (resolvedProfile) {
-            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-            document.cookie = `attendguard-demo-user=${encodeURIComponent(
-              JSON.stringify(resolvedProfile)
-            )}; path=/; expires=${expires}; SameSite=Lax`;
-            localStorage.setItem("attendguard-user", JSON.stringify(resolvedProfile));
+            saveCurrentUserProfile(resolvedProfile);
             localStorage.removeItem("attendguard-oauth-provider");
             localStorage.removeItem("attendguard-oauth-role");
 
-            toast.success(`Google Sign-In Successful!`, {
+            toast.success(`Authentication Successful!`, {
               description: `Welcome, ${resolvedProfile.fullName}! Launching your command center...`,
             });
 

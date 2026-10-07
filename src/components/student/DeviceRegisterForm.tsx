@@ -15,7 +15,7 @@ interface DeviceRegisterFormProps {
 }
 
 export function DeviceRegisterForm({ onRegistered }: DeviceRegisterFormProps) {
-  const [deviceName, setDeviceName] = React.useState("Jane's Primary Smartphone");
+  const [deviceName, setDeviceName] = React.useState("Primary Student Smartphone");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState("");
 
@@ -72,7 +72,7 @@ export function DeviceRegisterForm({ onRegistered }: DeviceRegisterFormProps) {
             id="device-name-input"
             value={deviceName}
             onChange={(e) => setDeviceName(e.target.value)}
-            placeholder="e.g. Jane's Pixel 8 Pro or iPhone 15"
+            placeholder="e.g. Pixel 8 Pro or iPhone 15"
             disabled={isSubmitting}
             className="text-sm bg-slate-950 border-slate-800"
           />

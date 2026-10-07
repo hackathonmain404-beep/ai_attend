@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
-import { signIn, getCurrentUserProfile, signOut } from "@/lib/auth/auth-client";
+import { signIn, getCurrentUserProfile, signOut, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS } from "@/mocks/auth";
 import { cn } from "@/lib/utils";
@@ -102,30 +102,37 @@ export function LoginForm() {
 
         // 2. Check Supabase client session (e.g., Google OAuth redirect)
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        let { data: { session } } = await supabase.auth.getSession();
 
-        const isOAuthReturn =
-          typeof window !== "undefined" &&
-          (window.location.hash.includes("access_token") ||
-            window.location.search.includes("code") ||
-            Boolean(localStorage.getItem("attendguard-oauth-provider")));
-
+        const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const code = urlParams?.get("code");
         const oauthError = searchParams.get("error");
         const storedRole =
           (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
           socialRole ||
           "student";
 
+        if (!session?.user && code) {
+          try {
+            const { data: exchanged } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchanged?.session) {
+              session = exchanged.session;
+            }
+          } catch (codeErr) {
+            console.warn("Exchange code attempt notice:", codeErr);
+          }
+        }
+
         if (session?.user) {
-          const email = session.user.email || "student@university.edu";
+          const email = session.user.email || "";
           const meta = session.user.user_metadata || {};
           const fullName =
-            meta.full_name || meta.name || email.split("@")[0] || "Verified Academic";
+            meta.full_name || meta.name || (email ? email.split("@")[0] : "Verified Academic");
           const identifier =
             meta.identifier ||
             (storedRole === "teacher"
-              ? `FAC-${Math.floor(1000 + Math.random() * 9000)}`
-              : `STU-${Math.floor(1000 + Math.random() * 9000)}`);
+              ? `FAC-${session.user.id.slice(0, 4)}`
+              : `STU-${session.user.id.slice(0, 4)}`);
 
           const profile = {
             id: session.user.id,
@@ -135,17 +142,13 @@ export function LoginForm() {
             identifier,
           };
 
-          const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-          document.cookie = `attendguard-demo-user=${encodeURIComponent(
-            JSON.stringify(profile)
-          )}; path=/; expires=${expires}; SameSite=Lax`;
-          localStorage.setItem("attendguard-user", JSON.stringify(profile));
+          saveCurrentUserProfile(profile);
           localStorage.removeItem("attendguard-oauth-provider");
           localStorage.removeItem("attendguard-oauth-role");
 
           if (isMounted) {
             setCurrentUser(profile);
-            toast.success(`Google Authentication Verified!`, {
+            toast.success(`Authentication Confirmed!`, {
               description: `Signed in as ${profile.fullName} (${
                 storedRole === "student" ? "Student" : "Faculty"
               }).`,
@@ -156,56 +159,12 @@ export function LoginForm() {
           router.push(target);
           router.refresh();
           return;
-        } else if (isOAuthReturn && !oauthError) {
-          const defaultEmail =
-            storedRole === "student"
-              ? "jane.doe@university.edu"
-              : "prof.turing@university.edu";
-          const profile = MOCK_USERS[defaultEmail].profile;
-          const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-          document.cookie = `attendguard-demo-user=${encodeURIComponent(
-            JSON.stringify(profile)
-          )}; path=/; expires=${expires}; SameSite=Lax`;
-          localStorage.setItem("attendguard-user", JSON.stringify(profile));
+        } else if (oauthError) {
           localStorage.removeItem("attendguard-oauth-provider");
           localStorage.removeItem("attendguard-oauth-role");
-
-          if (isMounted) {
-            setCurrentUser(profile);
-            toast.success(`Social Authentication Confirmed!`, {
-              description: `Session established for ${profile.fullName}.`,
-            });
-          }
-
-          const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
-          router.push(target);
-          router.refresh();
-          return;
-        } else if (oauthError) {
-          if (localStorage.getItem("attendguard-oauth-role")) {
-            const role = (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
-            const defaultEmail = role === "student" ? "jane.doe@university.edu" : "prof.turing@university.edu";
-            const profile = MOCK_USERS[defaultEmail].profile;
-            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-            document.cookie = `attendguard-demo-user=${encodeURIComponent(
-              JSON.stringify(profile)
-            )}; path=/; expires=${expires}; SameSite=Lax`;
-            localStorage.setItem("attendguard-user", JSON.stringify(profile));
-            localStorage.removeItem("attendguard-oauth-role");
-            localStorage.removeItem("attendguard-oauth-provider");
-
-            if (isMounted) {
-              setCurrentUser(profile);
-              toast.success(`Google Session Connected!`, {
-                description: `Signed in as ${profile.fullName} (${role === "student" ? "Student" : "Faculty"}).`,
-              });
-            }
-
-            const target = redirectTarget || (role === "student" ? "/student" : "/teacher");
-            router.push(target);
-            router.refresh();
-            return;
-          }
+          toast.error("Social Sign-In Error", {
+            description: "The authentication provider returned an error. Please try again.",
+          });
         }
       } catch (err) {
         console.error("Session check error:", err);
@@ -223,26 +182,24 @@ export function LoginForm() {
             const storedRole =
               (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
               "student";
-            const email = session.user.email || "student@university.edu";
+            const email = session.user.email || "";
             const meta = session.user.user_metadata || {};
             const profile = {
               id: session.user.id,
               email,
               fullName:
-                meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
+                meta.full_name || meta.name || (email ? email.split("@")[0] : "Verified Academic"),
               role: storedRole,
               identifier:
-                storedRole === "teacher" ? "FAC-404" : "STU-001",
+                meta.identifier || (storedRole === "teacher" ? `FAC-${session.user.id.slice(0, 4)}` : `STU-${session.user.id.slice(0, 4)}`),
             };
 
-            const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-            document.cookie = `attendguard-demo-user=${encodeURIComponent(
-              JSON.stringify(profile)
-            )}; path=/; expires=${expires}; SameSite=Lax`;
-            localStorage.setItem("attendguard-user", JSON.stringify(profile));
+            saveCurrentUserProfile(profile);
+            localStorage.removeItem("attendguard-oauth-provider");
+            localStorage.removeItem("attendguard-oauth-role");
 
             setCurrentUser(profile);
-            toast.success(`Signed in via Google!`, {
+            toast.success(`Signed in via Connected Account!`, {
               description: `Redirecting to ${storedRole === "student" ? "Student Command Center" : "Faculty Console"}...`,
             });
             const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
@@ -317,87 +274,42 @@ export function LoginForm() {
     setServerError(null);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-      const isPlaceholder =
-        !supabaseUrl ||
-        supabaseUrl.includes("your-project-id") ||
-        supabaseUrl.includes("mock-project") ||
-        !supabaseUrl.startsWith("http");
-
       const targetRole = socialRole;
       const targetUrl = redirectTarget || (targetRole === "student" ? "/student" : "/teacher");
-      const selectedUserEmail =
-        targetRole === "student"
-          ? "jane.doe@university.edu"
-          : "prof.turing@university.edu";
 
-      const userRecord = MOCK_USERS[selectedUserEmail].profile;
-
-      // Always save session & cookies in advance
-      if (typeof document !== "undefined") {
-        const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
-        document.cookie = `attendguard-demo-user=${encodeURIComponent(
-          JSON.stringify(userRecord)
-        )}; path=/; expires=${expires}; SameSite=Lax`;
-        localStorage.setItem("attendguard-user", JSON.stringify(userRecord));
+      // Remember selected role and provider for callback resolution
+      if (typeof window !== "undefined") {
         localStorage.setItem("attendguard-oauth-role", targetRole);
         localStorage.setItem("attendguard-oauth-provider", provider);
       }
 
-      if (!isPlaceholder) {
-        try {
-          const supabase = createClient();
-          const redirectUrl =
-            typeof window !== "undefined"
-              ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(targetUrl)}`
-              : `/auth/callback?redirect=${encodeURIComponent(targetUrl)}`;
+      const supabase = createClient();
+      const redirectUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(targetUrl)}`
+          : `/auth/callback?redirect=${encodeURIComponent(targetUrl)}`;
 
-          const { error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-              redirectTo: redirectUrl,
-              queryParams: {
-                prompt: "select_account",
-              },
-            },
-          });
-
-          if (!error) {
-            return;
-          }
-          console.warn("Direct OAuth returned error, falling back to seamless sign-in:", error);
-        } catch (oauthErr) {
-          console.warn("Direct OAuth execution error, falling back:", oauthErr);
-        }
-      }
-
-      // Smooth realistic feedback
-      await new Promise((r) => setTimeout(r, 500));
-
-      const providerLabels = {
-        google: "Google Workspace",
-        github: "GitHub Student/Faculty",
-        discord: "Discord Academic Community",
-      };
-
-      toast.success(`Connected via ${providerLabels[provider]}!`, {
-        description: `Authenticated as ${userRecord.fullName} (${
-          targetRole === "student" ? "Student STU-001" : "Faculty Professor"
-        }).`,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
       });
 
-      setCurrentUser(userRecord);
-
-      if (redirectTarget && redirectTarget.startsWith("/")) {
-        router.push(redirectTarget);
-      } else {
-        router.push(targetRole === "student" ? "/student" : "/teacher");
+      if (error) {
+        throw error;
       }
-      router.refresh();
     } catch (err: any) {
-      const msg = err.message || `Failed to sign in with ${provider}.`;
+      const msg = err.message || `Failed to initiate sign-in with ${provider}.`;
       setServerError(msg);
       toast.error("Social Sign-In Failed", { description: msg });
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("attendguard-oauth-role");
+        localStorage.removeItem("attendguard-oauth-provider");
+      }
     } finally {
       setSocialLoading(null);
     }

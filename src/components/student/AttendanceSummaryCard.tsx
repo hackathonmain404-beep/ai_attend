@@ -20,9 +20,12 @@ export function AttendanceSummaryCard({
   streakDays,
   atRiskCount,
 }: AttendanceSummaryCardProps) {
-  const status = getAttendanceStatus(overallPercentage);
-  const xpCurrent = Math.round(overallPercentage * 10);
-  const attendanceRatio = totalHeld > 0 ? (totalAttended / totalHeld) * 100 : 0;
+  const safeOverall = typeof overallPercentage === "number" && !isNaN(overallPercentage) ? overallPercentage : 0;
+  const status = getAttendanceStatus(safeOverall);
+  const xpCurrent = Math.round(safeOverall * 10);
+  const safeHeld = totalHeld ?? 0;
+  const safeAttended = totalAttended ?? 0;
+  const attendanceRatio = safeHeld > 0 ? (safeAttended / safeHeld) * 100 : 0;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
@@ -41,7 +44,7 @@ export function AttendanceSummaryCard({
             </div>
             <div className="flex items-baseline gap-1 mt-1" style={{ transform: "translateZ(10px)" }}>
               <span className={`text-2xl sm:text-3xl font-black tracking-tight ${status.textClass}`}>
-                {overallPercentage.toFixed(1)}%
+                {safeOverall.toFixed(1)}%
               </span>
               <span className="text-[11px] font-mono text-slate-400 font-semibold ml-1">
                 ({xpCurrent} XP)
@@ -52,9 +55,9 @@ export function AttendanceSummaryCard({
             <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  overallPercentage >= 75
+                  safeOverall >= 75
                     ? "bg-gradient-to-r from-teal-400 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                    : overallPercentage >= 65
+                    : safeOverall >= 65
                     ? "bg-amber-500"
                     : "bg-rose-500"
                 }`}

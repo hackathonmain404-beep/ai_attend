@@ -14,19 +14,28 @@ export function TeacherProfileHeader({
   teacher,
   onStartSessionClick,
 }: TeacherProfileHeaderProps) {
+  const teacherName = teacher?.fullName || "Faculty Professor";
+  const teacherInitials = (teacherName.trim() || "P")
+    .split(/\s+/)
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "P";
+
   return (
     <div className="rounded-2xl border border-teal-500/30 bg-gradient-to-r from-teal-950/40 via-slate-900/80 to-slate-900/90 p-6 md:p-8 backdrop-blur-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xl">
       <div className="flex items-start sm:items-center gap-4">
         <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-xl shadow-teal-950/60 font-black text-2xl shrink-0">
-          {teacher.fullName.split(" ").map((n) => n[0]).join("")}
+          {teacherInitials}
         </div>
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              {teacher.fullName}
+              {teacherName}
             </h1>
             <Badge variant="outline" className="border-teal-500/40 bg-teal-500/10 text-teal-300 font-mono text-xs">
-              {teacher.identifier}
+              {teacher?.identifier || "FAC-AUTH"}
             </Badge>
             <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 border border-teal-500/30 text-teal-300">
               FACULTY CONTROL ROOM // RADAR ACTIVE
@@ -35,12 +44,12 @@ export function TeacherProfileHeader({
           <p className="text-xs sm:text-sm text-slate-300 font-medium flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1 text-teal-300">
               <Building2 className="h-3.5 w-3.5 text-teal-400" />
-              {teacher.department}
+              {teacher?.department || "Academic Department"}
             </span>
             <span className="text-slate-500">•</span>
             <span className="text-slate-400 flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5 text-slate-500" />
-              {teacher.office}
+              {teacher?.office || "Faculty Room"}
             </span>
           </p>
         </div>

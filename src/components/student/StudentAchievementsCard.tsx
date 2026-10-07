@@ -23,15 +23,17 @@ export function StudentAchievementsCard({
   totalAttended,
   totalHeld,
 }: StudentAchievementsCardProps) {
+  const safePct = typeof overallPercentage === "number" && !isNaN(overallPercentage) ? overallPercentage : 0;
+
   const achievements = [
     {
       id: "perfect_attendance",
       title: "Perfect Attendance",
       category: "Distinction",
       description: "Maintain >= 95% total term attendance",
-      isUnlocked: overallPercentage >= 95,
+      isUnlocked: safePct >= 95,
       icon: Trophy,
-      progress: `${overallPercentage.toFixed(1)}% / 95%`,
+      progress: `${safePct.toFixed(1)}% / 95%`,
       badgeColor: "border-amber-500/40 text-amber-300 bg-amber-500/10",
       glowColor: "amber" as const,
     },
@@ -51,9 +53,9 @@ export function StudentAchievementsCard({
       title: "Consistency Master",
       category: "Standing",
       description: "Sustain >= 80% Honor Roll standing",
-      isUnlocked: overallPercentage >= 80,
+      isUnlocked: safePct >= 80,
       icon: Zap,
-      progress: `${overallPercentage.toFixed(1)}% / 80%`,
+      progress: `${safePct.toFixed(1)}% / 80%`,
       badgeColor: "border-cyan-500/40 text-cyan-300 bg-cyan-500/10",
       glowColor: "cyan" as const,
     },

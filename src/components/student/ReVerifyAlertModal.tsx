@@ -198,7 +198,7 @@ export function ReVerifyAlertModal({
             {/* Device Hardware Info */}
             <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono px-1">
               <Smartphone className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span>Bound to Jane&apos;s iPhone 15 Pro</span>
+              <span>Bound to Verified Smartphone</span>
             </div>
 
             {errorMessage && (

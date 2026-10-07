@@ -10,16 +10,23 @@ import { DeviceStatusCard } from "@/components/student/DeviceStatusCard";
 import { DeviceRegisterForm } from "@/components/student/DeviceRegisterForm";
 import { fetchStudentDeviceStatus } from "@/lib/services/device-client-service";
 import { getMockStudentDeviceStatus } from "@/mocks/device-ui";
+import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import type { StudentDeviceStatus } from "@/types/device-ui";
 
 export default function StudentDevicePage() {
   const [deviceStatus, setDeviceStatus] = React.useState<StudentDeviceStatus | null>(() =>
     getMockStudentDeviceStatus()
   );
+  const [userProfile, setUserProfile] = React.useState<any>(() => {
+    return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+  });
 
   React.useEffect(() => {
     fetchStudentDeviceStatus().then(setDeviceStatus);
-  }, []);
+    if (!userProfile) {
+      resolveCurrentUserProfile().then(setUserProfile);
+    }
+  }, [userProfile]);
 
   const handleSimulateUnregister = () => {
     setDeviceStatus({
@@ -60,7 +67,7 @@ export default function StudentDevicePage() {
         </div>
 
         <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs font-mono">
-          Jane Doe • STU2026-0891
+          {userProfile?.fullName || "Student"} • {userProfile?.identifier || "STU-AUTH"}
         </Badge>
       </header>
 

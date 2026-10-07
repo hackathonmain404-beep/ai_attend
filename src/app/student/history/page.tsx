@@ -9,10 +9,20 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { AttendanceHistoryList } from "@/components/student/AttendanceHistoryList";
 import { ReVerifyAlertModal } from "@/components/student/ReVerifyAlertModal";
 import { MOCK_ATTENDANCE_HISTORY, getActiveReVerifyChallenge } from "@/mocks/verification";
+import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import type { ReVerifyChallenge } from "@/types/verification";
 
 export default function StudentAttendanceHistoryPage() {
   const [activeChallenge, setActiveChallenge] = React.useState<ReVerifyChallenge | null>(null);
+  const [userProfile, setUserProfile] = React.useState<any>(() => {
+    return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+  });
+
+  React.useEffect(() => {
+    if (!userProfile) {
+      resolveCurrentUserProfile().then(setUserProfile);
+    }
+  }, [userProfile]);
 
   // Periodically check for surprise in-class re-verification alert
   React.useEffect(() => {
@@ -55,7 +65,7 @@ export default function StudentAttendanceHistoryPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs font-mono">
-            Jane Doe • STU2026-0891
+            {userProfile?.fullName || "Student"} • {userProfile?.identifier || "STU-AUTH"}
           </Badge>
         </div>
       </header>

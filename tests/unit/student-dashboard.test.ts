@@ -65,4 +65,55 @@ describe("Student Attendance Summary Data Contract", () => {
     expect(activeLecture).toBeDefined();
     expect(activeLecture?.sessionId).toBeDefined();
   });
+
+  it("dynamically binds authenticated student profile instead of hardcoded demo user", async () => {
+    const customUser = {
+      id: "user-alex-123",
+      email: "alex.kumar@university.edu",
+      fullName: "Alex Kumar",
+      role: "student" as const,
+      identifier: "STU-2026-999",
+      device: {
+        isRegistered: true,
+        deviceName: "Alex OnePlus 12",
+        registeredAt: "2026-10-01T10:00:00Z",
+      },
+    };
+
+    const summary = await getStudentAttendanceSummary(customUser);
+
+    expect(summary.student.id).toBe("user-alex-123");
+    expect(summary.student.fullName).toBe("Alex Kumar");
+    expect(summary.student.identifier).toBe("STU-2026-999");
+    expect(summary.student.email).toBe("alex.kumar@university.edu");
+    expect(summary.student.device.deviceName).toBe("Alex OnePlus 12");
+    expect(summary.student.fullName).not.toBe("Jane Doe");
+  });
+
+  it("preserves separate distinct user profiles when switching between sessions", async () => {
+    const userA = {
+      id: "user-a",
+      email: "userA@university.edu",
+      fullName: "Student Alpha",
+      role: "student" as const,
+      identifier: "STU-001-A",
+    };
+
+    const userB = {
+      id: "user-b",
+      email: "userB@university.edu",
+      fullName: "Student Beta",
+      role: "student" as const,
+      identifier: "STU-002-B",
+    };
+
+    const summaryA = await getStudentAttendanceSummary(userA);
+    const summaryB = await getStudentAttendanceSummary(userB);
+
+    expect(summaryA.student.fullName).toBe("Student Alpha");
+    expect(summaryB.student.fullName).toBe("Student Beta");
+    expect(summaryA.student.identifier).toBe("STU-001-A");
+    expect(summaryB.student.identifier).toBe("STU-002-B");
+    expect(summaryA.student.id).not.toBe(summaryB.student.id);
+  });
 });

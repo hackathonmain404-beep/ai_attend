@@ -129,7 +129,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
         </div>
 
         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-400 break-all select-all">
-          {status.deviceFingerprint || "fp_hash_jane_iphone_15_pro_abc123"}
+          {status.deviceFingerprint || "fp_hash_device_hardware_lock"}
         </div>
       </div>
 

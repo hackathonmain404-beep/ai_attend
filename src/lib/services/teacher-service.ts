@@ -1,7 +1,13 @@
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { MOCK_TEACHER_DATA } from "@/mocks/teacher";
-import type { TeacherOverviewData, SessionAttendee, ActiveSessionData } from "@/types/teacher";
+import {
+  getCurrentUserProfile,
+  resolveCurrentUserProfile,
+  type MockUserProfile,
+} from "@/lib/auth/auth-client";
+import type { TeacherOverviewData, SessionAttendee, ActiveSessionData, TeacherProfile } from "@/types/teacher";
 
 /**
  * Filter attendees by query search (matches full name or roll number).
@@ -17,12 +23,35 @@ export function filterAttendees(attendees: SessionAttendee[], search: string): S
 /**
  * Fetches the teacher overview dataset.
  * Conforms to docs/API.md. Falls back to mock if backend endpoint is unavailable.
+ * Dynamically binds the real authenticated faculty profile to the overview data.
  */
-export async function getTeacherOverview(): Promise<TeacherOverviewData> {
+export async function getTeacherOverview(
+  providedProfile?: MockUserProfile
+): Promise<TeacherOverviewData> {
+  let profile = providedProfile;
+  if (!profile && typeof window !== "undefined") {
+    profile = getCurrentUserProfile() || (await resolveCurrentUserProfile()) || undefined;
+  }
+
+  const teacherProfile: TeacherProfile =
+    profile && profile.role === "teacher"
+      ? {
+          id: profile.id || MOCK_TEACHER_DATA.teacher.id,
+          fullName: profile.fullName || MOCK_TEACHER_DATA.teacher.fullName,
+          identifier: profile.identifier || MOCK_TEACHER_DATA.teacher.identifier,
+          email: profile.email || MOCK_TEACHER_DATA.teacher.email,
+          department: (profile as any).department || MOCK_TEACHER_DATA.teacher.department,
+          office: (profile as any).office || MOCK_TEACHER_DATA.teacher.office,
+        }
+      : MOCK_TEACHER_DATA.teacher;
+
   try {
     const data = await apiFetch<TeacherOverviewData>("/api/teacher/overview");
     if (data && data.classes) {
-      return data;
+      return {
+        ...data,
+        teacher: teacherProfile,
+      };
     }
   } catch (err: any) {
     if (process.env.NODE_ENV !== "production") {
@@ -32,7 +61,10 @@ export async function getTeacherOverview(): Promise<TeacherOverviewData> {
     }
   }
 
-  return MOCK_TEACHER_DATA;
+  return {
+    ...MOCK_TEACHER_DATA,
+    teacher: teacherProfile,
+  };
 }
 
 /**
@@ -95,11 +127,38 @@ export async function resetStudentDevice(
 
 /**
  * TanStack Query Hook for Teacher Overview
+ * Dynamically scoped to the authenticated faculty member.
  */
 export function useTeacherOverview() {
+  const [profile, setProfile] = React.useState<MockUserProfile | null>(() => {
+    return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+  });
+
+  React.useEffect(() => {
+    let isMounted = true;
+    if (!profile) {
+      resolveCurrentUserProfile().then((p) => {
+        if (isMounted && p) setProfile(p);
+      });
+    }
+
+    const handleUserChange = (e: Event) => {
+      const custom = e as CustomEvent<MockUserProfile | null>;
+      if (isMounted) setProfile(custom.detail);
+    };
+
+    window.addEventListener("attendguard-user-changed", handleUserChange);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("attendguard-user-changed", handleUserChange);
+    };
+  }, [profile]);
+
+  const userKey = profile?.id || profile?.email || "authenticated-teacher";
+
   return useQuery({
-    queryKey: ["teacher-overview"],
-    queryFn: getTeacherOverview,
+    queryKey: ["teacher-overview", userKey],
+    queryFn: () => getTeacherOverview(profile || undefined),
     staleTime: 1000 * 30, // 30 seconds
   });
 }

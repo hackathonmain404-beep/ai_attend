@@ -30,7 +30,7 @@ export function LowAttendanceWarningBanner({ atRiskClasses }: LowAttendanceWarni
             <p className="text-sm text-slate-200 font-medium">
               You are currently below the required 75% threshold in:{" "}
               <span className="font-bold text-amber-300">
-                {atRiskClasses.map((c) => `${c.code} (${c.percentage.toFixed(1)}%)`).join(", ")}
+                {atRiskClasses.map((c) => `${c.code} (${(c.percentage ?? 0).toFixed(1)}%)`).join(", ")}
               </span>
               .
             </p>

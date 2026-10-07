@@ -37,13 +37,13 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
       </CardHeader>
 
       <CardContent className="p-0 space-y-3">
-        {lectures.length === 0 ? (
+        {(!lectures || lectures.length === 0) ? (
           <div className="text-center py-8 text-slate-400 space-y-2">
             <Calendar className="h-8 w-8 mx-auto text-slate-600" />
             <p className="text-xs">No active lectures scheduled for today.</p>
           </div>
         ) : (
-          lectures.map((lecture) => {
+          (lectures || []).map((lecture) => {
             const isActive = lecture.status === "active";
             const isCompleted = lecture.status === "completed";
 
