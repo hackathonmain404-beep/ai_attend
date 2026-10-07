@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { signIn } from "@/lib/auth/auth-client";
@@ -197,11 +196,6 @@ export function LoginForm() {
             style={{ transform: "translateZ(20px)" }}
           >
             <ShieldCheck className="h-6 w-6 text-white" />
-          </div>
-          <div className="flex justify-center mb-2" style={{ transform: "translateZ(14px)" }}>
-            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
-              Cryptographic Perimeter
-            </Badge>
           </div>
           <CardTitle className="text-2xl font-black text-white tracking-tight" style={{ transform: "translateZ(12px)" }}>
             AttendGuard Sign In

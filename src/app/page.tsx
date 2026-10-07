@@ -83,11 +83,6 @@ export default function HomePage() {
           {/* Interactive 3D Holographic Shield */}
           <HolographicHeroShield />
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium text-emerald-300 shadow-lg shadow-emerald-950/40 hover:scale-105 transition-transform duration-300">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Verified Attendance & Proxy Prevention System</span>
-          </div>
-
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.1]">
             Next-Gen Attendance. <br />
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
@@ -121,15 +116,6 @@ export default function HomePage() {
 
         {/* 1-Click Demo Persona Fast-Track */}
         <div className="relative z-10 max-w-5xl mx-auto w-full mb-12">
-          <div className="text-center mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-              Instant Hackathon Persona Access
-            </h2>
-            <p className="text-xs text-slate-500">
-              Jump straight into any role with pre-configured cryptographic state
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Student Persona 3D Tilt Card */}
             <TiltCard glowColor="emerald" maxTilt={7} scale={1.02} className="h-full">
