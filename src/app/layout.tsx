@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "sonner";
+import { DemoTourFloatingButton } from "@/components/presentation/DemoTourFloatingButton";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#070b12] text-slate-100 min-h-screen antialiased flex flex-col`}>
         <QueryProvider>
           {children}
+          <DemoTourFloatingButton />
           <Toaster
             position="top-center"
             richColors
