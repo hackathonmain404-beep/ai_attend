@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS, type MockUserProfile } from "@/mocks/auth";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, apiFetch } from "@/lib/api-client";
 
 export interface AuthSession {
   user: MockUserProfile | null;
@@ -105,9 +105,38 @@ export async function signIn(
 }
 
 /**
+ * Registers a new student or faculty user via the backend signup API.
+ */
+export async function signUp(params: {
+  email: string;
+  password: string;
+  fullName: string;
+  role: "student" | "teacher";
+  identifier: string;
+}): Promise<{ profile: MockUserProfile; role: "student" | "teacher" }> {
+  const result = await apiFetch<{
+    user: MockUserProfile;
+    role: "student" | "teacher";
+  }>("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(result.user));
+  }
+
+  return { profile: result.user, role: result.role };
+}
+
+/**
  * Signs out the current active session.
  */
 export async function signOut(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {}
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const isMockEnvironment = supabaseUrl.includes("mock-project") || !supabaseUrl.startsWith("http");
 

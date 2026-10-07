@@ -129,8 +129,8 @@ export function LoginForm() {
         const targetUrl = redirectTarget || (socialRole === "student" ? "/student" : "/teacher");
         const redirectUrl =
           typeof window !== "undefined"
-            ? `${window.location.origin}${targetUrl}`
-            : targetUrl;
+            ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(targetUrl)}`
+            : `/auth/callback?redirect=${encodeURIComponent(targetUrl)}`;
 
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
