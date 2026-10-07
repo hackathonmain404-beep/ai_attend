@@ -28,6 +28,9 @@ export function TeacherProfileHeader({
             <Badge variant="outline" className="border-teal-500/40 bg-teal-500/10 text-teal-300 font-mono text-xs">
               {teacher.identifier}
             </Badge>
+            <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 border border-teal-500/30 text-teal-300">
+              FACULTY CONTROL ROOM // RADAR ACTIVE
+            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 font-medium flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1 text-teal-300">

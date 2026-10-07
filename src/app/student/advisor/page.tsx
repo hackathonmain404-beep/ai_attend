@@ -52,7 +52,7 @@ export default function StudentAdvisorPage(): React.JSX.Element {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30">
       {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-20">
+      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm" className="text-slate-400 hover:text-white">
             <Link href="/student">
@@ -62,43 +62,45 @@ export default function StudentAdvisorPage(): React.JSX.Element {
           </Button>
           <div className="h-4 w-[1px] bg-slate-800" />
           <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-semibold text-slate-200">
-              AI Attendance Advisor & Analytics
+            <div className="h-6 w-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+              <Bot className="h-3.5 w-3.5" />
+            </div>
+            <span className="text-xs font-mono font-bold text-white tracking-wide">
+              AI ADVISOR // COMPANION HUD
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Tab Navigation */}
-          <div className="hidden sm:flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="hidden sm:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('simulator')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 activeTab === 'simulator'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Scenario Simulator
+              SCENARIO SIMULATOR
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('live')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 activeTab === 'live'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-950/60'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Live Student Chat
+              LIVE MISSION CHAT
             </button>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 shadow-sm text-xs">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 shadow-sm text-xs font-mono">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-300 font-mono">Anti-Hallucination Active</span>
+            <span className="text-emerald-300 font-bold">SYSTEM ONLINE ✓</span>
           </div>
         </div>
       </header>

@@ -15,6 +15,9 @@ import { ReVerifyAlertModal } from "@/components/student/ReVerifyAlertModal";
 import { getActiveReVerifyChallenge } from "@/mocks/verification";
 import type { ReVerifyChallenge } from "@/types/verification";
 
+import { StudentAchievementsCard } from "@/components/student/StudentAchievementsCard";
+import { StudentMissionsDeck } from "@/components/student/StudentMissionsDeck";
+
 export default function StudentDashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStudentSummary();
   const [activeChallenge, setActiveChallenge] = React.useState<ReVerifyChallenge | null>(null);
@@ -80,13 +83,26 @@ export default function StudentDashboardPage() {
       {/* 3. Regulatory Warning Banner (Rendered when courses are < 75%) */}
       <LowAttendanceWarningBanner atRiskClasses={atRiskClasses} />
 
-      {/* 4. Today's Lectures & Active Session Scanner */}
+      {/* 4. Game-Style Academic Achievements System */}
+      <StudentAchievementsCard
+        overallPercentage={data.overallPercentage}
+        streakDays={data.streakDays}
+        atRiskCount={atRiskClasses.length}
+        isDeviceBound={Boolean(data.student?.device?.isRegistered)}
+        totalAttended={data.totalAttended}
+        totalHeld={data.totalHeld}
+      />
+
+      {/* 5. Feature Operations & Missions Deck */}
+      <StudentMissionsDeck />
+
+      {/* 6. Today's Lectures & Active Session Scanner */}
       <TodayLecturesCard lectures={data.todayLectures} />
 
-      {/* 5. Subject-Wise Course Breakdown */}
+      {/* 7. Subject-Wise Course Breakdown */}
       <SubjectAttendanceCard classes={data.classes} />
 
-      {/* 6. Surprise In-Class Re-Verification Modal */}
+      {/* 8. Surprise In-Class Re-Verification Modal */}
       <ReVerifyAlertModal
         challenge={activeChallenge}
         onCompleted={() => setActiveChallenge(null)}

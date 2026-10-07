@@ -81,7 +81,7 @@ export default function StudentLayout({
           </Link>
 
           {/* Desktop Nav Items */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 text-xs">
+          <nav className="hidden md:flex items-center gap-1 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800 text-xs font-mono">
             {navItems.map((item) => {
               const isActive = item.exact
                 ? pathname === item.href
@@ -93,14 +93,17 @@ export default function StudentLayout({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all duration-200",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all duration-200 relative",
                     isActive
-                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                   )}
                 >
                   <Icon className={cn("h-3.5 w-3.5", isActive ? "text-emerald-400" : "text-slate-400")} />
                   <span>{item.name}</span>
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-emerald-400 rounded-full shadow-[0_0_6px_#10b981]" />
+                  )}
                 </Link>
               );
             })}
@@ -108,22 +111,28 @@ export default function StudentLayout({
 
           {/* User Profile & Device Status */}
           <div className="flex items-center gap-2.5">
+            {/* Live Telemetry Ping */}
+            <div className="hidden xl:flex items-center gap-1.5 font-mono text-[10px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span>LIVE PING: 14ms</span>
+            </div>
+
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-800/80">
-              <div className="h-7 w-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center justify-center shadow-md shadow-emerald-950/40">
                 {userProfile?.fullName ? userProfile.fullName[0] : "J"}
               </div>
-              <div className="hidden lg:flex flex-col text-left">
+              <div className="hidden lg:flex flex-col text-left font-mono">
                 <span className="text-xs font-bold text-slate-200 leading-tight">
                   {userProfile?.fullName || "Jane Doe"}
                 </span>
-                <span className="text-[10px] font-mono text-emerald-400">
+                <span className="text-[10px] text-cyan-400 font-bold">
                   {userProfile?.identifier || "2024-CS-0042"}
                 </span>
               </div>
             </div>
 
-            <Badge variant="emerald" className="hidden sm:inline-flex text-[10px] py-0.5 px-2">
-              Verified Device
+            <Badge variant="emerald" className="hidden sm:inline-flex text-[10px] py-0.5 px-2 font-mono font-bold">
+              VERIFIED DEVICE
             </Badge>
 
             <LogoutButton variant="ghost" size="sm" showText={false} className="h-8 w-8 p-0 text-slate-400 hover:text-white" title="Sign Out" />

@@ -83,20 +83,23 @@ export default function HomePage() {
           {/* Interactive 3D Holographic Shield */}
           <HolographicHeroShield />
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold tracking-wide">
-            <Sparkles className="h-3.5 w-3.5 text-teal-300" />
-            <span>B.Tech Academic Attendance & Progression Engine</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold tracking-wider shadow-lg shadow-emerald-950/40">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span>B.TECH PROTOCOL // NEXT-GEN ATTENDANCE ENGINE</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15]">
-            Your B.Tech attendance, progress and academic tools{" "}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.12]">
+            NEXT-GEN ATTENDANCE. <br />
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              — in one place.
+              LEVEL UP YOUR CAMPUS EXPERIENCE.
             </span>
           </h1>
 
           <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto">
-            Zero-proxy cryptographic QR verification, hardware-bound device biometrics, live 75% margin calculation, and academic progression tracking engineered for engineering campuses.
+            Zero-proxy cryptographic QR challenges, hardware-bound device biometrics, live 75% margin calculation, and academic progression tracking engineered for modern B.Tech engineering students.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -104,10 +107,10 @@ export default function HomePage() {
               asChild
               size="lg"
               variant="emerald"
-              className="gap-2 font-bold px-6 shadow-xl shadow-emerald-950/60 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300"
+              className="gap-2 font-mono font-bold px-7 py-6 text-sm shadow-2xl shadow-emerald-950/80 hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all duration-300 tracking-wide"
             >
               <Link href="/student">
-                Open Student Dashboard
+                ENTER COMMAND CENTER
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -115,13 +118,29 @@ export default function HomePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-slate-700 hover:border-slate-500 hover:bg-slate-800 text-slate-200 gap-2 font-semibold transition-all duration-300"
+              className="border-slate-700 bg-slate-900/70 hover:border-slate-500 hover:bg-slate-800 text-slate-200 gap-2 font-mono font-bold px-6 py-6 text-sm transition-all duration-300 tracking-wide"
             >
               <a href="#pillars">
-                Explore Features
+                EXPLORE MISSIONS
                 <Compass className="h-4 w-4 text-emerald-400" />
               </a>
             </Button>
+          </div>
+
+          {/* HUD Telemetry Status Strip */}
+          <div className="pt-2 flex items-center justify-center gap-3 sm:gap-6 text-[10px] sm:text-xs font-mono text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <strong className="text-emerald-300">SYS.STATUS:</strong> 100% ONLINE
+            </span>
+            <span className="text-slate-700">|</span>
+            <span className="flex items-center gap-1.5">
+              <strong className="text-cyan-300">SECURITY:</strong> SHA-256 HARDWARE LOCKED
+            </span>
+            <span className="text-slate-700 hidden sm:inline">|</span>
+            <span className="hidden sm:flex items-center gap-1.5">
+              <strong className="text-teal-300">PROXY COUNT:</strong> 0 DETECTED
+            </span>
           </div>
         </div>
 

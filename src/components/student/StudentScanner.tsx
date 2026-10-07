@@ -152,78 +152,98 @@ export function StudentScanner() {
     <div className="w-full max-w-xl mx-auto space-y-6">
       {/* Scanner Viewport Card */}
       <Card className="border-slate-800 bg-slate-950 overflow-hidden shadow-2xl relative">
-        <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+            <CardTitle className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
               <Camera className="h-5 w-5 text-emerald-400" />
-              Dynamic QR Scanner
+              <span>DYNAMIC QR VIEWFINDER HUD</span>
             </CardTitle>
-            <CardDescription className="text-slate-400 text-xs mt-0.5">
-              Align classroom projector QR code inside the target reticle
+            <CardDescription className="text-slate-400 text-xs mt-0.5 font-mono">
+              Align classroom display token inside targeting crosshairs
             </CardDescription>
           </div>
-          <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
-            Active
-          </Badge>
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <Badge variant="outline" className="border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold bg-emerald-500/10">
+              HUD ACTIVE
+            </Badge>
+          </div>
         </div>
 
         {/* Camera Viewport Area */}
-        <div className="relative aspect-[4/3] sm:aspect-video w-full bg-slate-900 flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-[4/3] sm:aspect-video w-full bg-slate-950 flex items-center justify-center overflow-hidden cyber-grid">
           {hasCamera && (
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover opacity-90"
             />
           )}
 
-          {/* Viewfinder Target Reticle */}
-          <div className="relative z-10 w-64 h-64 sm:w-72 sm:h-72 border-2 border-emerald-400/30 rounded-2xl flex items-center justify-center p-4">
-            {/* 4 Corner Targeting Brackets */}
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
+          {/* Futuristic HUD Telemetry Overlays */}
+          <div className="absolute top-3 inset-x-4 z-10 flex items-center justify-between text-[10px] font-mono text-emerald-400/80 pointer-events-none">
+            <span className="bg-slate-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+              TARGET: ROTATING HMAC
+            </span>
+            <span className="bg-slate-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+              FREQ: 15-20s CYCLE
+            </span>
+          </div>
 
-            {/* Radar / Scanning sweep line */}
-            <div className="absolute inset-x-2 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#10b981] animate-bounce" />
+          {/* Viewfinder Target Reticle */}
+          <div className="relative z-10 w-64 h-64 sm:w-72 sm:h-72 border border-emerald-400/30 rounded-2xl flex items-center justify-center p-4 bg-slate-950/30 backdrop-blur-[2px] shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+            {/* 4 Corner Sci-Fi Targeting Brackets */}
+            <div className="absolute -top-1 -left-1 w-9 h-9 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+            <div className="absolute -top-1 -right-1 w-9 h-9 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+            <div className="absolute -bottom-1 -left-1 w-9 h-9 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+            <div className="absolute -bottom-1 -right-1 w-9 h-9 border-b-4 border-r-4 border-emerald-400 rounded-br-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+
+            {/* Crosshair Center Reticle */}
+            <div className="absolute w-6 h-[1px] bg-emerald-400/40 pointer-events-none" />
+            <div className="absolute h-6 w-[1px] bg-emerald-400/40 pointer-events-none" />
+
+            {/* Radar / Scanning Laser Sweep Line */}
+            <div className="absolute inset-x-2 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_18px_#10b981] animate-scanline" />
 
             {/* Empty Camera Fallback / Reticle Center */}
             {!hasCamera && (
-              <div className="text-center p-4 space-y-2">
-                <div className="mx-auto h-12 w-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
+              <div className="text-center p-4 space-y-2 z-10">
+                <div className="mx-auto h-12 w-12 rounded-2xl bg-slate-900/90 border border-slate-700 flex items-center justify-center text-slate-300 shadow-md">
                   {permissionDenied ? (
                     <CameraOff className="h-6 w-6 text-rose-400" />
                   ) : (
-                    <Camera className="h-6 w-6 text-slate-400 animate-pulse" />
+                    <Camera className="h-6 w-6 text-emerald-400 animate-pulse" />
                   )}
                 </div>
-                <p className="text-xs font-semibold text-slate-300">
-                  {permissionDenied ? "Camera Access Blocked" : "Live Camera Simulator Active"}
+                <p className="text-xs font-bold text-white font-mono">
+                  {permissionDenied ? "CAMERA PERMISSION REQUIRED" : "SIMULATOR ACTIVE // RETICLE READY"}
                 </p>
-                <p className="text-[11px] text-slate-400 leading-tight">
+                <p className="text-[11px] text-slate-400 leading-tight max-w-[200px] mx-auto">
                   {permissionDenied
-                    ? "Camera permission denied by browser. Use the test triggers below to submit attendance."
-                    : "Position classroom display code within brackets."}
+                    ? "Camera permission denied. Use one-click simulator triggers below."
+                    : "Center classroom projector QR within targeting brackets."}
                 </p>
               </div>
             )}
           </div>
 
           {/* Device Hardware Binding Badge */}
-          <div className="absolute bottom-3 left-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5 font-mono">
+          <div className="absolute bottom-3 left-3 z-10 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1.5 font-mono shadow-md">
             <Smartphone className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Hardware Bound: iPhone 15 Pro</span>
+            <span>HARDWARE BOUND // SHA-256</span>
           </div>
 
           {/* Submitting Loading Overlay */}
           {isSubmitting && (
-            <div className="absolute inset-0 z-20 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center space-y-3">
+            <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-3">
               <RefreshCw className="h-8 w-8 text-emerald-400 animate-spin" />
-              <p className="text-sm font-semibold text-white">Verifying Cryptographic Attendance...</p>
-              <p className="text-xs text-slate-400">Validating token timestamp and hardware binding</p>
+              <p className="text-sm font-bold text-white font-mono tracking-wide">VERIFYING CRYPTOGRAPHIC TOKEN...</p>
+              <p className="text-xs text-slate-400">Validating HMAC timestamp & 1:1 hardware fingerprint</p>
             </div>
           )}
         </div>
