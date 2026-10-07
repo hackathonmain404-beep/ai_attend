@@ -11,8 +11,6 @@ import {
   EyeOff,
   Loader2,
   AlertCircle,
-  GraduationCap,
-  Presentation,
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
@@ -86,7 +84,6 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -117,17 +114,6 @@ export function LoginForm() {
       const message = err.message || "Failed to authenticate. Please check your credentials.";
       setServerError(message);
       toast.error("Authentication Failed", { description: message });
-    }
-  };
-
-  const handleSelectPersona = (type: "student" | "teacher") => {
-    setServerError(null);
-    if (type === "student") {
-      setValue("email", "jane.doe@university.edu", { shouldValidate: true });
-      setValue("password", "student123", { shouldValidate: true });
-    } else {
-      setValue("email", "prof.turing@university.edu", { shouldValidate: true });
-      setValue("password", "teacher123", { shouldValidate: true });
     }
   };
 
@@ -315,51 +301,10 @@ export function LoginForm() {
           {/* Dividing OR Line */}
           <div className="relative my-3">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-800/90" />
+              <span className="w-full border-t border-slate-800/80" />
             </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-              <span className="bg-slate-900/90 px-3 text-slate-400 rounded-full border border-slate-800/50">
-                Or Institutional Email
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Demo Persona Switcher Chips */}
-          <div className="rounded-xl border border-slate-800/80 bg-slate-950/50 p-2.5 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Fast-Track Personas
-              </span>
-              <span className="text-[10px] text-emerald-400 font-medium">1-Click Auto-Fill</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleSelectPersona("student")}
-                className="flex items-center gap-2 p-2 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-emerald-950/30 hover:border-emerald-500/40 text-left transition-all duration-200 group hover-lift-3d"
-              >
-                <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20">
-                  <GraduationCap className="h-3.5 w-3.5" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-emerald-300">Jane Doe</p>
-                  <p className="text-[10px] text-slate-500 truncate">Student STU-001</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectPersona("teacher")}
-                className="flex items-center gap-2 p-2 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-teal-950/30 hover:border-teal-500/40 text-left transition-all duration-200 group hover-lift-3d"
-              >
-                <div className="p-1 rounded-md bg-teal-500/10 text-teal-400 group-hover:bg-teal-500/20">
-                  <Presentation className="h-3.5 w-3.5" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-teal-300">Prof. Turing</p>
-                  <p className="text-[10px] text-slate-500 truncate">Faculty FAC-001</p>
-                </div>
-              </button>
+            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider text-slate-500">
+              <span className="bg-slate-900/90 px-3">or</span>
             </div>
           </div>
 
