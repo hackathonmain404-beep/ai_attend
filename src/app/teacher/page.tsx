@@ -18,11 +18,107 @@ import { StartSessionModal } from "@/components/teacher/StartSessionModal";
 import { LiveAttendeeTable } from "@/components/teacher/LiveAttendeeTable";
 import { SessionHistoryTable } from "@/components/teacher/SessionHistoryTable";
 import { TeacherDashboardSkeleton } from "@/components/teacher/TeacherDashboardSkeleton";
+import { LiveAttendanceStream, type StreamEventItem } from "@/components/teacher/LiveAttendanceStream";
+import { RealtimeSimControls } from "@/components/teacher/RealtimeSimControls";
+import { subscribeToAttendanceSession } from "@/lib/realtime/attendance-channel";
 
 export default function TeacherOverviewPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useTeacherOverview();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [activeSessionOverride, setActiveSessionOverride] = React.useState<any>(null);
+  const [streamEvents, setStreamEvents] = React.useState<StreamEventItem[]>([]);
+
+  const currentActiveSession =
+    activeSessionOverride !== null ? activeSessionOverride : data?.activeSession;
+
+  // Real-time Event Subscription
+  React.useEffect(() => {
+    if (!currentActiveSession?.sessionId) return;
+
+    const unsubscribe = subscribeToAttendanceSession(currentActiveSession.sessionId, {
+      onStudentCheckedIn: (event) => {
+        toast.success(`Check-In: ${event.student.fullName}`, {
+          description: `Roll: ${event.student.rollNumber} • ${event.student.deviceName}`,
+        });
+
+        setStreamEvents((prev) => [
+          {
+            id: "evt-" + Math.random().toString(16).substring(2, 8),
+            type: "check_in",
+            title: `${event.student.fullName} (${event.student.rollNumber})`,
+            subtitle: `Verified via ${event.student.deviceName || "Bound Device"}`,
+            timestamp: event.student.checkInTime,
+          },
+          ...prev,
+        ]);
+
+        setActiveSessionOverride((prevSession: any) => {
+          const session = prevSession || currentActiveSession;
+          if (!session) return prevSession;
+
+          // Check if already in attendees list
+          const exists = session.attendees?.some(
+            (a: any) => a.studentId === event.student.studentId
+          );
+          if (exists) return session;
+
+          return {
+            ...session,
+            presentCount: (session.presentCount || 0) + 1,
+            attendees: [event.student, ...(session.attendees || [])],
+          };
+        });
+      },
+
+      onProxyBlocked: (event) => {
+        toast.error(`Proxy Blocked: ${event.alert.studentName}`, {
+          description: `${event.alert.reason} • ${event.alert.attemptedDevice}`,
+        });
+
+        setStreamEvents((prev) => [
+          {
+            id: "evt-" + Math.random().toString(16).substring(2, 8),
+            type: "proxy_alert",
+            title: `Proxy Blocked: ${event.alert.studentName} (${event.alert.rollNumber})`,
+            subtitle: `${event.alert.reason} • ${event.alert.attemptedDevice}`,
+            timestamp: event.alert.timestamp,
+          },
+          ...prev,
+        ]);
+      },
+
+      onReverifyAcknowledged: (event) => {
+        toast.info(`Re-Verified: ${event.fullName}`, {
+          description: "In-class presence confirmed within 60s window.",
+        });
+
+        setStreamEvents((prev) => [
+          {
+            id: "evt-" + Math.random().toString(16).substring(2, 8),
+            type: "reverify",
+            title: `${event.fullName} Spot Re-Verified`,
+            subtitle: "One-touch in-class confirmation verified",
+            timestamp: event.timestamp,
+          },
+          ...prev,
+        ]);
+
+        setActiveSessionOverride((prevSession: any) => {
+          const session = prevSession || currentActiveSession;
+          if (!session || !session.attendees) return prevSession;
+
+          return {
+            ...session,
+            attendees: session.attendees.map((a: any) =>
+              a.studentId === event.studentId ? { ...a, reVerified: true } : a
+            ),
+          };
+        });
+      },
+    });
+
+    return () => unsubscribe();
+  }, [currentActiveSession?.sessionId]);
 
   if (isLoading) {
     return <TeacherDashboardSkeleton />;
@@ -50,9 +146,6 @@ export default function TeacherOverviewPage() {
       </Card>
     );
   }
-
-  const currentActiveSession =
-    activeSessionOverride !== null ? activeSessionOverride : data.activeSession;
 
   const handleStartSession = async (classId: string, intervalSec: number) => {
     try {
@@ -96,7 +189,18 @@ export default function TeacherOverviewPage() {
         onEndSessionClick={handleEndSession}
       />
 
-      {/* 4. Live Checked-In Attendee Table (If Session Active) */}
+      {/* 4. Real-time Live Stream & Simulator Suite (When active session is running) */}
+      {currentActiveSession && (
+        <div className="space-y-4">
+          <RealtimeSimControls sessionId={currentActiveSession.sessionId} />
+          <LiveAttendanceStream
+            events={streamEvents}
+            onClear={() => setStreamEvents([])}
+          />
+        </div>
+      )}
+
+      {/* 5. Live Checked-In Attendee Table (If Session Active) */}
       {currentActiveSession && (
         <LiveAttendeeTable
           attendees={currentActiveSession.attendees}
@@ -104,7 +208,7 @@ export default function TeacherOverviewPage() {
         />
       )}
 
-      {/* 5. Assigned Courses Grid */}
+      {/* 6. Assigned Courses Grid */}
       <TeacherClassesGrid
         classes={data.classes}
         onStartSessionForClass={(classId) => {
@@ -112,7 +216,7 @@ export default function TeacherOverviewPage() {
         }}
       />
 
-      {/* 6. Historical Sessions Ledger */}
+      {/* 7. Historical Sessions Ledger */}
       <SessionHistoryTable sessions={data.recentSessions} />
 
       {/* Start Session Modal */}
