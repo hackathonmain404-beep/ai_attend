@@ -9,6 +9,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: 'https://test-project.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test_anon_key_mock_value_here',
+      SUPABASE_SERVICE_ROLE_KEY: 'test_service_role_key_mock_value',
+      QR_HMAC_SECRET: 'test_qr_hmac_secret_32_characters_minimum_entropy',
+    },
   },
   resolve: {
     alias: {
