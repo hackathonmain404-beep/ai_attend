@@ -7,6 +7,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  // Intercept incoming OAuth callback authorization codes landing on root and forward to /auth/callback
+  if (pathname === '/' && searchParams.has('code')) {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = '/auth/callback';
+    return NextResponse.redirect(callbackUrl);
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -70,8 +79,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const { pathname } = request.nextUrl;
-
   // Protected paths: /student/* and /teacher/*
   const isStudentRoute = pathname.startsWith('/student');
   const isTeacherRoute = pathname.startsWith('/teacher');
@@ -103,5 +110,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/student/:path*', '/teacher/:path*'],
+  matcher: ['/', '/student/:path*', '/teacher/:path*'],
 };

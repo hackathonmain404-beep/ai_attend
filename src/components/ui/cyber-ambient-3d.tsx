@@ -109,6 +109,9 @@ export function HolographicHeroShield() {
 
           {/* Shield Icon */}
           <svg
+            width="40"
+            height="40"
+            style={{ maxWidth: "40px", maxHeight: "40px" }}
             className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-400 group-hover:text-emerald-300 drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-transform duration-500 group-hover:scale-110"
             viewBox="0 0 24 24"
             fill="none"
