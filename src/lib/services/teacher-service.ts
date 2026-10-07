@@ -100,7 +100,6 @@ export function useTeacherOverview() {
   return useQuery({
     queryKey: ["teacher-overview"],
     queryFn: getTeacherOverview,
-    initialData: MOCK_TEACHER_DATA,
     staleTime: 1000 * 30, // 30 seconds
   });
 }
