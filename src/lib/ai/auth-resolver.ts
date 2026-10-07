@@ -38,7 +38,7 @@ export async function resolveAuthenticatedUser(
 
   if (!token && cookieHeader) {
     const cookies = Object.fromEntries(
-      cookieHeader.split(';').map((c) => {
+      cookieHeader.split(';').map((c: string) => {
         const [k, ...v] = c.trim().split('=');
         return [k, v.join('=')];
       })
