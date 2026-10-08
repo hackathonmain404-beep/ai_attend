@@ -96,103 +96,78 @@ export function StudentProfileHeader({
   const levelInfo = getLevelInfo(safePercentage);
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900/95 via-[#080d19] to-slate-950 p-5 sm:p-6 backdrop-blur-md shadow-2xl shadow-slate-950/70 space-y-5 relative overflow-hidden">
-      {/* Top HUD Micro-Status Bar */}
-      <div className="flex items-center justify-between text-[10px] font-mono border-b border-slate-800/80 pb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-emerald-400 font-bold tracking-wider uppercase">SYSTEM ONLINE</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">TELEMETRY: LIVE</span>
-          <span className="text-slate-600 hidden sm:inline">|</span>
-          <span className="text-teal-400 hidden sm:inline">ZERO-PROXY SHIELD ACTIVE</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="hidden sm:inline">SHA-256 SECURE</span>
-          <span className="px-2 py-0.5 rounded bg-slate-800/90 text-cyan-300 font-bold border border-slate-700">
-            PLAYER HUB
-          </span>
-        </div>
-      </div>
-
-      {/* Main Character Header Row */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        {/* Avatar & Player Identity */}
-        <div className="flex items-center gap-4 sm:gap-5">
-          {/* Glowing Avatar Frame with Holographic Ring */}
+    <div className="rounded-2xl border border-slate-800/90 bg-gradient-to-br from-slate-900/90 via-[#080d19] to-slate-950 p-4 sm:p-5 backdrop-blur-md shadow-xl shadow-slate-950/60 space-y-4 relative overflow-hidden">
+      {/* Main Profile Header Row */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Avatar & Student Identity */}
+        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+          {/* Avatar Frame */}
           <div className="relative group shrink-0">
             <div
-              className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-center text-white shadow-2xl shrink-0 font-black text-2xl sm:text-3xl ring-2 transition-all duration-300 ${levelInfo.ringColor}`}
+              className={`h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shrink-0 font-bold text-xl sm:text-2xl ring-1 ring-emerald-400/30`}
             >
               {studentInitials}
             </div>
 
             {/* Level Badge Overlay */}
-            <div className="absolute -bottom-2 -left-1 px-1.5 py-0.5 rounded bg-slate-950 border border-emerald-500/50 text-[10px] font-mono font-black text-emerald-300 shadow-lg">
+            <div className="absolute -bottom-1.5 -left-1 px-1.5 py-0.2 rounded bg-slate-950 border border-emerald-500/40 text-[9px] font-mono font-bold text-emerald-300 shadow">
               LVL {playerLevel}
             </div>
 
             {/* Verified Device Checkmark Dot */}
             <span
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white shadow-md"
+              className="absolute -top-1 -right-1 h-4.5 w-4.5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[9px] text-white shadow"
               title="Identity & Hardware Verified"
             >
               <CheckCircle2 className="h-3 w-3" />
             </span>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
                 {studentName}
               </h1>
-              <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-slate-800/90 text-cyan-400 border border-slate-700/80 font-bold shadow-sm">
+              <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700/80 font-semibold">
                 {student?.identifier || "STU-AUTH"}
               </span>
-              <Badge variant={levelInfo.badgeVariant} className="text-[10px] font-bold">
+              <Badge variant={levelInfo.badgeVariant} className="text-[10px] font-semibold py-0 px-2">
                 {levelInfo.levelName}
               </Badge>
             </div>
             <p className="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap">
-              <span className="text-slate-200 font-bold">
+              <span className="text-slate-300 font-semibold truncate">
                 {student?.cohort || "B.Tech Computer Science & Engineering"}
               </span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-300 font-semibold">
+              <span className="text-slate-400">
                 {student?.semester || "Semester 5 (Fall 2026)"}
               </span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400 font-mono text-[11px] font-bold">B.Tech Command</span>
             </p>
           </div>
         </div>
 
         {/* Bound Device & Quick Action Hub */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto pt-2.5 md:pt-0 border-t md:border-t-0 border-slate-800/80 shrink-0">
           <Link
             href="/student/device"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs font-semibold hover:border-emerald-500/60 hover:bg-emerald-500/20 transition-all duration-200 shadow-sm"
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300 text-xs font-medium hover:border-teal-500/50 hover:bg-teal-500/20 transition-colors"
             title="Manage Hardware Lock"
           >
-            <Smartphone className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="max-w-[130px] sm:max-w-none truncate font-mono text-[11px]">
+            <Smartphone className="h-3.5 w-3.5 text-teal-400" />
+            <span className="max-w-[120px] sm:max-w-none truncate font-mono text-[11px]">
               {student?.device?.deviceName || "Hardware Protected"}
             </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </Link>
 
           <Button
             asChild
             variant="outline"
             size="sm"
-            className="border-slate-800 bg-slate-900/60 text-xs text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-800"
+            className="h-8 border-slate-800 bg-slate-900/60 text-xs text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-800"
           >
             <Link href="/student/history">
-              <History className="h-3.5 w-3.5 mr-1.5 text-teal-400" />
+              <History className="h-3.5 w-3.5 mr-1 text-teal-400" />
               Ledger
             </Link>
           </Button>
@@ -201,7 +176,7 @@ export function StudentProfileHeader({
             asChild
             variant="emerald"
             size="sm"
-            className="text-xs font-bold shadow-md shadow-emerald-950/40 gap-1.5"
+            className="h-8 text-xs font-semibold gap-1.5 shadow-sm"
           >
             <Link href="/student/scanner">
               <Scan className="h-3.5 w-3.5" />
@@ -211,48 +186,45 @@ export function StudentProfileHeader({
         </div>
       </div>
 
-      {/* Futuristic XP & Progression HUD Deck */}
-      <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-3 relative overflow-hidden">
-        {/* Subtle Background Glow */}
-        <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-emerald-500/5 to-transparent pointer-events-none" />
-
+      {/* Compact XP & Progression Deck */}
+      <div className="p-3 sm:p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2.5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-              <Sparkles className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center shrink-0">
+              <Sparkles className="h-3 w-3" />
             </div>
             <div>
-              <span className="font-mono font-bold text-white tracking-wide">
+              <span className="font-mono font-bold text-slate-200">
                 ACADEMIC XP: {xpCurrent} / {xpMax}
               </span>
-              <span className="text-slate-400 ml-2 font-mono text-[11px]">
+              <span className="text-slate-400 ml-1.5 font-mono text-[11px]">
                 ({levelInfo.tierTag})
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-mono">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 font-mono">
               <Flame className="h-3 w-3 text-amber-400 fill-amber-400" />
               {streakDays} Class Streak
             </span>
-            <span className="font-mono font-bold text-emerald-400 text-sm">
+            <span className="font-mono font-bold text-teal-400 text-sm">
               {safePercentage.toFixed(1)}% Attendance
             </span>
           </div>
         </div>
 
-        {/* Progression Bar with Glowing Gradient Fill */}
-        <div className="space-y-1.5">
-          <div className="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700/60 shadow-inner">
+        {/* Clean Slim Progression Bar */}
+        <div className="space-y-1">
+          <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${levelInfo.barGradient} transition-all duration-700 shadow-[0_0_14px_rgba(16,185,129,0.6)]`}
+              className={`h-full rounded-full bg-gradient-to-r ${levelInfo.barGradient} transition-all duration-500`}
               style={{ width: `${Math.min(100, Math.max(0, safePercentage))}%` }}
             />
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 px-0.5 font-mono">
-            <span>REGULATORY MINIMUM: 75.0%</span>
-            <span className="text-teal-300 font-bold">
+            <span>MINIMUM: 75.0%</span>
+            <span className="text-teal-400 font-medium">
               TARGET: {levelInfo.nextMilestone}
             </span>
           </div>

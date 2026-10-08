@@ -83,7 +83,7 @@ export default function StudentDashboardPage() {
   const atRiskClasses = (data.classes || []).filter((c) => (c.percentage ?? 0) < 75);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* 1. Student Identity & Hardware Device Header */}
       <StudentProfileHeader
         student={data.student}
