@@ -251,7 +251,7 @@ export function AdvisorChatWindow({ studentName: propStudentName }: { studentNam
       </div>
 
       {/* Quick-Prompt Suggestions Bar */}
-      <div className="px-4 py-2.5 bg-[#06080A] border-t border-zinc-800/80 overflow-x-auto scrollbar-none flex items-center gap-2">
+      <div className="px-4 py-2.5 bg-[#06080A] border-t border-zinc-800/80 overflow-x-auto flex items-center gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <span className="text-[10px] font-mono font-semibold text-zinc-500 uppercase tracking-widest shrink-0 flex items-center gap-1.5">
           <Zap className="h-3 w-3 text-blue-400" />
           SUGGESTIONS:
@@ -276,20 +276,22 @@ export function AdvisorChatWindow({ studentName: propStudentName }: { studentNam
         }}
         className="p-3.5 sm:p-4 border-t border-zinc-800/80 bg-[#0B0D10] flex items-center gap-2.5"
       >
-        <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask about your courses (e.g. 'Can I miss tomorrow's Distributed Systems class?')..."
-          disabled={isLoading}
-          className="bg-[#06080A] border-zinc-800 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500 text-white placeholder:text-zinc-500 h-11 text-xs sm:text-sm font-mono rounded-lg"
-        />
+        <div className="relative flex-1">
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Ask about your courses (e.g. 'Can I miss tomorrow's Distributed Systems class?')..."
+            disabled={isLoading}
+            className="bg-[#06080A] border-zinc-800 focus:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500 text-white placeholder:text-zinc-500 h-11 text-xs sm:text-sm font-mono rounded-xl shadow-inner transition-all duration-200"
+          />
+        </div>
         <Button
           type="submit"
           disabled={!inputValue.trim() || isLoading}
-          className="h-11 px-5 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase tracking-wider font-semibold rounded-lg shadow-lg shadow-blue-900/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none shrink-0"
+          className="h-11 px-5 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase tracking-wider font-semibold rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none shrink-0"
         >
-          <Send className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Send</span>
+          <Send className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">SEND</span>
         </Button>
       </form>
     </div>

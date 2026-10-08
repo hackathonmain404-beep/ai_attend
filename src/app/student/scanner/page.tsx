@@ -2,48 +2,65 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Smartphone, Sparkles, HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, ShieldCheck, Smartphone } from "lucide-react";
 import { StudentScanner } from "@/components/student/StudentScanner";
 
 export default function StudentScannerPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30">
-      {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-            <Link href="/student">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Student Portal
-            </Link>
-          </Button>
-          <div className="h-4 w-[1px] bg-slate-800" />
-          <span className="text-xs font-semibold text-slate-300">
-            Attendance Check-In
-          </span>
+    <div className="space-y-10 sm:space-y-12">
+      {/* 1. Command Center Page Hero */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 sm:pb-8 border-b border-zinc-800/60">
+        <div className="space-y-3 max-w-2xl">
+          {/* Eyebrow */}
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              QR TELEMETRY
+            </span>
+            <span className="text-zinc-600 font-mono text-xs">/</span>
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+              ATTENDANCE CHECK-IN
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white leading-tight">
+            Dynamic QR Scanner
+          </h1>
+
+          {/* Supporting Copy */}
+          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
+            Align classroom display token inside targeting crosshairs to record verified hardware-coupled presence.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">AttendGuard Proxy Shield</span>
+        {/* Right Breadcrumb & Compliance Tag */}
+        <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+          <Link
+            href="/student"
+            className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors group"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
+            <span>BACK TO COMMAND CENTER</span>
+          </Link>
+
+          <div className="px-3 py-1 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs font-mono text-zinc-400 flex items-center gap-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+            <span>HMAC-SHA256 SECURED</span>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Scanner Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center">
+      {/* 2. Main Scanner Body */}
+      <section className="flex flex-col items-center justify-center">
         <StudentScanner />
-      </main>
+      </section>
 
-      {/* Bottom Advice Strip */}
-      <footer className="border-t border-slate-900 bg-slate-950 p-3 text-center text-xs text-slate-500">
-        <p className="flex items-center justify-center gap-1">
-          <Smartphone className="h-3.5 w-3.5 text-slate-400 inline" />
-          Device bound to student profile. Ensure your phone is connected to campus Wi-Fi or cellular network.
-        </p>
-      </footer>
+      {/* 3. Security Perimeter Guidance Strip */}
+      <div className="max-w-xl mx-auto w-full p-4 rounded-xl border border-zinc-800/80 bg-[#0B0D10] text-center text-xs font-mono text-zinc-400 flex items-center justify-center gap-2">
+        <Smartphone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+        <span>Hardware bound to student profile • Ensure active institutional perimeter connection</span>
+      </div>
     </div>
   );
 }
