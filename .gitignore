@@ -48,3 +48,7 @@ Thumbs.db
 
 # Local/Nested repos
 ai_attend/
+
+# OS / OneDrive duplicate conflict files
+* - Copy*
+*- Copy*
