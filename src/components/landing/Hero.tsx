@@ -5,7 +5,6 @@ import { motion, useSpring, useMotionValue } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ParticleField } from "@/components/hero/ParticleField";
-import { AttendanceToken } from "@/components/hero/AttendanceToken";
 import { fadeUpVariants } from "@/lib/motion";
 
 interface HeroProps {
@@ -41,7 +40,7 @@ export function Hero({ destinationHref }: HeroProps) {
       ref={heroRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className="relative min-h-screen flex flex-col items-center justify-start pt-32 sm:pt-36 lg:pt-40 pb-24 px-6 overflow-hidden bg-[#030712] border-b border-zinc-900/80"
+      className="relative min-h-[85vh] lg:min-h-screen flex flex-col items-center justify-center pt-32 sm:pt-36 pb-24 px-6 overflow-hidden bg-[#030712] border-b border-zinc-900/80"
     >
       {/* 1. Scoped Hero Atmospheric Light Waves (Clipped strictly inside Hero) */}
       <div
@@ -95,7 +94,7 @@ export function Hero({ destinationHref }: HeroProps) {
           initial="hidden"
           animate="visible"
           custom={0.3}
-          className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6 mb-14"
+          className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6"
         >
           <MagneticButton
             href={destinationHref}
@@ -114,17 +113,6 @@ export function Hero({ destinationHref }: HeroProps) {
             <span>Explore Security Pillars</span>
             <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-1 transition-all duration-200" />
           </a>
-        </motion.div>
-
-        {/* Step 6: Interactive Attendance Security Token */}
-        <motion.div
-          variants={fadeUpVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0.45}
-          className="w-full pt-1"
-        >
-          <AttendanceToken />
         </motion.div>
       </motion.div>
     </section>
