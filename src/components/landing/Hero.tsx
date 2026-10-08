@@ -20,24 +20,12 @@ export function Hero({ destinationHref }: HeroProps) {
       />
 
       <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center my-auto">
-        {/* Security Badge Pill */}
-        <motion.div
-          variants={fadeUpVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-zinc-300 text-xs font-mono tracking-wide mb-8 shadow-sm"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span>ZERO-TRUST ATTENDANCE ARCHITECTURE</span>
-        </motion.div>
-
         {/* Enormous Geometric Sans Headline */}
         <motion.h1
           variants={fadeUpVariants}
           initial="hidden"
           animate="visible"
-          custom={0.1}
+          custom={0}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-white leading-[1.06] mb-6"
         >
           <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
@@ -50,7 +38,7 @@ export function Hero({ destinationHref }: HeroProps) {
           variants={fadeUpVariants}
           initial="hidden"
           animate="visible"
-          custom={0.2}
+          custom={0.1}
           className="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-10"
         >
           Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.
@@ -61,7 +49,7 @@ export function Hero({ destinationHref }: HeroProps) {
           variants={fadeUpVariants}
           initial="hidden"
           animate="visible"
-          custom={0.3}
+          custom={0.2}
           className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6"
         >
           <MagneticButton
