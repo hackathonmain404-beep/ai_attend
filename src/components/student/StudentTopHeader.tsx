@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,57 +19,6 @@ export function StudentTopHeader({
 }: StudentTopHeaderProps) {
   const pathname = usePathname();
 
-  // Dynamic Page Metadata based on current route
-  const pageMeta = React.useMemo(() => {
-    if (pathname === "/student" || pathname === "/student/") {
-      return {
-        title: "Dashboard",
-        subtitle: "B.Tech Command Center // Term 5",
-        badge: "LIVE TELEMETRY",
-      };
-    }
-    if (pathname.startsWith("/student/scanner")) {
-      return {
-        title: "Dynamic QR Scanner",
-        subtitle: "Rotating HMAC Camera Viewfinder",
-        badge: "20s REFRESH",
-      };
-    }
-    if (pathname.startsWith("/student/history")) {
-      return {
-        title: "Attendance History",
-        subtitle: "Cryptographic Attendance Ledger",
-        badge: "VERIFIED LOGS",
-      };
-    }
-    if (pathname.startsWith("/student/advisor")) {
-      return {
-        title: "AI Policy Advisor",
-        subtitle: "Zero-Hallucination Academic Companion",
-        badge: "NEURAL ADVISOR",
-      };
-    }
-    if (pathname.startsWith("/student/device")) {
-      return {
-        title: "Device Biometric Binding",
-        subtitle: "1:1 SHA-256 Hardware Perimeter",
-        badge: "HARDWARE LOCKED",
-      };
-    }
-    if (pathname.startsWith("/student/subjects")) {
-      return {
-        title: "Subject Attendance",
-        subtitle: "Course Breakdown & Margin Math",
-        badge: "75% REGULATION",
-      };
-    }
-    return {
-      title: "Student Portal",
-      subtitle: "AttendGuard Institutional Perimeter",
-      badge: "ACTIVE",
-    };
-  }, [pathname]);
-
   // Derived user initials (e.g. "Abhijit Raika" -> "AR")
   const userInitials = React.useMemo(() => {
     const rawName = userProfile?.fullName?.trim() || "Student";
@@ -80,54 +30,93 @@ export function StudentTopHeader({
   }, [userProfile?.fullName]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#07080A]/90 backdrop-blur-md transition-all duration-300">
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-5 md:px-6 h-14 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#06080A]/90 backdrop-blur-md transition-all duration-300">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 h-14 flex items-center justify-between gap-4">
         {/* =========================================================
-            LEFT AREA: Mobile Toggle & Page Title / Telemetry
+            LEFT AREA: Mobile Toggle & Branded Command Center Identity
             ========================================================= */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           {/* Mobile Hamburger Drawer Trigger */}
           <Button
             onClick={onOpenMobile}
             variant="ghost"
             size="sm"
-            className="md:hidden h-8 w-8 p-0 text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg"
+            className="md:hidden h-8 w-8 p-0 text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg shrink-0"
             aria-label="Open Navigation Menu"
           >
             <Menu className="h-4 w-4" />
           </Button>
 
-          {/* Current Page Title and Subtitle */}
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
-                {pageMeta.title}
-              </h1>
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-mono font-medium px-2 py-0.2 rounded border border-blue-500/25 bg-blue-500/10 text-blue-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-                {pageMeta.badge}
+          {/* Branded Identity: ATTENDGUARD V1.0 / COMMAND CENTER */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link href="/student" className="flex items-center gap-2 group">
+              <span className="font-bold font-mono text-sm tracking-tight text-white group-hover:text-blue-400 transition-colors">
+                ATTENDGUARD
               </span>
-            </div>
-            <p className="hidden xs:block text-[10px] font-mono text-zinc-500 truncate">
-              {pageMeta.subtitle}
-            </p>
+              <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded border border-blue-500/25 bg-blue-500/10 text-blue-400">
+                V1.0
+              </span>
+            </Link>
+            <span className="hidden sm:inline-block text-zinc-650 font-mono text-xs">/</span>
+            <span className="hidden sm:inline-block text-[11px] font-mono text-zinc-400 uppercase tracking-wider truncate">
+              COMMAND CENTER
+            </span>
           </div>
         </div>
 
         {/* =========================================================
+            CENTER AREA: Minimal Landing-Page Style Navigation Links
+            ========================================================= */}
+        <nav className="hidden lg:flex items-center gap-6 font-mono text-[11px] tracking-wider uppercase text-zinc-400">
+          <Link
+            href="/student"
+            className={cn(
+              "transition-colors hover:text-white",
+              pathname === "/student" ? "text-white font-semibold" : "text-zinc-400"
+            )}
+          >
+            OVERVIEW
+          </Link>
+          <a
+            href="#courses"
+            className="transition-colors hover:text-white text-zinc-400"
+          >
+            COURSES
+          </a>
+          <Link
+            href="/student/device"
+            className={cn(
+              "transition-colors hover:text-white",
+              pathname.startsWith("/student/device") ? "text-white font-semibold" : "text-zinc-400"
+            )}
+          >
+            VERIFICATION
+          </Link>
+          <Link
+            href="/student/history"
+            className={cn(
+              "transition-colors hover:text-white",
+              pathname.startsWith("/student/history") ? "text-white font-semibold" : "text-zinc-400"
+            )}
+          >
+            REPORTS
+          </Link>
+        </nav>
+
+        {/* =========================================================
             RIGHT AREA: Compact User Profile & System Status
             ========================================================= */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {/* Global System Status indicator */}
-          <div className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md">
+          <div className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span>SYSTEM: OPERATIONAL</span>
+            <span>SYSTEM OPERATIONAL</span>
           </div>
 
           {/* Compact User Profile Capsule */}
           <div
             className={cn(
-              "flex items-center gap-2 py-0.5 px-2 rounded-lg",
+              "flex items-center gap-2 py-1 px-2.5 rounded-lg",
               "bg-zinc-900/80 border border-zinc-800",
               "hover:border-zinc-700 hover:bg-zinc-900",
               "transition-colors duration-150",
@@ -179,3 +168,4 @@ export function StudentTopHeader({
     </header>
   );
 }
+

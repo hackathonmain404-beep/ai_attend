@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, RotateCcw, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useStudentSummary } from "@/lib/services/student-service";
@@ -100,13 +101,13 @@ export default function StudentDashboardPage() {
   const atRiskClasses = (data.classes || []).filter((c) => (c.percentage ?? 0) < 75);
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      {/* 1. Editorial Command Center Header */}
+    <div className="space-y-10 sm:space-y-12">
+      {/* 1. Command Center Hero */}
       <ScrollReveal animation="fade-down" duration={550}>
         <StudentGreetingHeader student={data.student} />
       </ScrollReveal>
 
-      {/* 2. Security Attendance Telemetry Overview */}
+      {/* 2. Attendance Status Overview */}
       <ScrollReveal animation="fade-up" delay={50} duration={600}>
         <AttendanceSummaryCard
           overallPercentage={data.overallPercentage}
@@ -117,37 +118,37 @@ export default function StudentDashboardPage() {
         />
       </ScrollReveal>
 
-      {/* 3. Security Warning Notification (when courses are below 75%) */}
+      {/* 3. Important Alert / Recovery (if any course is < 75%) */}
       {atRiskClasses.length > 0 && (
         <ScrollReveal animation="fade-up" delay={70}>
           <LowAttendanceWarningBanner atRiskClasses={atRiskClasses} />
         </ScrollReveal>
       )}
 
-      {/* 4. Zero-Trust Verification Status (Dynamic, Device, Perimeter, Real-Time) */}
+      {/* 4. Live Academic Sessions */}
       <ScrollReveal animation="fade-up" delay={85}>
+        <TodayLecturesCard lectures={data.todayLectures} />
+      </ScrollReveal>
+
+      {/* 5. Course Telemetry */}
+      <ScrollReveal animation="fade-up" delay={100}>
+        <SubjectAttendanceCard classes={data.classes} />
+      </ScrollReveal>
+
+      {/* 6. Security Operations */}
+      <ScrollReveal animation="fade-up" delay={120}>
+        <StudentMissionsDeck />
+      </ScrollReveal>
+
+      {/* 7. Verification Layers */}
+      <ScrollReveal animation="fade-up" delay={135}>
         <VerificationStatusCard
           isDeviceBound={Boolean(data.student?.device?.isRegistered)}
         />
       </ScrollReveal>
 
-      {/* 5. Live Academic Sessions (Today's timetable & scanner) */}
-      <ScrollReveal animation="fade-up" delay={100}>
-        <TodayLecturesCard lectures={data.todayLectures} />
-      </ScrollReveal>
-
-      {/* 6. Course Attendance Telemetry Breakdown */}
-      <ScrollReveal animation="fade-up" delay={120}>
-        <SubjectAttendanceCard classes={data.classes} />
-      </ScrollReveal>
-
-      {/* 7. Command Center Operations (Missions) */}
-      <ScrollReveal animation="fade-up" delay={140}>
-        <StudentMissionsDeck />
-      </ScrollReveal>
-
-      {/* 8. Academic Security Milestones */}
-      <ScrollReveal animation="fade-up" delay={160}>
+      {/* 8. Academic Milestones */}
+      <ScrollReveal animation="fade-up" delay={150}>
         <StudentAchievementsCard
           overallPercentage={data.overallPercentage}
           streakDays={data.streakDays}
@@ -158,7 +159,62 @@ export default function StudentDashboardPage() {
         />
       </ScrollReveal>
 
-      {/* 9. Surprise In-Class Re-Verification Modal */}
+      {/* 9. AI Policy Advisor Utility Panel */}
+      <ScrollReveal animation="fade-up" delay={165}>
+        <section id="advisor" className="scroll-mt-24 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+              <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+                AI POLICY ADVISOR
+              </h2>
+              <span className="text-zinc-600 font-mono text-xs">/</span>
+              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+                COMPLIANCE INTELLIGENCE
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+              ONLINE
+            </span>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-1.5 max-w-xl">
+              <h3 className="text-base font-semibold text-white tracking-tight">
+                Academic Regulations & Leave Companion
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed font-normal">
+                Grounded academic guidance for attendance requirements, medical leave policies, and recovery calculations.
+              </p>
+            </div>
+
+            <Link
+              href="/student/advisor"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/90 hover:bg-zinc-850 hover:border-blue-500/40 text-xs font-mono text-white transition-all shrink-0 self-start md:self-auto group"
+            >
+              <span>ASK AI ADVISOR</span>
+              <ArrowRight className="h-3.5 w-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* 10. Clean Footer / System Status Area */}
+      <footer className="pt-8 pb-4 border-t border-zinc-850/80 text-xs font-mono text-zinc-500 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <span className="h-2 w-2 rounded-full bg-blue-400" />
+          <span className="text-zinc-300 font-medium">ATTENDGUARD KERNEL V1.0</span>
+          <span className="text-zinc-700">·</span>
+          <span>SYSTEM OPERATIONAL</span>
+        </div>
+        <div className="flex items-center gap-4 text-zinc-500">
+          <span>ZERO-TRUST TELEMETRY</span>
+          <span className="text-zinc-700">·</span>
+          <span>RFC-4180 AUDIT SYNCED</span>
+        </div>
+      </footer>
+
+      {/* In-Class Verification Modal */}
       <ReVerifyAlertModal
         challenge={activeChallenge}
         onCompleted={() => setActiveChallenge(null)}
@@ -167,3 +223,4 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
+

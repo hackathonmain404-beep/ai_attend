@@ -10,109 +10,109 @@ export function VerificationStatusCard({ isDeviceBound }: VerificationStatusCard
     {
       number: "01",
       title: "DYNAMIC CHALLENGE",
-      protocol: "HMAC-SHA256 ROTATION",
+      description: "Cryptographic session verification with rotating HMAC tokens.",
       status: "VERIFIED",
-      statusDetail: "20s Expiry Cycle",
       icon: QrCode,
       isVerified: true,
     },
     {
       number: "02",
       title: "DEVICE BINDING",
-      protocol: "1:1 HARDWARE SEED",
+      description: "Trusted hardware association & SHA-256 fingerprint seed.",
       status: isDeviceBound ? "VERIFIED" : "PENDING",
-      statusDetail: isDeviceBound ? "1:1 Bound Device" : "Registration Req.",
       icon: Smartphone,
       isVerified: isDeviceBound,
     },
     {
       number: "03",
-      title: "PERIMETER VERIFICATION",
-      protocol: "CAMPUS GEOFENCE",
+      title: "PERIMETER",
+      description: "Campus presence verification and geofence boundary checks.",
       status: "VERIFIED",
-      statusDetail: "Boundary Active",
       icon: MapPin,
       isVerified: true,
     },
     {
       number: "04",
       title: "REAL-TIME VALIDATION",
-      protocol: "ATOMIC FINALITY",
+      description: "Immediate submission checks and immutable ledger finality.",
       status: "ACTIVE",
-      statusDetail: "Sub-Second Sync",
       icon: ShieldCheck,
       isVerified: true,
     },
   ];
 
   return (
-    <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 shadow-sm space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-zinc-800/60">
+    <section id="verification" className="scroll-mt-24 space-y-4">
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
         <div>
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
             <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
-              VERIFICATION STATUS
+              VERIFICATION LAYERS
             </h2>
+            <span className="text-zinc-600 font-mono text-xs">/</span>
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+              ZERO-TRUST ARCHITECTURE
+            </span>
           </div>
-          <p className="text-[11px] font-mono text-zinc-500 mt-0.5">
-            Zero-Trust state across cryptographic, hardware, and perimeter security layers.
+          <p className="text-[11px] font-mono text-zinc-500 mt-1">
+            Zero-trust validation across every attendance submission.
           </p>
         </div>
 
-        <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/60 self-start sm:self-auto shrink-0">
-          Security Perimeter
+        <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider self-start sm:self-auto shrink-0">
+          FOUR LAYERS ACTIVE
         </span>
       </div>
 
-      {/* 4 Pillars Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 4 Minimal Columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {layers.map((layer) => {
           const Icon = layer.icon;
 
           return (
             <div
               key={layer.number}
-              className={`p-3.5 rounded-lg border transition-all duration-200 flex flex-col justify-between ${
+              className={`rounded-2xl border p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between ${
                 layer.isVerified
-                  ? "border-zinc-800/80 bg-zinc-950/60 hover:border-blue-500/35"
-                  : "border-amber-500/30 bg-amber-950/10"
+                  ? "border-zinc-800/80 bg-[#0B0D10] hover:border-blue-500/40"
+                  : "border-amber-500/30 bg-[#0B0D10]"
               }`}
             >
               <div>
-                {/* Top: Number & Icon */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-mono font-medium text-zinc-500">
+                {/* Header: Number & Icon */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-mono font-semibold text-zinc-500">
                     {layer.number}
                   </span>
                   <div
-                    className={`h-6 w-6 rounded-md flex items-center justify-center ${
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center ${
                       layer.isVerified
                         ? "bg-zinc-900 border border-zinc-800 text-blue-400"
                         : "bg-amber-500/10 border border-amber-500/25 text-amber-400"
                     }`}
                   >
-                    <Icon className="h-3 w-3" />
+                    <Icon className="h-4 w-4" />
                   </div>
                 </div>
 
-                {/* Layer Title & Protocol */}
-                <h3 className="text-xs font-semibold text-white tracking-tight">
+                {/* Title & Description */}
+                <h3 className="text-sm font-semibold text-white tracking-tight mb-1.5">
                   {layer.title}
                 </h3>
-                <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
-                  {layer.protocol}
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {layer.description}
                 </p>
               </div>
 
               {/* Status Rail */}
-              <div className="pt-2 mt-3 border-t border-zinc-800/70 flex items-center justify-between">
-                <span className="text-[10px] font-mono text-zinc-500">
-                  {layer.statusDetail}
+              <div className="pt-3 mt-4 border-t border-zinc-800/70 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                  STATUS
                 </span>
                 <span
-                  className={`text-[10px] font-mono font-semibold flex items-center gap-1 ${
+                  className={`text-[10px] font-mono font-semibold flex items-center gap-1.5 ${
                     layer.isVerified ? "text-blue-400" : "text-amber-400"
                   }`}
                 >
@@ -128,6 +128,7 @@ export function VerificationStatusCard({ isDeviceBound }: VerificationStatusCard
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
+
