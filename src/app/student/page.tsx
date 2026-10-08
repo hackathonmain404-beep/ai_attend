@@ -178,7 +178,7 @@ export default function StudentDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-950/25 hover:-translate-y-0.5 hover:bg-[#0E1117]">
             <div className="space-y-1.5 max-w-xl">
               <h3 className="text-base font-semibold text-white tracking-tight">
                 Academic Regulations & Leave Companion
@@ -190,10 +190,10 @@ export default function StudentDashboardPage() {
 
             <Link
               href="/student/advisor"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/90 hover:bg-zinc-850 hover:border-blue-500/40 text-xs font-mono text-white transition-all shrink-0 self-start md:self-auto group"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/90 hover:bg-zinc-850 hover:border-blue-500/40 text-xs font-mono text-white transition-all duration-200 hover:scale-105 active:scale-95 shrink-0 self-start md:self-auto group"
             >
               <span>ASK AI ADVISOR</span>
-              <ArrowRight className="h-3.5 w-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="h-3.5 w-3.5 text-blue-400 group-hover:translate-x-1.5 transition-transform duration-200" />
             </Link>
           </div>
         </section>

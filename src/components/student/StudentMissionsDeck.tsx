@@ -89,34 +89,34 @@ export function StudentMissionsDeck() {
             href={op.href}
             className="group block focus:outline-none"
           >
-            <div className="h-full rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 transition-all duration-200 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-950/20 flex flex-col justify-between">
+            <div className="h-full rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-950/25 hover:-translate-y-1 hover:bg-[#0E1117] flex flex-col justify-between">
               <div>
                 {/* Header: Number and Title */}
                 <div className="flex items-center gap-3 mb-1.5">
-                  <span className="text-xs font-mono font-semibold text-blue-400">
+                  <span className="text-xs font-mono font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
                     {op.id}
                   </span>
-                  <h3 className="text-sm font-semibold text-white tracking-tight group-hover:text-zinc-100 transition-colors">
+                  <h3 className="text-sm font-semibold text-white tracking-tight group-hover:text-blue-100 transition-colors">
                     {op.title}
                   </h3>
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-zinc-400 leading-relaxed pl-7">
+                <p className="text-xs text-zinc-400 leading-relaxed pl-7 group-hover:text-zinc-300 transition-colors">
                   {op.description}
                 </p>
               </div>
 
               {/* Status & Action Row */}
               <div className="pt-3 mt-3 border-t border-zinc-800/70 flex items-center justify-between pl-7">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 group-hover:text-zinc-300 transition-colors">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 group-hover:scale-125 transition-transform" />
                   {op.status}
                 </span>
 
                 <span className="text-xs font-mono font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 transition-colors">
                   <span>{op.actionText}</span>
-                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-1.5 transition-transform duration-200" />
                 </span>
               </div>
             </div>

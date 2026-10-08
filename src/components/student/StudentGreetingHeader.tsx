@@ -94,7 +94,7 @@ export function StudentGreetingHeader({
       {/* Right Column: System Operational Pill + Primary & Secondary CTAs */}
       <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-4 shrink-0">
         {/* System Operational Indicator */}
-        <div className="px-3.5 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-left font-mono">
+        <div className="px-3.5 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-left font-mono transition-all duration-200 hover:border-blue-500/30 hover:bg-zinc-900 cursor-default">
           <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">
             SYSTEM
           </span>
@@ -110,7 +110,7 @@ export function StudentGreetingHeader({
         <div className="flex flex-wrap items-center gap-3">
           <Button
             asChild
-            className="h-10 px-5 text-xs font-mono font-semibold tracking-wide bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-blue-950/40 transition-all gap-2"
+            className="h-10 px-5 text-xs font-mono font-semibold tracking-wide bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-200 gap-2"
           >
             <Link href="/student/scanner">
               <Scan className="h-4 w-4" />
@@ -121,7 +121,7 @@ export function StudentGreetingHeader({
           <Button
             asChild
             variant="outline"
-            className="h-10 px-4 text-xs font-mono font-medium tracking-wide bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white rounded-lg transition-all"
+            className="h-10 px-4 text-xs font-mono font-medium tracking-wide bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white rounded-lg hover:scale-105 active:scale-95 hover:border-zinc-700 transition-all duration-200"
           >
             <a href="#sessions">
               <span>VIEW SCHEDULE →</span>

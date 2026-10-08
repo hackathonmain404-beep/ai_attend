@@ -108,7 +108,7 @@ export function StudentTopHeader({
             ========================================================= */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Global System Status indicator */}
-          <div className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md">
+          <div className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md transition-all duration-200 hover:border-blue-500/30 hover:bg-zinc-900 cursor-default">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
             <span>SYSTEM OPERATIONAL</span>
           </div>

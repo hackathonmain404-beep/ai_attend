@@ -52,22 +52,22 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
               href={`/student/subjects/${course.classId}`}
               className="group block focus:outline-none"
             >
-              <div className="h-full rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-5 sm:p-6 transition-all duration-200 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-950/20 flex flex-col justify-between">
+              <div className="h-full rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-5 sm:p-6 transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-950/30 hover:-translate-y-1 hover:bg-[#0E1117] flex flex-col justify-between">
                 <div>
                   {/* Top Row: Course Code & Attendance % */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <span className="text-xs font-mono font-semibold text-blue-400 uppercase tracking-wider block mb-1">
+                      <span className="text-xs font-mono font-semibold text-blue-400 group-hover:text-blue-300 uppercase tracking-wider block mb-1 transition-colors">
                         {course.code}
                       </span>
-                      <h3 className="text-base font-semibold text-white tracking-tight leading-snug group-hover:text-zinc-100 transition-colors">
+                      <h3 className="text-base font-semibold text-white tracking-tight leading-snug group-hover:text-blue-100 transition-colors">
                         {course.className}
                       </h3>
                     </div>
 
                     <div className="text-right shrink-0">
                       <div
-                        className={`text-2xl sm:text-3xl font-mono font-bold tracking-tight leading-none ${
+                        className={`text-2xl sm:text-3xl font-mono font-bold tracking-tight leading-none transition-transform duration-200 group-hover:scale-105 ${
                           isSafe ? "text-white" : "text-amber-400"
                         }`}
                       >
@@ -82,7 +82,7 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
                   {/* Thin Progress Line */}
                   <div className="w-full bg-zinc-850 h-[2px] rounded-full overflow-hidden my-4">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
+                      className={`h-full rounded-full transition-all duration-500 group-hover:brightness-125 ${
                         isSafe ? "bg-blue-500" : "bg-amber-400"
                       }`}
                       style={{ width: `${Math.min(100, Math.max(0, course.percentage ?? 0))}%` }}
@@ -116,7 +116,7 @@ export function SubjectAttendanceCard({ classes }: SubjectAttendanceListProps) {
 
                   <div className="flex items-center gap-1 text-xs font-mono text-zinc-400 group-hover:text-blue-400 transition-colors shrink-0 self-end sm:self-auto">
                     <span>ANALYTICS & SIMULATOR</span>
-                    <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="h-3 w-3 group-hover:translate-x-1.5 transition-transform duration-200" />
                   </div>
                 </div>
               </div>

@@ -28,7 +28,7 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
       </div>
 
       {/* Sessions Container */}
-      <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] divide-y divide-zinc-800/70 overflow-hidden">
+      <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] divide-y divide-zinc-800/70 overflow-hidden transition-all duration-300 hover:border-blue-500/40 hover:shadow-2xl hover:shadow-blue-950/20">
         {!lectures || lectures.length === 0 ? (
           <div className="py-12 px-6 text-center text-zinc-500 space-y-2 font-mono">
             <Calendar className="h-6 w-6 mx-auto text-zinc-650 opacity-60" />
@@ -42,33 +42,33 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
             return (
               <div
                 key={lecture.classId}
-                className={`p-4 sm:p-5 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                className={`group p-4 sm:p-5 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                   isActive
-                    ? "bg-zinc-900/60 shadow-[inset_0_1px_0_0_rgba(59,130,246,0.2)]"
-                    : "hover:bg-zinc-950/50"
+                    ? "bg-zinc-900/60 shadow-[inset_0_1px_0_0_rgba(59,130,246,0.2)] hover:bg-zinc-900/90 hover:shadow-[inset_0_1px_0_0_rgba(59,130,246,0.4)]"
+                    : "hover:bg-zinc-900/40 hover:pl-6"
                 }`}
               >
                 {/* Left: Code, Title, Time, Room */}
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="text-xs font-mono font-semibold text-blue-400">
+                    <span className="text-xs font-mono font-semibold text-blue-400 group-hover:text-blue-300 transition-colors">
                       {lecture.code}
                     </span>
                     <span className="text-zinc-600 font-mono text-xs">/</span>
-                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
+                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate group-hover:text-blue-100 transition-colors">
                       {lecture.className}
                     </h3>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-zinc-500" />
+                      <Clock className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
                       <span>{lecture.time}</span>
                     </div>
                     <span className="text-zinc-700">·</span>
                     <div className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-zinc-500" />
-                      <span>{lecture.room}</span>
+                      <MapPin className="h-3.5 w-3.5 text-zinc-500 group-hover:text-blue-400 transition-colors" />
+                      <span className="group-hover:text-zinc-300 transition-colors">{lecture.room}</span>
                     </div>
                   </div>
                 </div>
@@ -76,7 +76,7 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
                 {/* Right: Operational Status & Primary Scan Action */}
                 <div className="flex items-center gap-3 shrink-0 self-end md:self-auto">
                   {isActive && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono font-semibold text-blue-400">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono font-semibold text-blue-400 transition-all duration-200 group-hover:shadow-sm group-hover:shadow-blue-500/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                       <span>ACTIVE SESSION</span>
                     </span>
@@ -97,7 +97,7 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
                   {isActive && (
                     <Link
                       href={`/student/scanner${lecture.sessionId ? `?session=${lecture.sessionId}` : ""}`}
-                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold shadow-sm hover:shadow-blue-500/20 transition-all"
+                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold shadow-sm hover:shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-150"
                     >
                       <QrCode className="h-3.5 w-3.5" />
                       <span>SCAN ATTENDANCE →</span>

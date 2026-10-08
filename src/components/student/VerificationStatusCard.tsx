@@ -74,23 +74,23 @@ export function VerificationStatusCard({ isDeviceBound }: VerificationStatusCard
           return (
             <div
               key={layer.number}
-              className={`rounded-2xl border p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between ${
+              className={`group rounded-2xl border p-5 sm:p-6 transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-950/25 hover:-translate-y-1 hover:bg-[#0E1117] flex flex-col justify-between ${
                 layer.isVerified
-                  ? "border-zinc-800/80 bg-[#0B0D10] hover:border-blue-500/40"
+                  ? "border-zinc-800/80 bg-[#0B0D10]"
                   : "border-amber-500/30 bg-[#0B0D10]"
               }`}
             >
               <div>
                 {/* Header: Number & Icon */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-mono font-semibold text-zinc-500">
+                  <span className="text-xs font-mono font-semibold text-zinc-500 group-hover:text-blue-400 transition-colors">
                     {layer.number}
                   </span>
                   <div
-                    className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-110 ${
                       layer.isVerified
-                        ? "bg-zinc-900 border border-zinc-800 text-blue-400"
-                        : "bg-amber-500/10 border border-amber-500/25 text-amber-400"
+                        ? "bg-zinc-900 border border-zinc-800 text-blue-400 group-hover:border-blue-500/40 group-hover:shadow-sm group-hover:shadow-blue-500/20"
+                        : "bg-amber-500/10 border border-amber-500/25 text-amber-400 group-hover:border-amber-500/40"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -98,26 +98,26 @@ export function VerificationStatusCard({ isDeviceBound }: VerificationStatusCard
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="text-sm font-semibold text-white tracking-tight mb-1.5">
+                <h3 className="text-sm font-semibold text-white tracking-tight mb-1.5 group-hover:text-blue-100 transition-colors">
                   {layer.title}
                 </h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <p className="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
                   {layer.description}
                 </p>
               </div>
 
               {/* Status Rail */}
               <div className="pt-3 mt-4 border-t border-zinc-800/70 flex items-center justify-between">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider group-hover:text-zinc-400 transition-colors">
                   STATUS
                 </span>
                 <span
-                  className={`text-[10px] font-mono font-semibold flex items-center gap-1.5 ${
-                    layer.isVerified ? "text-blue-400" : "text-amber-400"
+                  className={`text-[10px] font-mono font-semibold flex items-center gap-1.5 transition-colors ${
+                    layer.isVerified ? "text-blue-400 group-hover:text-blue-300" : "text-amber-400"
                   }`}
                 >
                   <span
-                    className={`h-1.5 w-1.5 rounded-full ${
+                    className={`h-1.5 w-1.5 rounded-full transition-transform group-hover:scale-125 ${
                       layer.isVerified ? "bg-blue-400" : "bg-amber-400"
                     }`}
                   />

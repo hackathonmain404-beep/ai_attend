@@ -103,25 +103,25 @@ export function StudentAchievementsCard({
         {milestones.map((item) => (
           <div
             key={item.id}
-            className={`rounded-2xl border p-5 transition-all duration-200 flex flex-col justify-between ${
+            className={`group rounded-2xl border p-5 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between ${
               item.isUnlocked
-                ? "border-zinc-800/80 bg-[#0B0D10] hover:border-blue-500/40"
-                : "border-zinc-850/60 bg-[#0B0D10]/50 opacity-60"
+                ? "border-zinc-800/80 bg-[#0B0D10] hover:border-blue-500/50 hover:shadow-blue-950/25 hover:bg-[#0E1117]"
+                : "border-zinc-850/60 bg-[#0B0D10]/50 opacity-60 hover:opacity-85 hover:border-zinc-700/80 hover:bg-[#0B0D10]"
             }`}
           >
             <div>
               {/* Header: Title and Status */}
               <div className="flex items-start justify-between gap-3 mb-2">
-                <h3 className="text-sm font-semibold text-white tracking-tight">
+                <h3 className="text-sm font-semibold text-white tracking-tight group-hover:text-blue-100 transition-colors">
                   {item.title}
                 </h3>
                 {item.isUnlocked ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-blue-400 uppercase tracking-wider shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-blue-400 uppercase tracking-wider shrink-0 transition-transform group-hover:scale-105">
                     <Check className="h-3 w-3 text-blue-400" />
                     UNLOCKED
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-500 uppercase tracking-wider shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-500 uppercase tracking-wider shrink-0 transition-transform group-hover:scale-105">
                     <Lock className="h-3 w-3 text-zinc-600" />
                     LOCKED
                   </span>
@@ -129,20 +129,20 @@ export function StudentAchievementsCard({
               </div>
 
               {/* Criteria */}
-              <p className="text-xs font-mono text-blue-400/90 mb-2">
+              <p className="text-xs font-mono text-blue-400/90 mb-2 group-hover:text-blue-300 transition-colors">
                 {item.criteria}
               </p>
 
               {/* Description */}
-              <p className="text-xs text-zinc-400 leading-relaxed font-normal">
+              <p className="text-xs text-zinc-400 leading-relaxed font-normal group-hover:text-zinc-300 transition-colors">
                 {item.description}
               </p>
             </div>
 
             {/* Bottom Progress */}
-            <div className="pt-3 mt-4 border-t border-zinc-850 flex items-center justify-between text-[11px] font-mono text-zinc-500">
-              <span>PROGRESS</span>
-              <span className={item.isUnlocked ? "text-zinc-200" : "text-zinc-500"}>
+            <div className="pt-3 mt-4 border-t border-zinc-850 flex items-center justify-between text-[11px] font-mono text-zinc-500 group-hover:border-zinc-800/80 transition-colors">
+              <span className="group-hover:text-zinc-400 transition-colors">PROGRESS</span>
+              <span className={item.isUnlocked ? "text-zinc-200 group-hover:text-white transition-colors" : "text-zinc-500"}>
                 {item.progress}
               </span>
             </div>
