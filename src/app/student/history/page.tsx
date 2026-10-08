@@ -2,10 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, History, ShieldCheck, CheckCircle2, Sparkles, Filter, AlertTriangle, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { ArrowLeft, Loader2, ArrowRight } from "lucide-react";
 import { AttendanceHistoryList } from "@/components/student/AttendanceHistoryList";
 import { ReVerifyAlertModal } from "@/components/student/ReVerifyAlertModal";
 import { fetchAttendanceHistory, checkActiveReVerifyChallenge } from "@/lib/services/verification-service";
@@ -66,84 +63,131 @@ export default function StudentAttendanceHistoryPage() {
   const attendanceRate = totalRecords > 0 ? ((presentCount / totalRecords) * 100).toFixed(0) : "100";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30">
-      {/* Top Navigation */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-            <Link href="/student">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Student Dashboard
-            </Link>
-          </Button>
-          <div className="h-4 w-[1px] bg-slate-800" />
+    <div className="space-y-10 sm:space-y-12">
+      {/* 1. Command Center Page Hero */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 sm:pb-8 border-b border-zinc-800/60">
+        <div className="space-y-3 max-w-2xl">
+          {/* Eyebrow */}
           <div className="flex items-center gap-2">
-            <History className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-semibold text-slate-200">
-              Attendance History Ledger
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              ATTENDANCE LEDGER
+            </span>
+            <span className="text-zinc-600 font-mono text-xs">/</span>
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+              CRYPTOGRAPHIC AUDIT
             </span>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs font-mono">
-            {userProfile?.fullName || "Student"} • {userProfile?.identifier || "STU-AUTH"}
-          </Badge>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Title Header */}
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
-            Verified Attendance History
+          {/* Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white leading-tight">
+            Verified Attendance Ledger
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400">
+
+          {/* Supporting Copy */}
+          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
             Immutable log of all lecture sessions, cryptographic timestamps, and hardware-bound re-verifications.
           </p>
         </div>
 
-        {/* Aggregate Metric Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-4 border-slate-800 bg-slate-900/50">
-            <div className="text-xs text-slate-400 font-medium">Recorded Sessions</div>
-            <div className="text-2xl font-black text-white mt-1">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : totalRecords}
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Total lecture logs</div>
-          </Card>
+        {/* Right Breadcrumb & Compliance Pill */}
+        <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+          <Link
+            href="/student"
+            className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors group"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
+            <span>BACK TO COMMAND CENTER</span>
+          </Link>
 
-          <Card className="p-4 border-slate-800 bg-slate-900/50">
-            <div className="text-xs text-slate-400 font-medium">Attended Sessions</div>
-            <div className="text-2xl font-black text-emerald-400 mt-1">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : presentCount}
-            </div>
-            <div className="text-[11px] text-emerald-500/80 mt-0.5">
-              {attendanceRate}% attendance rate
-            </div>
-          </Card>
+          <div className="px-3 py-1 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs font-mono text-zinc-400 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+            <span>RFC-4180 AUDIT COMPLIANT</span>
+          </div>
+        </div>
+      </div>
 
-          <Card className="p-4 border-slate-800 bg-slate-900/50">
-            <div className="text-xs text-slate-400 font-medium">In-Class Re-Verified</div>
-            <div className="text-2xl font-black text-teal-400 mt-1">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : reverifiedCount}
-            </div>
-            <div className="text-[11px] text-teal-500/80 mt-0.5">Surprise checks passed</div>
-          </Card>
-
-          <Card className="p-4 border-slate-800 bg-slate-900/50">
-            <div className="text-xs text-slate-400 font-medium">Proxy Shield Blocks</div>
-            <div className="text-2xl font-black text-rose-400 mt-1">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : proxyBlockedCount}
-            </div>
-            <div className="text-[11px] text-rose-500/80 mt-0.5">Unregistered hardware</div>
-          </Card>
+      {/* 2. Aggregate Telemetry Console Grid */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              LEDGER TELEMETRY
+            </h2>
+            <span className="text-zinc-600 font-mono text-xs">/</span>
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+              HISTORICAL SUMMARY
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+            {loading ? "SYNCING..." : `${totalRecords} TOTAL ENTRIES`}
+          </span>
         </div>
 
-        {/* History Table & Filter */}
-        <AttendanceHistoryList initialRecords={records} />
-      </main>
+        <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 sm:p-7 transition-all duration-300 hover:border-blue-500/40 hover:shadow-2xl hover:shadow-blue-950/20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-4 divide-y sm:divide-y-0 lg:divide-x divide-zinc-800/60">
+            {/* Metric 1: Recorded Sessions */}
+            <div className="pt-4 sm:pt-0 sm:px-4 first:sm:pl-0 space-y-1.5 group/metric">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block group-hover/metric:text-blue-400 transition-colors">
+                RECORDED SESSIONS
+              </span>
+              <div className="text-3xl sm:text-4xl font-bold font-mono text-white tracking-tight">
+                {loading ? <Loader2 className="h-7 w-7 animate-spin text-zinc-600" /> : totalRecords}
+              </div>
+              <p className="text-[11px] font-mono text-zinc-400">
+                Total lecture logs recorded
+              </p>
+            </div>
+
+            {/* Metric 2: Attended Sessions */}
+            <div className="pt-4 sm:pt-0 sm:px-4 space-y-1.5 group/metric">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block group-hover/metric:text-blue-400 transition-colors">
+                ATTENDED SESSIONS
+              </span>
+              <div className="text-3xl sm:text-4xl font-bold font-mono text-white tracking-tight">
+                {loading ? <Loader2 className="h-7 w-7 animate-spin text-zinc-600" /> : presentCount}
+              </div>
+              <p className="text-[11px] font-mono text-blue-400">
+                {attendanceRate}% compliance rate
+              </p>
+            </div>
+
+            {/* Metric 3: In-Class Re-Verified */}
+            <div className="pt-4 sm:pt-0 sm:px-4 space-y-1.5 group/metric">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block group-hover/metric:text-blue-400 transition-colors">
+                IN-CLASS RE-VERIFIED
+              </span>
+              <div className="text-3xl sm:text-4xl font-bold font-mono text-white tracking-tight">
+                {loading ? <Loader2 className="h-7 w-7 animate-spin text-zinc-600" /> : reverifiedCount}
+              </div>
+              <p className="text-[11px] font-mono text-zinc-400">
+                Challenge checks passed
+              </p>
+            </div>
+
+            {/* Metric 4: Security Exceptions */}
+            <div className="pt-4 sm:pt-0 sm:px-4 last:sm:pr-0 space-y-1.5 group/metric">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block group-hover/metric:text-blue-400 transition-colors">
+                SECURITY BLOCKS
+              </span>
+              <div
+                className={`text-3xl sm:text-4xl font-bold font-mono tracking-tight ${
+                  proxyBlockedCount > 0 ? "text-amber-400" : "text-zinc-100"
+                }`}
+              >
+                {loading ? <Loader2 className="h-7 w-7 animate-spin text-zinc-600" /> : proxyBlockedCount}
+              </div>
+              <p className="text-[11px] font-mono text-zinc-400">
+                {proxyBlockedCount > 0 ? "Flagged hardware attempts" : "0 proxy violations"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. History Table & Filter Section */}
+      <AttendanceHistoryList initialRecords={records} />
 
       {/* Surprise In-Class Re-Verification Modal */}
       <ReVerifyAlertModal
@@ -154,3 +198,4 @@ export default function StudentAttendanceHistoryPage() {
     </div>
   );
 }
+
