@@ -286,18 +286,18 @@ export function LoginForm() {
 
   return (
     <TiltCard maxTilt={5} scale={1.01} className="w-full max-w-md">
-      <Card className="w-full border-slate-800 bg-slate-900/85 backdrop-blur-2xl shadow-2xl p-6 sm:p-8 relative">
+      <Card className="w-full border-zinc-800/80 bg-zinc-950/90 backdrop-blur-2xl shadow-2xl shadow-black/80 p-6 sm:p-8 relative rounded-2xl">
         <CardHeader className="text-center p-0 mb-5">
           <div
-            className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center mb-3.5 shadow-lg shadow-emerald-950/60"
+            className="mx-auto h-12 w-12 rounded-2xl bg-zinc-900 border border-blue-500/30 flex items-center justify-center mb-3.5 shadow-lg shadow-blue-950/50 text-blue-400"
             style={{ transform: "translateZ(20px)" }}
           >
-            <ShieldCheck className="h-6 w-6 text-white" />
+            <ShieldCheck className="h-6 w-6 text-blue-400" />
           </div>
-          <CardTitle className="text-2xl font-black text-white tracking-tight" style={{ transform: "translateZ(12px)" }}>
+          <CardTitle className="text-2xl font-bold text-white tracking-tight" style={{ transform: "translateZ(12px)" }}>
             AttendGuard Sign In
           </CardTitle>
-          <CardDescription className="text-slate-400 text-xs mt-1" style={{ transform: "translateZ(8px)" }}>
+          <CardDescription className="text-zinc-400 text-xs mt-1" style={{ transform: "translateZ(8px)" }}>
             Authenticate with academic credentials or connected institutional accounts.
           </CardDescription>
         </CardHeader>
@@ -305,39 +305,37 @@ export function LoginForm() {
         <CardContent className="p-0 space-y-4">
           {/* Active Session Status Banner */}
           {currentUser && (
-            <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 backdrop-blur-md shadow-lg shadow-emerald-950/40 text-xs">
+            <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-950/30 backdrop-blur-md shadow-lg shadow-blue-950/30 text-xs">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-400">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                   </span>
                   <span>ACTIVE SESSION // AUTHENTICATED</span>
                 </div>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/25 uppercase">
                   {currentUser.role === "student" ? "Student" : "Faculty"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-bold text-emerald-300 shrink-0">
+                  <div className="h-8 w-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center font-bold text-blue-300 shrink-0">
                     {currentUser.fullName ? currentUser.fullName.charAt(0) : "U"}
                   </div>
                   <div className="min-w-0">
                     <p className="font-bold text-white truncate text-xs">
                       {currentUser.fullName}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">
+                    <p className="text-[10px] text-zinc-400 truncate">
                       {currentUser.email} • {currentUser.identifier || "STU-001"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
+                  <button
                     type="button"
-                    size="sm"
-                    variant="emerald"
-                    className="h-8 px-3 text-xs font-bold gap-1 shadow-md shadow-emerald-950/60"
+                    className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1 shadow-md shadow-blue-950/60 transition-colors"
                     onClick={() => {
                       const dest =
                         redirectTarget && redirectTarget.startsWith("/")
@@ -350,12 +348,12 @@ export function LoginForm() {
                   >
                     <span>Enter Portal</span>
                     <ArrowRight className="h-3 w-3" />
-                  </Button>
+                  </button>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-8 px-2 text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
+                    className="h-8 px-2 text-xs text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10"
                     onClick={handleLogout}
                     title="Sign Out"
                   >
@@ -369,19 +367,19 @@ export function LoginForm() {
           {/* Social OAuth Sign-In Suite (Discord, GitHub, Google) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-slate-400 uppercase tracking-wider">
+              <span className="font-semibold text-zinc-400 uppercase tracking-wider">
                 Instant Social OAuth
               </span>
               {/* Role Toggle for OAuth */}
-              <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setSocialRole("student")}
                   className={cn(
                     "px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-200",
                     socialRole === "student"
-                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm"
-                      : "text-slate-500 hover:text-slate-300"
+                      ? "bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-300"
                   )}
                 >
                   Student
@@ -392,8 +390,8 @@ export function LoginForm() {
                   className={cn(
                     "px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-200",
                     socialRole === "teacher"
-                      ? "bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-sm"
-                      : "text-slate-500 hover:text-slate-300"
+                      ? "bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-300"
                   )}
                 >
                   Faculty
@@ -407,11 +405,11 @@ export function LoginForm() {
                 type="button"
                 onClick={() => handleSocialLogin("google")}
                 disabled={Boolean(socialLoading) || isSubmitting}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-800/90 bg-slate-950/60 hover:bg-slate-800/80 hover:border-slate-700 text-slate-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-zinc-850 hover:border-zinc-700 text-zinc-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
                 title={`Continue with Google as ${socialRole === "student" ? "Student" : "Faculty"}`}
               >
                 {socialLoading === "google" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
                 ) : (
                   <GoogleIcon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
                 )}
@@ -423,13 +421,13 @@ export function LoginForm() {
                 type="button"
                 onClick={() => handleSocialLogin("github")}
                 disabled={Boolean(socialLoading) || isSubmitting}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-800/90 bg-slate-950/60 hover:bg-slate-800/80 hover:border-slate-700 text-slate-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-zinc-850 hover:border-zinc-700 text-zinc-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
                 title={`Continue with GitHub as ${socialRole === "student" ? "Student" : "Faculty"}`}
               >
                 {socialLoading === "github" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
                 ) : (
-                  <GitHubIcon className="h-4 w-4 shrink-0 text-slate-200 group-hover:text-white transition-transform group-hover:scale-110" />
+                  <GitHubIcon className="h-4 w-4 shrink-0 text-zinc-200 group-hover:text-white transition-transform group-hover:scale-110" />
                 )}
                 <span>GitHub</span>
               </button>
@@ -439,11 +437,11 @@ export function LoginForm() {
                 type="button"
                 onClick={() => handleSocialLogin("discord")}
                 disabled={Boolean(socialLoading) || isSubmitting}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-800/90 bg-slate-950/60 hover:bg-[#5865F2]/15 hover:border-[#5865F2]/50 text-slate-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-[#5865F2]/15 hover:border-[#5865F2]/50 text-zinc-200 hover-lift-3d disabled:opacity-50 transition-all text-xs font-semibold shadow-md group"
                 title={`Continue with Discord as ${socialRole === "student" ? "Student" : "Faculty"}`}
               >
                 {socialLoading === "discord" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
                 ) : (
                   <DiscordIcon className="h-4 w-4 shrink-0 text-[#5865F2] group-hover:brightness-125 transition-transform group-hover:scale-110" />
                 )}
@@ -455,10 +453,10 @@ export function LoginForm() {
           {/* Dividing OR Line */}
           <div className="relative my-3">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-800/80" />
+              <span className="w-full border-t border-zinc-800/80" />
             </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider text-slate-500">
-              <span className="bg-slate-900/90 px-3">or</span>
+            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+              <span className="bg-zinc-950 px-3">or</span>
             </div>
           </div>
 
@@ -477,11 +475,11 @@ export function LoginForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
             {/* Email Field */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300" htmlFor="email-input">
+              <label className="text-xs font-semibold text-zinc-300" htmlFor="email-input">
                 Academic Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Mail className="h-4 w-4" />
                 </div>
                 <Input
@@ -489,7 +487,7 @@ export function LoginForm() {
                   type="email"
                   placeholder="name@university.edu"
                   className={cn(
-                    "pl-10 text-sm bg-slate-950/60 border-slate-800 focus:border-emerald-500 transition-colors",
+                    "pl-10 text-sm bg-zinc-900/60 border-zinc-800 focus:border-blue-500 focus-visible:ring-blue-500/30 text-zinc-100 placeholder:text-zinc-600 transition-colors",
                     errors.email && "border-rose-500/80 focus-visible:ring-rose-500"
                   )}
                   disabled={isSubmitting}
@@ -506,12 +504,12 @@ export function LoginForm() {
             {/* Password Field */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300" htmlFor="password-input">
+                <label className="text-xs font-semibold text-zinc-300" htmlFor="password-input">
                   Password
                 </label>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -519,7 +517,7 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   className={cn(
-                    "pl-10 pr-10 text-sm bg-slate-950/60 border-slate-800 focus:border-emerald-500 transition-colors",
+                    "pl-10 pr-10 text-sm bg-zinc-900/60 border-zinc-800 focus:border-blue-500 focus-visible:ring-blue-500/30 text-zinc-100 placeholder:text-zinc-600 transition-colors",
                     errors.password && "border-rose-500/80 focus-visible:ring-rose-500"
                   )}
                   disabled={isSubmitting}
@@ -528,7 +526,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-500 hover:text-zinc-300"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -542,15 +540,14 @@ export function LoginForm() {
             </div>
 
             {/* Submit Button */}
-            <Button
+            <button
               type="submit"
-              variant="emerald"
-              className="w-full gap-2 font-bold shadow-lg shadow-emerald-950/60 mt-1 hover-lift-3d"
               disabled={isSubmitting || Boolean(socialLoading)}
+              className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-semibold text-sm shadow-[0_0_24px_-4px_rgba(37,99,235,0.45)] hover:shadow-[0_0_32px_-2px_rgba(37,99,235,0.6)] border border-blue-400/30 flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 mt-1 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
                   <span>Verifying Credentials...</span>
                 </>
               ) : (
@@ -559,13 +556,13 @@ export function LoginForm() {
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
-            </Button>
+            </button>
           </form>
 
           {/* Security Notice Footer */}
-          <div className="text-center pt-1 border-t border-slate-800/60">
-            <p className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+          <div className="text-center pt-2 border-t border-zinc-850">
+            <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3 text-blue-400" />
               <span>Hardware-bound device perimeter & single active session policy</span>
             </p>
           </div>
