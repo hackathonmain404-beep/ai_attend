@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
-import { SecurityPillars } from "@/components/landing/SecurityPillars";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { ArchitectureFlow } from "@/components/landing/ArchitectureFlow";
 import { FinalCTA } from "@/components/landing/FinalCTA";
@@ -148,10 +147,7 @@ export default function HomePage() {
       {/* 2. Self-Contained Stitch-Inspired Hero Section with GSAP ScrollTrigger */}
       <Hero destinationHref={destinationHref} isLoaded={isPageLoaded} />
 
-      {/* 3. Pinned GSAP Scroll Experience: Four Security Pillars */}
-      <SecurityPillars />
-
-      {/* 4. Campus Platform Capabilities */}
+      {/* 3. Campus Platform Capabilities */}
       <FeaturesSection />
 
       {/* 5. Scroll-Driven Architecture Story: Generate → Verify → Bind → Record */}

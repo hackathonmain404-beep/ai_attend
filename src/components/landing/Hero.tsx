@@ -4,7 +4,6 @@ import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { ParticleField } from "@/components/hero/ParticleField";
-import { SecurityToken } from "@/components/landing/SecurityToken";
 
 interface HeroProps {
   destinationHref: string;
@@ -18,7 +17,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const copyRef = React.useRef<HTMLParagraphElement>(null);
   const ctaPrimaryRef = React.useRef<HTMLAnchorElement>(null);
   const ctaSecondaryRef = React.useRef<HTMLAnchorElement>(null);
-  const tokenWrapRef = React.useRef<HTMLDivElement>(null);
   const contentWrapperRef = React.useRef<HTMLDivElement>(null);
 
   // Parallax Atmosphere Background Elements
@@ -27,7 +25,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const violetGlowRef = React.useRef<HTMLDivElement>(null);
   const cyanGlowRef = React.useRef<HTMLDivElement>(null);
 
-  // 1. GSAP Hero Entrance Animation (Order: Headline -> Description -> CTAs -> Token)
+  // 1. GSAP Hero Entrance Animation (Order: Headline -> Description -> CTAs)
   React.useEffect(() => {
     if (typeof window === "undefined" || !isLoaded) return;
 
@@ -35,7 +33,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
 
     const ctx = gsap.context(() => {
       if (prefersReducedMotion) {
-        gsap.set([headlineLine1Ref.current, headlineLine2Ref.current, copyRef.current, ctaPrimaryRef.current, ctaSecondaryRef.current, tokenWrapRef.current], {
+        gsap.set([headlineLine1Ref.current, headlineLine2Ref.current, copyRef.current, ctaPrimaryRef.current, ctaSecondaryRef.current], {
           opacity: 1,
           y: 0,
           filter: "blur(0px)",
@@ -53,7 +51,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       gsap.set(copyRef.current, { opacity: 0, y: 30, filter: "blur(6px)" });
       gsap.set(ctaPrimaryRef.current, { opacity: 0, y: 22 });
       gsap.set(ctaSecondaryRef.current, { opacity: 0, y: 22 });
-      gsap.set(tokenWrapRef.current, { opacity: 0, y: 44, scale: 0.95 });
 
       // Entrance timeline
       const tl = gsap.timeline({ delay: 0.2 });
@@ -106,17 +103,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
             ease: "power3.out",
           },
           "-=0.5"
-        )
-        .to(
-          tokenWrapRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 1.0,
-            ease: "power3.out",
-          },
-          "-=0.4"
         );
     }, heroRef);
 
@@ -139,21 +125,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
           y: -100,
           scale: 0.92,
           opacity: 0.35,
-          ease: "none",
-          scrollTrigger: {
-            trigger: heroRef.current,
-            start: "top top",
-            end: "bottom top",
-            scrub: 1.2,
-          },
-        });
-      }
-
-      // Security Token visualization scroll scrub (moves toward center, rotates slightly, scales)
-      if (tokenWrapRef.current) {
-        gsap.to(tokenWrapRef.current, {
-          y: -60,
-          scale: 1.05,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
@@ -322,17 +293,12 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
 
           <a
             ref={ctaSecondaryRef}
-            href="#security"
+            href="#architecture"
             className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 group py-2 will-change-transform"
           >
-            <span>Explore Security Pillars</span>
+            <span>Explore Architecture</span>
             <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-1 transition-all duration-200" />
           </a>
-        </div>
-
-        {/* Security Token Visualization (Anchor for Hero/Security transition) */}
-        <div ref={tokenWrapRef} className="w-full pt-2 will-change-transform">
-          <SecurityToken mode="crypto" isHero={true} />
         </div>
       </div>
     </section>

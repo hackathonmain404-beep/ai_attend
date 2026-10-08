@@ -13,16 +13,14 @@ interface FooterLink {
 
 const PRODUCT_LINKS: FooterLink[] = [
   { label: "Command Center", href: "/login" },
-  { label: "Security", href: "#security" },
-  { label: "Features", href: "#features" },
   { label: "Architecture", href: "#architecture" },
+  { label: "Features", href: "#features" },
   { label: "How It Works", href: "#architecture" },
 ];
 
 const RESOURCE_LINKS: FooterLink[] = [
   { label: "Documentation", href: "/login" },
   { label: "API Reference", href: "/api/health", isExternal: true },
-  { label: "Security Overview", href: "#security" },
   { label: "System Status", href: "/api/health", isExternal: true },
   { label: "Support", href: "mailto:support@attendguard.edu" },
 ];

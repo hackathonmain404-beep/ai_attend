@@ -59,7 +59,6 @@ export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
   };
 
   const navLinks = [
-    { label: "Security", href: "#security" },
     { label: "Architecture", href: "#architecture" },
     { label: "Features", href: "#features" },
   ];
