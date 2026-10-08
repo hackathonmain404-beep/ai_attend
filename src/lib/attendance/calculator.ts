@@ -26,11 +26,19 @@ export interface ClassSummary extends SubjectStats {
   classId: string;
   className: string;
   courseCode: string;
+  schedule?: string;
+  semester?: string;
+  teacherName?: string;
 }
 
 export interface StudentAttendanceSummary {
   overallPercentage: number;
   classes: ClassSummary[];
+  totalHeld?: number;
+  totalAttended?: number;
+  streakDays?: number;
+  todayLectures?: any[];
+  student?: any;
 }
 
 /**

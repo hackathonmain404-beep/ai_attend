@@ -13,6 +13,9 @@ export interface SubjectAttendance {
   status: "safe" | "at_risk" | "critical";
   classesNeededFor75: number;
   canMissNext: number;
+  schedule?: string;
+  semester?: string;
+  teacherName?: string;
 }
 
 export interface TodayLecture {

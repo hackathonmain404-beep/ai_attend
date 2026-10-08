@@ -13,9 +13,34 @@ interface SessionHistoryTableProps {
 
 export function SessionHistoryTable({ sessions }: SessionHistoryTableProps) {
   const handleExportCsv = (session: SessionHistoryRecord) => {
-    toast.success(`Exporting attendance report for ${session.courseCode}`, {
-      description: `Downloaded attendance ledger (${session.presentCount} present students).`,
-    });
+    try {
+      const headers = ["Session ID", "Course Code", "Course Name", "Date", "Present Count", "Total Enrolled", "Attendance Rate"];
+      const row = [
+        `"${session.sessionId}"`,
+        `"${session.courseCode}"`,
+        `"${session.className}"`,
+        `"${session.date}"`,
+        session.presentCount,
+        session.totalEnrolled,
+        `"${session.percentage}%"`,
+      ];
+      const csvString = [headers.join(","), row.join(",")].join("\r\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `session_${session.courseCode}_${session.sessionId.slice(0, 8)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported attendance report for ${session.courseCode}`, {
+        description: `Downloaded CSV ledger (${session.presentCount} present / ${session.totalEnrolled} enrolled).`,
+      });
+    } catch {
+      toast.error("Failed to generate CSV export file.");
+    }
   };
 
   return (

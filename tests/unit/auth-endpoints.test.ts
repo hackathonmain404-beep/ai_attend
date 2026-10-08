@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST as loginHandler } from '@/app/api/auth/login/route';
 import { POST as signupHandler } from '@/app/api/auth/signup/route';
 import { POST as logoutHandler } from '@/app/api/auth/logout/route';
+import * as serverSupabase from '@/lib/supabase/server';
 
 describe('Backend Authentication System API (POST /api/auth/*)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('POST /api/auth/login', () => {
     it('rejects invalid email formats with HTTP 400', async () => {
       const req = new NextRequest('http://localhost:3000/api/auth/login', {
@@ -21,6 +26,16 @@ describe('Backend Authentication System API (POST /api/auth/*)', () => {
     });
 
     it('rejects invalid credentials with HTTP 401', async () => {
+      const mockSupabase = {
+        auth: {
+          signInWithPassword: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'Invalid academic credentials' },
+          }),
+        },
+      };
+      vi.spyOn(serverSupabase, 'createServerSupabaseClient').mockResolvedValue(mockSupabase as any);
+
       const req = new NextRequest('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +50,33 @@ describe('Backend Authentication System API (POST /api/auth/*)', () => {
     });
 
     it('successfully authenticates valid academic student persona', async () => {
+      const mockSupabase = {
+        auth: {
+          signInWithPassword: vi.fn().mockResolvedValue({
+            data: {
+              user: { id: '00000000-0000-0000-0000-000000000002', email: 'jane.doe@university.edu' },
+              session: { access_token: 'mock-session-token' },
+            },
+            error: null,
+          }),
+        },
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: '00000000-0000-0000-0000-000000000002',
+              email: 'jane.doe@university.edu',
+              full_name: 'Jane Doe',
+              role: 'student',
+              identifier: 'STU-2026-001',
+            },
+            error: null,
+          }),
+        }),
+      };
+      vi.spyOn(serverSupabase, 'createServerSupabaseClient').mockResolvedValue(mockSupabase as any);
+
       const req = new NextRequest('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,6 +92,33 @@ describe('Backend Authentication System API (POST /api/auth/*)', () => {
     });
 
     it('successfully authenticates faculty professor persona', async () => {
+      const mockSupabase = {
+        auth: {
+          signInWithPassword: vi.fn().mockResolvedValue({
+            data: {
+              user: { id: '00000000-0000-0000-0000-000000000001', email: 'prof.turing@university.edu' },
+              session: { access_token: 'mock-session-token' },
+            },
+            error: null,
+          }),
+        },
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: '00000000-0000-0000-0000-000000000001',
+              email: 'prof.turing@university.edu',
+              full_name: 'Prof. Alan Turing',
+              role: 'teacher',
+              identifier: 'FAC-2026-001',
+            },
+            error: null,
+          }),
+        }),
+      };
+      vi.spyOn(serverSupabase, 'createServerSupabaseClient').mockResolvedValue(mockSupabase as any);
+
       const req = new NextRequest('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,6 +150,27 @@ describe('Backend Authentication System API (POST /api/auth/*)', () => {
     });
 
     it('provisions valid new registration request', async () => {
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          or: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: null,
+          }),
+        }),
+        auth: {
+          signUp: vi.fn().mockResolvedValue({
+            data: {
+              user: { id: 'new-user-123', email: 'new.student@university.edu' },
+              session: null,
+            },
+            error: null,
+          }),
+        },
+      };
+      vi.spyOn(serverSupabase, 'createServerSupabaseClient').mockResolvedValue(mockSupabase as any);
+
       const req = new NextRequest('http://localhost:3000/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,6 +194,13 @@ describe('Backend Authentication System API (POST /api/auth/*)', () => {
 
   describe('POST /api/auth/logout', () => {
     it('clears session cookies and confirms sign out', async () => {
+      const mockSupabase = {
+        auth: {
+          signOut: vi.fn().mockResolvedValue({ error: null }),
+        },
+      };
+      vi.spyOn(serverSupabase, 'createServerSupabaseClient').mockResolvedValue(mockSupabase as any);
+
       const req = new NextRequest('http://localhost:3000/api/auth/logout', {
         method: 'POST',
       });

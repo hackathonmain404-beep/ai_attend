@@ -31,6 +31,7 @@ export interface StudentDeviceStatus {
   deviceName?: string;
   deviceFingerprint?: string;
   registeredAt?: string;
+  lastUsedAt?: string;
   userAgent?: string;
 }
 

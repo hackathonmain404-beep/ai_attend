@@ -48,7 +48,7 @@ export const TOUR_STEPS: TourStep[] = [
     badgeVariant: "emerald",
     icon: Presentation,
     story:
-      "Prof. Alan Turing enters the lecture hall and activates a verified attendance broadcast for CS101 Data Structures with a 20-second dynamic rotation interval.",
+      "The professor enters the lecture hall and activates a verified attendance broadcast for their class with a 20-second dynamic rotation interval.",
     antiProxyMechanism:
       "Static QR codes are dead. AttendGuard generates time-bound HMAC SHA-256 tokens signed by server secrets, invalidating any token older than 20 seconds.",
     testInstructions: [
@@ -86,7 +86,7 @@ export const TOUR_STEPS: TourStep[] = [
     badgeVariant: "emerald",
     icon: Scan,
     story:
-      "Jane Doe opens AttendGuard's mobile scanner on her registered smartphone to check in for class.",
+      "A student opens AttendGuard's mobile scanner on their registered smartphone to check in for class.",
     antiProxyMechanism:
       "The scanner silently captures the device's hardware fingerprint (Canvas, WebGL, Screen, AudioContext hash). If a student logs in on a classmate's phone to check in for them, the system rejects it as a 'Device Mismatch Proxy Attempt'.",
     testInstructions: [
@@ -143,12 +143,12 @@ export const TOUR_STEPS: TourStep[] = [
     badgeVariant: "emerald",
     icon: Sparkles,
     story:
-      "Jane Doe asks the AI Advisor if she can afford to take next Friday off without violating the 75% university regulatory minimum.",
+      "A student asks the AI Advisor if they can afford to take next Friday off without violating the 75% university regulatory minimum.",
     antiProxyMechanism:
       "Zero hallucination guarantee: The advisor uses deterministic mathematical calculations for margins (can miss next N classes / recovery needed) and refuses to invent fake policies.",
     testInstructions: [
-      "Click quick-prompt chips like 'Can I miss tomorrow's CS101 lecture?'.",
-      "Visit /student/subjects/11111111-1111-1111-1111-111111111111 to test the interactive leave forecaster slider.",
+      "Click quick-prompt chips like 'Which of my courses are currently below 75%?'.",
+      "Visit /student/history to test the official verified attendance ledger.",
       "Visit /teacher/reports to generate official RFC-4180 audit CSV spreadsheets.",
     ],
   },

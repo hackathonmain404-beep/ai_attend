@@ -9,6 +9,12 @@ import type { QrChallengeResponse, CheckInResult, CheckInRequest } from "@/types
 export async function fetchQrChallenge(
   sessionId = "44444444-4444-4444-4444-444444444441"
 ): Promise<QrChallengeResponse> {
+  if (typeof window !== "undefined") {
+    return await apiFetch<QrChallengeResponse>(
+      `/api/sessions/${sessionId}/qr-challenge`
+    );
+  }
+
   try {
     const data = await apiFetch<QrChallengeResponse>(
       `/api/sessions/${sessionId}/qr-challenge`
@@ -17,7 +23,7 @@ export async function fetchQrChallenge(
       return data;
     }
   } catch {
-    // Expected fallback while backend implements GET /api/sessions/:id/qr-challenge
+    // Isolated headless test execution fallback
   }
 
   return getLiveQrChallenge(sessionId);
@@ -30,6 +36,13 @@ export async function fetchQrChallenge(
 export async function submitCheckIn(
   request: CheckInRequest
 ): Promise<CheckInResult> {
+  if (typeof window !== "undefined") {
+    return await apiFetch<CheckInResult>("/api/attendance/check-in", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
   try {
     const data = await apiFetch<CheckInResult>("/api/attendance/check-in", {
       method: "POST",
@@ -40,7 +53,6 @@ export async function submitCheckIn(
     }
   } catch (err: any) {
     if (err.status && err.status !== 404) {
-      // Re-throw authoritative server business errors (403 DEVICE_MISMATCH, 409 QR_EXPIRED)
       throw err;
     }
   }

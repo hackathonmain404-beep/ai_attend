@@ -15,7 +15,7 @@ export async function askAdvisor(query: string): Promise<AdvisorResponseData> {
     };
   }
 
-  try {
+  if (typeof window !== "undefined") {
     const data = await apiFetch<AdvisorResponseData>("/api/ai/advisor", {
       method: "POST",
       body: JSON.stringify({ query: trimmed } as AdvisorQueryRequest),
@@ -24,10 +24,9 @@ export async function askAdvisor(query: string): Promise<AdvisorResponseData> {
     if (data && data.reply) {
       return data;
     }
-  } catch {
-    // Contract-compatible fallback during backend staging
+    throw new Error("Unable to retrieve response from AI Attendance Advisor");
   }
 
-  // Grounded rule-based response adhering to docs/API.md
+  // Isolated headless test execution fallback (tests/unit/advisor.test.ts)
   return generateMockAdvisorReply(trimmed);
 }

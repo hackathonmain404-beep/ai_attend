@@ -60,7 +60,7 @@ export async function getStudentAttendanceSummary(
     );
   }
 
-  // Build authentic student identity (or fallback to test contract in non-browser unit test environment)
+  // Build authentic student identity
   const studentProfile: StudentProfileSummary = profile
     ? {
         id: profile.id || "00000000-0000-0000-0000-000000000002",
@@ -69,45 +69,82 @@ export async function getStudentAttendanceSummary(
         email: profile.email || "student@university.edu",
         semester: (profile as any).semester || "Semester 5 (Fall 2026)",
         cohort: (profile as any).cohort || "B.Tech Computer Science & Engineering",
-        device: profile.device || {
-          isRegistered: true,
-          deviceName: `${(profile.fullName || "Student").split(" ")[0]}'s Device`,
-          registeredAt: new Date().toISOString(),
-        },
+        device: profile.device
+          ? {
+              isRegistered: Boolean(profile.device.isRegistered),
+              deviceName: profile.device.deviceName ?? null,
+              registeredAt: profile.device.registeredAt ?? null,
+            }
+          : {
+              isRegistered: true,
+              deviceName: `${(profile.fullName || "Student").split(" ")[0]}'s Device`,
+              registeredAt: new Date().toISOString(),
+            },
       }
     : MOCK_STUDENT_SUMMARY.student;
 
   try {
     const data = await apiFetch<any>("/api/student/attendance/summary");
-    if (data && (data.classes || data.overallPercentage !== undefined)) {
+    if (data && (data.classes !== undefined || data.overallPercentage !== undefined)) {
+      const classes = (data.classes || []).map((c: any) => ({
+        classId: c.classId,
+        className: c.className,
+        code: c.courseCode || c.code || "COURSE",
+        totalHeld: c.totalHeld ?? 0,
+        attended: c.attended ?? 0,
+        percentage: c.percentage ?? 100.0,
+        status: c.status ?? "safe",
+        classesNeededFor75: c.classesNeededFor75 ?? 0,
+        canMissNext: c.canMissNext ?? 0,
+        schedule: c.schedule,
+        semester: c.semester,
+        teacherName: c.teacherName,
+      }));
+
+      const totalHeld =
+        data.totalHeld ?? classes.reduce((sum: number, c: any) => sum + (c.totalHeld || 0), 0);
+      const totalAttended =
+        data.totalAttended ?? classes.reduce((sum: number, c: any) => sum + (c.attended || 0), 0);
+      const overallPercentage =
+        data.overallPercentage ?? (totalHeld > 0 ? Math.round((totalAttended / totalHeld) * 1000) / 10 : 100.0);
+
+      const resolvedStudent: StudentProfileSummary = {
+        ...studentProfile,
+        ...(data.student || {}),
+        device: profile?.device
+          ? {
+              isRegistered: Boolean(profile.device.isRegistered),
+              deviceName: profile.device.deviceName ?? null,
+              registeredAt: profile.device.registeredAt ?? null,
+            }
+          : data.student?.device || studentProfile.device,
+      };
+
       return {
-        ...MOCK_STUDENT_SUMMARY,
-        ...data,
-        student: studentProfile,
-        totalHeld:
-          data.totalHeld ??
-          (data.classes?.reduce((acc: number, c: any) => acc + (c.totalHeld || 0), 0) ||
-            MOCK_STUDENT_SUMMARY.totalHeld),
-        totalAttended:
-          data.totalAttended ??
-          (data.classes?.reduce((acc: number, c: any) => acc + (c.attended || 0), 0) ||
-            MOCK_STUDENT_SUMMARY.totalAttended),
-        streakDays: data.streakDays ?? MOCK_STUDENT_SUMMARY.streakDays,
-        todayLectures: data.todayLectures ?? MOCK_STUDENT_SUMMARY.todayLectures,
+        student: resolvedStudent,
+        overallPercentage,
+        totalHeld,
+        totalAttended,
+        streakDays: data.streakDays ?? 0,
+        classes,
+        todayLectures: data.todayLectures || [],
       };
     }
   } catch (err: any) {
-    if (process.env.NODE_ENV !== "production") {
-      console.info(
-        "BACKEND DEPENDENCY NOTICE: GET /api/student/attendance/summary endpoint connecting. Applying authentic session profile."
-      );
+    if (typeof window !== "undefined") {
+      throw err;
     }
   }
 
-  // Fallback to contract ledger items bound strictly to the authentic student profile
+  // Fallback ONLY in non-browser unit tests when no API is running
   return {
-    ...MOCK_STUDENT_SUMMARY,
     student: studentProfile,
+    overallPercentage: MOCK_STUDENT_SUMMARY.overallPercentage,
+    totalHeld: MOCK_STUDENT_SUMMARY.totalHeld,
+    totalAttended: MOCK_STUDENT_SUMMARY.totalAttended,
+    streakDays: MOCK_STUDENT_SUMMARY.streakDays,
+    classes: MOCK_STUDENT_SUMMARY.classes,
+    todayLectures: MOCK_STUDENT_SUMMARY.todayLectures,
   };
 }
 

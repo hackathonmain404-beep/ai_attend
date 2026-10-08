@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loginSchema } from "@/lib/validations/auth";
 import { signIn, signOut, getCurrentUserProfile } from "@/lib/auth/auth-client";
 import { ApiError } from "@/lib/api-client";
@@ -63,6 +63,99 @@ describe("Login Zod Validation Schema", () => {
 });
 
 describe("Client Authentication Service & Contract Handling", () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
+      const endpoint = typeof url === "string" ? url : url.toString();
+      const body = init?.body ? JSON.parse(init.body as string) : {};
+
+      if (endpoint.includes("/api/auth/login")) {
+        if (body.email === "jane.doe@university.edu" && body.password === "student123") {
+          return {
+            status: 200,
+            json: async () => ({
+              success: true,
+              data: {
+                user: {
+                  id: "00000000-0000-0000-0000-000000000002",
+                  email: "jane.doe@university.edu",
+                  fullName: "Jane Doe",
+                  role: "student",
+                  identifier: "STU-2026-001",
+                  device: {
+                    isRegistered: true,
+                    deviceName: "Jane Galaxy S24",
+                    registeredAt: "2026-09-01T08:00:00Z",
+                  },
+                },
+                role: "student",
+              },
+              error: null,
+            }),
+          };
+        }
+
+        if (body.email === "prof.turing@university.edu" && body.password === "teacher123") {
+          return {
+            status: 200,
+            json: async () => ({
+              success: true,
+              data: {
+                user: {
+                  id: "00000000-0000-0000-0000-000000000001",
+                  email: "prof.turing@university.edu",
+                  fullName: "Prof. Alan Turing",
+                  role: "teacher",
+                  identifier: "FAC-2026-001",
+                },
+                role: "teacher",
+              },
+              error: null,
+            }),
+          };
+        }
+
+        return {
+          status: 401,
+          json: async () => ({
+            success: false,
+            data: null,
+            error: {
+              code: "INVALID_CREDENTIALS",
+              message: "Invalid academic email or password. Please verify credentials.",
+            },
+          }),
+        };
+      }
+
+      if (endpoint.includes("/api/auth/logout")) {
+        return {
+          status: 200,
+          json: async () => ({
+            success: true,
+            data: { message: "Successfully signed out of AttendGuard." },
+            error: null,
+          }),
+        };
+      }
+
+      return {
+        status: 404,
+        json: async () => ({
+          success: false,
+          data: null,
+          error: { code: "NOT_FOUND", message: "Endpoint not found" },
+        }),
+      };
+    }) as any;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
   it("authenticates valid student demo credentials and returns student profile", async () => {
     const result = await signIn("jane.doe@university.edu", "student123");
     expect(result.role).toBe("student");

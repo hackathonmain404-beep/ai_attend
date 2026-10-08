@@ -26,34 +26,6 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    try {
-      const { cookies } = await import('next/headers');
-      const demoCookie = cookies().get('attendguard-demo-user')?.value;
-      if (demoCookie) {
-        const parsed = JSON.parse(decodeURIComponent(demoCookie));
-        if (parsed?.id && parsed?.role) {
-          const { data: dbProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', parsed.id)
-            .maybeSingle();
-
-          return {
-            user: { id: parsed.id, email: parsed.email } as User,
-            profile: {
-              id: parsed.id,
-              email: parsed.email,
-              fullName: dbProfile?.full_name || parsed.fullName || parsed.full_name || 'Prof. Alan Turing',
-              role: (dbProfile?.role || parsed.role) as UserRole,
-              identifier: dbProfile?.identifier || parsed.identifier || 'FAC-2026-001',
-              createdAt: dbProfile?.created_at || new Date().toISOString(),
-              updatedAt: dbProfile?.updated_at || new Date().toISOString(),
-            },
-          };
-        }
-      }
-    } catch {}
-
     throw new UnauthorizedError('Authentication required. Please log in.');
   }
 

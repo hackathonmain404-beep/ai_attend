@@ -18,6 +18,10 @@ export function AttendanceHistoryList({ initialRecords }: AttendanceHistoryListP
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [activeAuditRecord, setActiveAuditRecord] = React.useState<AttendanceRecord | null>(null);
 
+  React.useEffect(() => {
+    setRecords(initialRecords);
+  }, [initialRecords]);
+
   // Extract unique classes for filter pills
   const uniqueClasses = React.useMemo(() => {
     const map = new Map<string, string>();

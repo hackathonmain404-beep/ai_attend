@@ -60,6 +60,21 @@ describe("Teacher Overview Data Contract", () => {
     expect(data.recentSessions.length).toBeGreaterThan(0);
   });
 
+  it("binds an authentic faculty profile when provided", async () => {
+    const authenticProfile = {
+      id: "99999999-9999-9999-9999-999999999999",
+      email: "dr.hopper@university.edu",
+      fullName: "Dr. Grace Hopper",
+      role: "teacher" as const,
+      identifier: "FAC-HOPPER-01",
+    };
+
+    const data = await getTeacherOverview(authenticProfile);
+    expect(data.teacher.fullName).toBe("Dr. Grace Hopper");
+    expect(data.teacher.identifier).toBe("FAC-HOPPER-01");
+    expect(data.teacher.email).toBe("dr.hopper@university.edu");
+  });
+
   it("creates a new live session structure with specified TTL", async () => {
     const newSession = await startAttendanceSession("11111111-1111-1111-1111-111111111111", 30);
     expect(newSession.status).toBe("active");

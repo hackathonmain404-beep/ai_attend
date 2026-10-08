@@ -17,6 +17,7 @@ import { getDemoScenario } from '@/lib/analytics/demo-scenarios';
 import { AttendanceOverviewCard } from '@/components/analytics/AttendanceOverviewCard';
 import { SubjectList } from '@/components/analytics/SubjectList';
 import { AttendanceAdvisorChat } from '@/components/ai/AttendanceAdvisorChat';
+import { useStudentSummary } from '@/lib/services/student-service';
 
 const SCENARIOS: { id: DemoScenarioId; name: string; tag: string; badgeColor: string; description: string }[] = [
   {
@@ -43,8 +44,10 @@ const SCENARIOS: { id: DemoScenarioId; name: string; tag: string; badgeColor: st
 ];
 
 export default function StudentAdvisorPage(): React.JSX.Element {
-  const [activeTab, setActiveTab] = React.useState<'live' | 'simulator'>('simulator');
+  const [activeTab, setActiveTab] = React.useState<'live' | 'simulator'>('live');
   const [activeScenarioId, setActiveScenarioId] = React.useState<DemoScenarioId>('critical');
+
+  const { data: liveSummary } = useStudentSummary();
 
   // Authoritative deterministic context dynamically derived from selected demo profile
   const { profile, context } = getDemoScenario(activeScenarioId);
@@ -150,7 +153,7 @@ export default function StudentAdvisorPage(): React.JSX.Element {
               </div>
             </div>
 
-            <AdvisorChatWindow />
+            <AdvisorChatWindow studentName={liveSummary?.student?.fullName} />
           </div>
         ) : (
           <div className="space-y-8">

@@ -2,38 +2,79 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Smartphone, ShieldCheck, AlertTriangle, Search, History, CheckCircle2, UserCheck, RefreshCw } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Smartphone, ShieldCheck, AlertTriangle, Search, History, Loader2 } from "lucide-react";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DeviceResetDialog } from "@/components/teacher/DeviceResetDialog";
-import { fetchDeviceAuditLog } from "@/lib/services/device-client-service";
-import type { DeviceAuditEntry } from "@/types/device-ui";
+import { apiFetch } from "@/lib/api-client";
 import type { SessionAttendee } from "@/types/teacher";
 
-const MOCK_COHORT_DEVICES: Array<SessionAttendee & { isBound: boolean }> = [
-  { studentId: "00000000-0000-0000-0000-000000000002", fullName: "Jane Doe", rollNumber: "STU2026-0891", checkInTime: "10:00 AM", status: "present", reVerified: true, deviceName: "Jane's iPhone 15 Pro", isBound: true },
-  { studentId: "00000000-0000-0000-0000-000000000003", fullName: "John Smith", rollNumber: "STU2026-0892", checkInTime: "10:02 AM", status: "present", reVerified: false, deviceName: "John's Pixel 8", isBound: true },
-  { studentId: "00000000-0000-0000-0000-000000000004", fullName: "Alice Johnson", rollNumber: "STU2026-0893", checkInTime: "10:05 AM", status: "present", reVerified: true, deviceName: "Alice's Galaxy S23", isBound: true },
-  { studentId: "00000000-0000-0000-0000-000000000005", fullName: "Bob Brown", rollNumber: "STU2026-0894", checkInTime: "—", status: "flagged", reVerified: false, deviceName: "None (Pending Reset)", isBound: false },
-  { studentId: "00000000-0000-0000-0000-000000000006", fullName: "Charlie Davis", rollNumber: "STU2026-0895", checkInTime: "10:01 AM", status: "present", reVerified: false, deviceName: "Charlie's iPhone 13", isBound: true },
-];
+interface CohortStudent {
+  studentId: string;
+  fullName: string;
+  rollNumber: string;
+  email: string;
+  deviceName: string;
+  isBound: boolean;
+  status: "present" | "late" | "flagged";
+  reVerified: boolean;
+  checkInTime: string;
+}
+
+interface DevicesApiResponse {
+  metrics: {
+    totalCohort: number;
+    boundDevices: number;
+    pendingBinding: number;
+    resetsAuthorized: number;
+  };
+  cohort: CohortStudent[];
+  auditLogs: Array<{
+    id: string;
+    studentId: string;
+    studentName: string;
+    rollNumber: string;
+    reason: string;
+    authorizedBy: string;
+    ipAddress: string;
+    timestamp: string;
+  }>;
+}
 
 export default function TeacherDevicesPage() {
-  const [auditLog, setAuditLog] = React.useState<DeviceAuditEntry[]>([]);
+  const [cohort, setCohort] = React.useState<CohortStudent[]>([]);
+  const [metrics, setMetrics] = React.useState({
+    totalCohort: 0,
+    boundDevices: 0,
+    pendingBinding: 0,
+    resetsAuthorized: 0,
+  });
+  const [auditLog, setAuditLog] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [resetTarget, setResetTarget] = React.useState<SessionAttendee | null>(null);
   const [search, setSearch] = React.useState("");
 
-  const refreshLog = () => {
-    fetchDeviceAuditLog().then(setAuditLog);
-  };
-
-  React.useEffect(() => {
-    refreshLog();
+  const refreshData = React.useCallback(async () => {
+    try {
+      const res = await apiFetch<DevicesApiResponse>("/api/teacher/devices");
+      if (res) {
+        setCohort(res.cohort || []);
+        setMetrics(res.metrics || { totalCohort: 0, boundDevices: 0, pendingBinding: 0, resetsAuthorized: 0 });
+        setAuditLog(res.auditLogs || []);
+      }
+    } catch {
+      // Fallback state on network issue
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const filteredCohort = MOCK_COHORT_DEVICES.filter(
+  React.useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const filteredCohort = cohort.filter(
     (s) =>
       s.fullName.toLowerCase().includes(search.toLowerCase()) ||
       s.rollNumber.toLowerCase().includes(search.toLowerCase())
@@ -63,25 +104,37 @@ export default function TeacherDevicesPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 border-slate-800 bg-slate-900/50">
           <span className="text-xs text-slate-400 font-medium">Cohort Students</span>
-          <div className="text-2xl font-black text-white mt-1">123</div>
+          <div className="text-2xl font-black text-white mt-1">
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : metrics.totalCohort}
+          </div>
           <span className="text-[11px] text-slate-500 mt-0.5">Total enrolled cohort</span>
         </Card>
 
         <Card className="p-4 border-slate-800 bg-slate-900/50">
           <span className="text-xs text-slate-400 font-medium">Bound Devices</span>
-          <div className="text-2xl font-black text-emerald-400 mt-1">119</div>
-          <span className="text-[11px] text-emerald-500/80 mt-0.5">96.7% hardware coupled</span>
+          <div className="text-2xl font-black text-emerald-400 mt-1">
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : metrics.boundDevices}
+          </div>
+          <span className="text-[11px] text-emerald-500/80 mt-0.5">
+            {metrics.totalCohort > 0
+              ? `${((metrics.boundDevices / metrics.totalCohort) * 100).toFixed(1)}% hardware coupled`
+              : "0% hardware coupled"}
+          </span>
         </Card>
 
         <Card className="p-4 border-slate-800 bg-slate-900/50">
           <span className="text-xs text-slate-400 font-medium">Pending Binding</span>
-          <div className="text-2xl font-black text-amber-400 mt-1">4</div>
+          <div className="text-2xl font-black text-amber-400 mt-1">
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : metrics.pendingBinding}
+          </div>
           <span className="text-[11px] text-amber-500/80 mt-0.5">Awaiting initial phone</span>
         </Card>
 
         <Card className="p-4 border-slate-800 bg-slate-900/50">
           <span className="text-xs text-slate-400 font-medium">Resets Authorized</span>
-          <div className="text-2xl font-black text-teal-400 mt-1">{auditLog.length + 10}</div>
+          <div className="text-2xl font-black text-teal-400 mt-1">
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-500" /> : metrics.resetsAuthorized}
+          </div>
           <span className="text-[11px] text-teal-500/80 mt-0.5">Audit log entries</span>
         </Card>
       </div>
@@ -121,42 +174,60 @@ export default function TeacherDevicesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {filteredCohort.map((student) => (
-                <tr key={student.studentId} className="hover:bg-slate-900/50 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-white">
-                    {student.fullName}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-slate-300">
-                    {student.rollNumber}
-                  </td>
-                  <td className="py-3 px-4 text-slate-300">
-                    {student.deviceName}
-                  </td>
-                  <td className="py-3 px-4">
-                    {student.isBound ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
-                        <ShieldCheck className="h-3 w-3" />
-                        Bound
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
-                        <AlertTriangle className="h-3 w-3" />
-                        Unbound
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <Button
-                      onClick={() => setResetTarget(student)}
-                      variant="outline"
-                      size="sm"
-                      className="border-slate-800 text-xs text-amber-300 hover:border-amber-500/40 hover:bg-amber-500/10"
-                    >
-                      Authorize Reset
-                    </Button>
+              {filteredCohort.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
+                    {isLoading ? "Retrieving student hardware ledger..." : "No cohort student records found."}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredCohort.map((student) => (
+                  <tr key={student.studentId} className="hover:bg-slate-900/50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-white">
+                      {student.fullName}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-300">
+                      {student.rollNumber}
+                    </td>
+                    <td className="py-3 px-4 text-slate-300">
+                      {student.deviceName}
+                    </td>
+                    <td className="py-3 px-4">
+                      {student.isBound ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
+                          <ShieldCheck className="h-3 w-3" />
+                          Bound
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
+                          <AlertTriangle className="h-3 w-3" />
+                          Unbound
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <Button
+                        onClick={() =>
+                          setResetTarget({
+                            studentId: student.studentId,
+                            fullName: student.fullName,
+                            rollNumber: student.rollNumber,
+                            checkInTime: student.checkInTime,
+                            status: student.status,
+                            reVerified: student.reVerified,
+                            deviceName: student.deviceName,
+                          })
+                        }
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-800 text-xs text-amber-300 hover:border-amber-500/40 hover:bg-amber-500/10"
+                      >
+                        Authorize Reset
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -180,35 +251,39 @@ export default function TeacherDevicesPage() {
               <tr>
                 <th className="py-3 px-4">Student</th>
                 <th className="py-3 px-4">Roll Number</th>
-                <th className="py-3 px-4">Revoked Hardware</th>
                 <th className="py-3 px-4">Reason / Audit Justification</th>
                 <th className="py-3 px-4">Authorized By</th>
                 <th className="py-3 px-4 text-right">Timestamp</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {auditLog.map((entry) => (
-                <tr key={entry.id} className="hover:bg-slate-900/50 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-white">
-                    {entry.studentName}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-slate-300">
-                    {entry.rollNumber}
-                  </td>
-                  <td className="py-3 px-4 text-slate-400">
-                    {entry.previousDeviceName}
-                  </td>
-                  <td className="py-3 px-4 text-slate-300 max-w-xs">
-                    {entry.reason}
-                  </td>
-                  <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                    {entry.resetBy}
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono text-[11px] text-slate-400">
-                    {new Date(entry.resetAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+              {auditLog.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
+                    {isLoading ? "Retrieving audit logs..." : "No administrative device resets recorded."}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                auditLog.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-slate-900/50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-white">
+                      {entry.studentName}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-300">
+                      {entry.rollNumber}
+                    </td>
+                    <td className="py-3 px-4 text-slate-300 max-w-xs">
+                      {entry.reason}
+                    </td>
+                    <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                      {entry.authorizedBy}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-[11px] text-slate-400">
+                      {new Date(entry.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -219,7 +294,7 @@ export default function TeacherDevicesPage() {
         isOpen={!!resetTarget}
         onClose={() => setResetTarget(null)}
         attendee={resetTarget}
-        onResetSuccess={refreshLog}
+        onResetSuccess={refreshData}
       />
     </div>
   );

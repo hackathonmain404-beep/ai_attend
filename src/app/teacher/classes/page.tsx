@@ -2,22 +2,84 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Users, BookOpen, Search, ArrowLeft, PlayCircle, ShieldCheck, Mail } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Users, Search, ArrowLeft, PlayCircle, ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTeacherOverview } from "@/lib/services/teacher-service";
+import { apiFetch } from "@/lib/api-client";
+
+interface RosterStudent {
+  studentId: string;
+  name: string;
+  roll: string;
+  email: string;
+  rate: number;
+  deviceBound: boolean;
+  deviceName: string | null;
+  proxyAlerts: number;
+  attendedCount: number;
+  totalSessions: number;
+}
+
+interface ClassRosterResponse {
+  classId: string;
+  code: string;
+  name: string;
+  schedule: string;
+  semester: string;
+  totalEnrolled: number;
+  students: RosterStudent[];
+}
 
 export default function TeacherClassesPage() {
   const { data } = useTeacherOverview();
-  const [selectedClassId, setSelectedClassId] = React.useState<string>(
-    data?.classes[0]?.id || ""
-  );
+  const [selectedClassId, setSelectedClassId] = React.useState<string>("");
+  const [roster, setRoster] = React.useState<RosterStudent[]>([]);
+  const [loadingRoster, setLoadingRoster] = React.useState(false);
   const [search, setSearch] = React.useState("");
+
+  // Sync selectedClassId with first available class once loaded
+  React.useEffect(() => {
+    if (!selectedClassId && data?.classes && data.classes.length > 0) {
+      setSelectedClassId(data.classes[0].id);
+    }
+  }, [data?.classes, selectedClassId]);
 
   const currentClass =
     data?.classes.find((c) => c.id === selectedClassId) || data?.classes[0];
+
+  React.useEffect(() => {
+    if (!currentClass?.id) return;
+
+    let isMounted = true;
+    setLoadingRoster(true);
+
+    apiFetch<ClassRosterResponse>(`/api/teacher/classes/${currentClass.id}/roster`)
+      .then((res) => {
+        if (isMounted && res) {
+          setRoster(res.students || []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setRoster([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingRoster(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentClass?.id]);
+
+  const filteredRoster = roster.filter(
+    (s) =>
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.roll.toLowerCase().includes(search.toLowerCase()) ||
+      s.email.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -46,23 +108,29 @@ export default function TeacherClassesPage() {
       </div>
 
       {/* Course Selection Tabs */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {data?.classes.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setSelectedClassId(c.id)}
-            className={`px-4 py-3 rounded-xl border text-left transition-all shrink-0 ${
-              selectedClassId === c.id
-                ? "border-teal-500 bg-teal-950/20 text-white shadow-lg"
-                : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
-            }`}
-          >
-            <span className="text-xs font-mono font-bold text-teal-400 block">{c.code}</span>
-            <p className="text-sm font-bold text-white mt-0.5">{c.name}</p>
-            <p className="text-[11px] text-slate-500 mt-1">{c.enrolledCount} Enrolled Students</p>
-          </button>
-        ))}
-      </div>
+      {data?.classes && data.classes.length > 0 ? (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {data.classes.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedClassId(c.id)}
+              className={`px-4 py-3 rounded-xl border text-left transition-all shrink-0 ${
+                (currentClass?.id === c.id)
+                  ? "border-teal-500 bg-teal-950/20 text-white shadow-lg"
+                  : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+              }`}
+            >
+              <span className="text-xs font-mono font-bold text-teal-400 block">{c.code}</span>
+              <p className="text-sm font-bold text-white mt-0.5">{c.name}</p>
+              <p className="text-[11px] text-slate-500 mt-1">{c.enrolledCount} Enrolled Students</p>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <Card className="p-6 border-slate-800 bg-slate-900/50 text-center">
+          <p className="text-xs text-slate-400">No courses assigned to your faculty profile.</p>
+        </Card>
+      )}
 
       {/* Enrolled Students Table */}
       {currentClass && (
@@ -74,7 +142,7 @@ export default function TeacherClassesPage() {
                   {currentClass.code}: Student Roster
                 </CardTitle>
                 <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs">
-                  {currentClass.enrolledCount} Total Cohort
+                  {roster.length} Enrolled Cohort
                 </Badge>
               </div>
               <CardDescription className="text-xs text-slate-400 mt-0.5">
@@ -105,19 +173,28 @@ export default function TeacherClassesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {[
-                  { name: "Jane Doe", roll: "STU2026-0891", email: "jane.doe@university.edu", rate: 85.0 },
-                  { name: "John Smith", roll: "STU2026-0892", email: "john.smith@university.edu", rate: 81.2 },
-                  { name: "Alice Johnson", roll: "STU2026-0893", email: "alice.j@university.edu", rate: 91.5 },
-                  { name: "Bob Brown", roll: "STU2026-0894", email: "bob.brown@university.edu", rate: 74.0 },
-                ]
-                  .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()) || s.roll.toLowerCase().includes(search.toLowerCase()))
-                  .map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
+                {loadingRoster ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
+                        <span>Querying verified course roster...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredRoster.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
+                      {search ? "No matching students found." : "No students currently enrolled in this course."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRoster.map((s) => (
+                    <tr key={s.studentId} className="hover:bg-slate-900/50 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-lg bg-slate-800 text-teal-400 font-bold flex items-center justify-center text-xs">
-                            {s.name[0]}
+                          <div className="h-7 w-7 rounded-lg bg-slate-800 text-teal-400 font-bold flex items-center justify-center text-xs uppercase">
+                            {s.name ? s.name[0] : "S"}
                           </div>
                           <span className="font-semibold text-white">{s.name}</span>
                         </div>
@@ -125,10 +202,17 @@ export default function TeacherClassesPage() {
                       <td className="py-3 px-4 font-mono text-slate-300">{s.roll}</td>
                       <td className="py-3 px-4 text-slate-400">{s.email}</td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
-                          <ShieldCheck className="h-3 w-3" />
-                          <span>Bound</span>
-                        </span>
+                        {s.deviceBound ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
+                            <ShieldCheck className="h-3 w-3" />
+                            <span>Bound</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>Unbound</span>
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className={`font-mono font-bold ${s.rate >= 75 ? "text-emerald-400" : "text-amber-400"}`}>
@@ -136,7 +220,8 @@ export default function TeacherClassesPage() {
                         </span>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

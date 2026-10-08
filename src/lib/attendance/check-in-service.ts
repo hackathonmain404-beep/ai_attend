@@ -241,13 +241,28 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   const className = classData ? `${classData.code}: ${classData.name}` : 'Enrolled Course';
 
   // Broadcast Realtime check-in event to update live headcount
+  let studentProfile: any = null;
+  try {
+    const profileQuery = supabase.from('profiles');
+    if (typeof profileQuery?.select === 'function') {
+      const q = profileQuery.select('full_name, identifier');
+      if (typeof q?.eq === 'function') {
+        const eqQ = q.eq('id', studentId);
+        if (typeof eqQ?.maybeSingle === 'function') {
+          const res = await eqQ.maybeSingle();
+          studentProfile = res?.data;
+        }
+      }
+    }
+  } catch {}
+
   await broadcastStudentCheckIn(
     sessionId,
     {
       recordId: record.id,
       studentId,
-      fullName: 'Enrolled Student',
-      rollNumber: 'STU',
+      fullName: studentProfile?.full_name || 'Enrolled Student',
+      rollNumber: studentProfile?.identifier || 'STU',
       checkInTime: record.check_in_time,
       status: 'present',
     },

@@ -12,7 +12,7 @@ import { TodayLecturesCard } from "@/components/student/TodayLecturesCard";
 import { SubjectAttendanceCard } from "@/components/student/SubjectAttendanceCard";
 import { StudentDashboardSkeleton } from "@/components/student/StudentDashboardSkeleton";
 import { ReVerifyAlertModal } from "@/components/student/ReVerifyAlertModal";
-import { getActiveReVerifyChallenge } from "@/mocks/verification";
+import { checkActiveReVerifyChallenge } from "@/lib/services/verification-service";
 import type { ReVerifyChallenge } from "@/types/verification";
 
 import { StudentAchievementsCard } from "@/components/student/StudentAchievementsCard";
@@ -23,14 +23,24 @@ export default function StudentDashboardPage() {
   const [activeChallenge, setActiveChallenge] = React.useState<ReVerifyChallenge | null>(null);
 
   React.useEffect(() => {
-    const check = () => {
-      const challenge = getActiveReVerifyChallenge();
-      setActiveChallenge(challenge);
+    let isMounted = true;
+    const check = async () => {
+      try {
+        const challenge = await checkActiveReVerifyChallenge();
+        if (isMounted) {
+          setActiveChallenge(challenge);
+        }
+      } catch {
+        // Silently skip on error
+      }
     };
 
     check();
-    const interval = setInterval(check, 3000);
-    return () => clearInterval(interval);
+    const interval = setInterval(check, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   if (isLoading) {

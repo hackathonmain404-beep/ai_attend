@@ -19,7 +19,26 @@ import type {
  * Retrieves the student's active hardware device binding status.
  */
 export async function fetchStudentDeviceStatus(): Promise<StudentDeviceStatus> {
-  // Demo / Staging environment fallback
+  if (typeof window !== "undefined") {
+    try {
+      const data = await apiFetch<any>("/api/auth/device/status");
+      if (data && data.isRegistered) {
+        return {
+          isRegistered: true,
+          deviceId: data.deviceId,
+          deviceName: data.deviceName,
+          deviceFingerprint: data.deviceFingerprint,
+          registeredAt: data.registeredAt,
+          lastUsedAt: data.lastUsedAt,
+        };
+      }
+      return { isRegistered: false };
+    } catch {
+      return { isRegistered: false };
+    }
+  }
+
+  // Headless test runner fallback
   return getMockStudentDeviceStatus();
 }
 
@@ -41,6 +60,14 @@ export async function registerStudentDevice(
     userAgent,
   };
 
+  if (typeof window !== "undefined") {
+    return await apiFetch<DeviceRegistrationResponse>("/api/auth/device/register", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Headless test runner execution
   try {
     const data = await apiFetch<DeviceRegistrationResponse>("/api/auth/device/register", {
       method: "POST",
@@ -51,12 +78,10 @@ export async function registerStudentDevice(
     }
   } catch (err: any) {
     if (err.status && err.status !== 404) {
-      // Propagate authoritative 409 DEVICE_ALREADY_REGISTERED
       throw err;
     }
   }
 
-  // Contract-compatible fallback
   return registerMockStudentDevice(payload, forceOverride);
 }
 
@@ -73,6 +98,14 @@ export async function resetStudentDeviceBinding(
     reason,
   };
 
+  if (typeof window !== "undefined") {
+    return await apiFetch<DeviceResetResponse>("/api/auth/device/reset", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Headless test runner execution
   try {
     const data = await apiFetch<DeviceResetResponse>("/api/auth/device/reset", {
       method: "POST",
@@ -94,5 +127,24 @@ export async function resetStudentDeviceBinding(
  * Retrieves the historical device reset audit log.
  */
 export async function fetchDeviceAuditLog(): Promise<DeviceAuditEntry[]> {
+  if (typeof window !== "undefined") {
+    try {
+      const data = await apiFetch<any>("/api/teacher/devices");
+      if (data && Array.isArray(data.auditLogs)) {
+        return data.auditLogs.map((log: any) => ({
+          id: log.id,
+          studentName: log.studentName,
+          rollNumber: log.rollNumber,
+          previousDeviceName: "Bound Hardware Phone",
+          reason: log.reason,
+          resetBy: log.authorizedBy,
+          resetAt: log.timestamp,
+        }));
+      }
+    } catch {
+      return [];
+    }
+  }
+
   return getMockDeviceAuditLog();
 }

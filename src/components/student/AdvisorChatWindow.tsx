@@ -7,28 +7,67 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { askAdvisor } from "@/lib/services/advisor-service";
+import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import type { AdvisorChatMessage, AdvisorContextSnapshot } from "@/types/advisor";
 
 const QUICK_PROMPT_SUGGESTIONS = [
-  "Am I safe in Linear Algebra, or do I need to attend the next classes?",
-  "Can I miss tomorrow's Distributed Systems class?",
   "Which of my courses are currently below 75%?",
-  "How many classes do I need to attend in Operating Systems?",
+  "Can I safely miss any upcoming classes?",
+  "How many classes do I need to attend to reach 75%?",
+  "Summarize my attendance status.",
 ];
 
-const INITIAL_MESSAGES: AdvisorChatMessage[] = [
-  {
-    id: "msg-welcome",
-    role: "advisor",
-    content:
-      "Hello Jane! I am your AttendGuard AI Academic Advisor. I am connected directly to your official cryptographic attendance ledger. Ask me any question about your course standings, upcoming absences, or recovery requirements.",
-    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    snapshot: null,
-  },
-];
+export function AdvisorChatWindow({ studentName: propStudentName }: { studentName?: string } = {}) {
+  const [profileName, setProfileName] = React.useState<string>(propStudentName || "");
 
-export function AdvisorChatWindow() {
-  const [messages, setMessages] = React.useState<AdvisorChatMessage[]>(INITIAL_MESSAGES);
+  React.useEffect(() => {
+    if (propStudentName) {
+      setProfileName(propStudentName);
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const cached = getCurrentUserProfile();
+      if (cached?.fullName) {
+        setProfileName(cached.fullName);
+      } else {
+        resolveCurrentUserProfile().then((u) => {
+          if (u?.fullName) setProfileName(u.fullName);
+        });
+      }
+    }
+  }, [propStudentName]);
+
+  const [messages, setMessages] = React.useState<AdvisorChatMessage[]>(() => {
+    const greeting = propStudentName ? `Hello ${propStudentName.split(" ")[0]}!` : "Hello!";
+    return [
+      {
+        id: "msg-welcome",
+        role: "advisor",
+        content:
+          `${greeting} I am your AttendGuard AI Academic Advisor. I am connected directly to your official cryptographic attendance ledger. Ask me any question about your course standings, upcoming absences, or recovery requirements.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        snapshot: null,
+      },
+    ];
+  });
+
+  React.useEffect(() => {
+    if (profileName) {
+      const firstName = profileName.split(" ")[0];
+      setMessages((prev) => {
+        if (prev.length === 1 && prev[0].id === "msg-welcome") {
+          return [
+            {
+              ...prev[0],
+              content: `Hello ${firstName}! I am your AttendGuard AI Academic Advisor. I am connected directly to your official cryptographic attendance ledger. Ask me any question about your course standings, upcoming absences, or recovery requirements.`,
+            },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [profileName]);
+
   const [inputValue, setInputValue] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
 

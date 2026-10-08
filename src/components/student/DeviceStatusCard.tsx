@@ -46,7 +46,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
               </Badge>
             </div>
             <p className="text-xs text-slate-400 font-mono">
-              Device ID: {status.deviceId || "dev-0891-iphone-15-pro"}
+              Device ID: {status.deviceId || "Active Hardware Unit"}
             </p>
           </div>
         </div>
@@ -84,10 +84,10 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
                     hour: "2-digit",
                     minute: "2-digit",
                   })
-                : "September 15, 2026 at 09:12 AM"}
+                : "Active Hardware Binding"}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500">Validated during campus orientation</p>
+          <p className="text-[11px] text-slate-500">Verified institutional registration</p>
         </div>
 
         {/* Security Binding Perimeter */}
@@ -129,7 +129,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
         </div>
 
         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-400 break-all select-all">
-          {status.deviceFingerprint || "fp_hash_device_hardware_lock"}
+          {status.deviceFingerprint || "Hardware fingerprint securely coupled"}
         </div>
       </div>
 

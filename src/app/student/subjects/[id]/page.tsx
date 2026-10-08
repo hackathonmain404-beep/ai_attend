@@ -6,7 +6,9 @@ import { ArrowLeft, BookOpen, Clock, MapPin, User, ShieldCheck, CheckCircle2, Al
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getSubjectDetails } from "@/lib/services/subject-service";
+import { getSubjectDetails, calculateAttendanceMargin } from "@/lib/services/subject-service";
+import { useStudentSummary } from "@/lib/services/student-service";
+import { fetchAttendanceHistory } from "@/lib/services/verification-service";
 import { AttendanceSimulatorCard } from "@/components/student/AttendanceSimulatorCard";
 
 interface SubjectPageProps {
@@ -16,7 +18,60 @@ interface SubjectPageProps {
 }
 
 export default function StudentSubjectDetailPage({ params }: SubjectPageProps) {
-  const subject = getSubjectDetails(params.id);
+  const { data: summary, isLoading } = useStudentSummary();
+  const [history, setHistory] = React.useState<any[]>([]);
+
+  const matchedFromSummary = summary?.classes?.find(
+    (c) =>
+      c.classId.toLowerCase() === params.id.toLowerCase() ||
+      c.code.toLowerCase() === params.id.toLowerCase()
+  );
+
+  const subject = React.useMemo(() => {
+    if (matchedFromSummary) {
+      const margin = calculateAttendanceMargin(
+        matchedFromSummary.attended,
+        matchedFromSummary.totalHeld
+      );
+      return {
+        id: matchedFromSummary.classId,
+        code: matchedFromSummary.code,
+        name: matchedFromSummary.className,
+        teacherName: matchedFromSummary.teacherName || "Course Instructor",
+        schedule: matchedFromSummary.schedule || "Scheduled Lecture",
+        semester: matchedFromSummary.semester || summary?.student?.semester || "Semester 5 (Fall 2026)",
+        credits: 4,
+        room: "Department Lecture Hall",
+        margin,
+        recentSessions: history,
+      };
+    }
+    return null;
+  }, [matchedFromSummary, summary, history]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadSessions() {
+      const classId = matchedFromSummary?.classId || params.id;
+      if (classId) {
+        try {
+          const records = await fetchAttendanceHistory(classId);
+          if (isMounted) setHistory(records);
+        } catch {}
+      }
+    }
+    loadSessions();
+    return () => { isMounted = false; };
+  }, [matchedFromSummary?.classId, params.id]);
+
+  if (isLoading && !subject) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 space-y-4 text-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+        <p className="text-xs text-slate-400">Loading course analytics...</p>
+      </div>
+    );
+  }
 
   if (!subject) {
     return (

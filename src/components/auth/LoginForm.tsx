@@ -24,7 +24,6 @@ import { TiltCard } from "@/components/ui/tilt-card";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { signIn, getCurrentUserProfile, signOut, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { createClient } from "@/lib/supabase/client";
-import { MOCK_USERS } from "@/mocks/auth";
 import { cn } from "@/lib/utils";
 
 // Social Provider Icons

@@ -2,13 +2,17 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Maximize2, Minimize2, Radio, StopCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Radio, StopCircle, PlayCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { DynamicQrDisplay } from "@/components/qr/DynamicQrDisplay";
+import { useTeacherOverview, endAttendanceSession } from "@/lib/services/teacher-service";
+import { toast } from "sonner";
 
 export default function TeacherSessionsProjectorPage() {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const { data, isLoading, refetch } = useTeacherOverview();
+  const activeSession = data?.activeSession;
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -27,6 +31,19 @@ export default function TeacherSessionsProjectorPage() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
+  const handleEndSession = async () => {
+    if (!activeSession?.sessionId) return;
+    try {
+      await endAttendanceSession(activeSession.sessionId);
+      toast.info("Session Closed", {
+        description: "Attendance broadcast terminated and records archived.",
+      });
+      refetch();
+    } catch {
+      toast.error("Failed to terminate session");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30">
       {/* Top Projector Action Bar */}
@@ -40,9 +57,9 @@ export default function TeacherSessionsProjectorPage() {
           </Button>
           <div className="h-4 w-[1px] bg-slate-800" />
           <div className="flex items-center gap-2">
-            <Radio className="h-4 w-4 text-emerald-400 animate-pulse" />
+            <Radio className={`h-4 w-4 ${activeSession ? "text-emerald-400 animate-pulse" : "text-slate-500"}`} />
             <span className="text-xs font-mono font-semibold text-slate-300">
-              AUDITORIUM LECTURE PROJECTOR MODE
+              {activeSession ? "AUDITORIUM LECTURE PROJECTOR MODE" : "PROJECTOR STANDBY"}
             </span>
           </div>
         </div>
@@ -67,30 +84,58 @@ export default function TeacherSessionsProjectorPage() {
             )}
           </Button>
 
-          <Button asChild variant="destructive" size="sm" className="text-xs font-bold">
-            <Link href="/teacher">
+          {activeSession && (
+            <Button
+              onClick={handleEndSession}
+              variant="destructive"
+              size="sm"
+              className="text-xs font-bold"
+            >
               <StopCircle className="h-3.5 w-3.5 mr-1.5" />
               End Session
-            </Link>
-          </Button>
+            </Button>
+          )}
         </div>
       </header>
 
       {/* Main Projector Stage */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <DynamicQrDisplay
-          sessionId="44444444-4444-4444-4444-444444444441"
-          courseCode="CS301"
-          courseName="Distributed Systems & Cloud Computing"
-          totalEnrolled={65}
-          presentCount={52}
-          rotationIntervalSec={20}
-        />
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-3 text-slate-400">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-400" />
+            <span className="text-sm">Connecting to faculty broadcast feed...</span>
+          </div>
+        ) : activeSession ? (
+          <DynamicQrDisplay
+            sessionId={activeSession.sessionId}
+            courseCode={activeSession.courseCode}
+            courseName={activeSession.className}
+            totalEnrolled={activeSession.totalEnrolled}
+            presentCount={activeSession.presentCount}
+            rotationIntervalSec={activeSession.qrRotationIntervalSec || 20}
+          />
+        ) : (
+          <Card className="max-w-md w-full p-8 border-slate-800 bg-slate-900/60 text-center space-y-4">
+            <div className="mx-auto h-12 w-12 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
+              <Radio className="h-6 w-6" />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">No Active Lecture Broadcast</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              There is currently no live attendance session in progress. Start an attendance session from your Faculty Console to project dynamic rolling QR tokens.
+            </p>
+            <Button asChild variant="emerald" size="sm" className="gap-2 font-bold shadow-md shadow-emerald-950">
+              <Link href="/teacher">
+                <PlayCircle className="h-4 w-4" />
+                Return to Faculty Console
+              </Link>
+            </Button>
+          </Card>
+        )}
       </main>
 
       {/* Bottom Security Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/90 py-3 text-center text-xs text-slate-500 font-mono">
-        AttendGuard HMAC SHA-256 Dynamic Rolling Tokens • Rotating Every 20 Seconds • Proxy Prevention Active
+        AttendGuard HMAC SHA-256 Dynamic Rolling Tokens • Rotating Every {activeSession?.qrRotationIntervalSec || 20} Seconds • Proxy Prevention Active
       </footer>
     </div>
   );

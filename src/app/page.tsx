@@ -30,7 +30,6 @@ import { CyberAmbient3D, HolographicHeroShield } from "@/components/ui/cyber-amb
 import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { MOCK_USERS } from "@/mocks/auth";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 
 export default function HomePage() {
@@ -61,16 +60,23 @@ export default function HomePage() {
             try {
               const { data, error } = await supabase.auth.exchangeCodeForSession(code);
               if (!error && data?.user) {
-                const meta = data.user.user_metadata || {};
-                const email = data.user.email || "student@university.edu";
+                const user = data.user;
+                const meta = user.user_metadata || {};
                 const storedRole =
                   (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+
+                const { data: dbProfile } = await supabase
+                  .from("profiles")
+                  .select("*")
+                  .eq("id", user.id)
+                  .maybeSingle();
+
                 resolvedProfile = {
-                  id: data.user.id,
-                  email,
-                  fullName: meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
-                  role: storedRole,
-                  identifier: storedRole === "teacher" ? "FAC-404" : "STU-001",
+                  id: user.id,
+                  email: dbProfile?.email || user.email || "",
+                  fullName: dbProfile?.full_name || meta.full_name || meta.name || user.email?.split("@")[0] || "Verified Academic",
+                  role: dbProfile?.role || storedRole,
+                  identifier: dbProfile?.identifier || (storedRole === "teacher" ? `FAC-${user.id.slice(0, 4)}` : `STU-${user.id.slice(0, 4)}`),
                 };
               }
             } catch (exchangeErr) {
@@ -82,16 +88,23 @@ export default function HomePage() {
             try {
               const { data: { session } } = await supabase.auth.getSession();
               if (session?.user) {
-                const meta = session.user.user_metadata || {};
-                const email = session.user.email || "student@university.edu";
+                const user = session.user;
+                const meta = user.user_metadata || {};
                 const storedRole =
                   (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") || "student";
+
+                const { data: dbProfile } = await supabase
+                  .from("profiles")
+                  .select("*")
+                  .eq("id", user.id)
+                  .maybeSingle();
+
                 resolvedProfile = {
-                  id: session.user.id,
-                  email,
-                  fullName: meta.full_name || meta.name || email.split("@")[0] || "Verified Academic",
-                  role: storedRole,
-                  identifier: storedRole === "teacher" ? "FAC-404" : "STU-001",
+                  id: user.id,
+                  email: dbProfile?.email || user.email || "",
+                  fullName: dbProfile?.full_name || meta.full_name || meta.name || user.email?.split("@")[0] || "Verified Academic",
+                  role: dbProfile?.role || storedRole,
+                  identifier: dbProfile?.identifier || (storedRole === "teacher" ? `FAC-${user.id.slice(0, 4)}` : `STU-${user.id.slice(0, 4)}`),
                 };
               }
             } catch {}

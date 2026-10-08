@@ -19,7 +19,6 @@ import { LiveAttendeeTable } from "@/components/teacher/LiveAttendeeTable";
 import { SessionHistoryTable } from "@/components/teacher/SessionHistoryTable";
 import { TeacherDashboardSkeleton } from "@/components/teacher/TeacherDashboardSkeleton";
 import { LiveAttendanceStream, type StreamEventItem } from "@/components/teacher/LiveAttendanceStream";
-import { RealtimeSimControls } from "@/components/teacher/RealtimeSimControls";
 import { subscribeToAttendanceSession } from "@/lib/realtime/attendance-channel";
 
 export default function TeacherOverviewPage() {
@@ -189,10 +188,9 @@ export default function TeacherOverviewPage() {
         onEndSessionClick={handleEndSession}
       />
 
-      {/* 4. Real-time Live Stream & Simulator Suite (When active session is running) */}
+      {/* 4. Real-time Live Attendance Stream (When active session is running) */}
       {currentActiveSession && (
         <div className="space-y-4">
-          <RealtimeSimControls sessionId={currentActiveSession.sessionId} />
           <LiveAttendanceStream
             events={streamEvents}
             onClear={() => setStreamEvents([])}

@@ -138,7 +138,7 @@ export const GET = withErrorHandler(async (_request: NextRequest) => {
       sessionId: activeSessionRecord.id,
       classId,
       className: cls?.name || 'Active Course',
-      courseCode: cls?.code || 'CS301',
+      courseCode: cls?.code || 'COURSE',
       status: activeSessionRecord.status as 'active' | 'ended',
       startedAt: activeSessionRecord.started_at,
       endedAt: activeSessionRecord.ended_at,
@@ -199,8 +199,8 @@ export const GET = withErrorHandler(async (_request: NextRequest) => {
     recentSessions.push({
       sessionId: s.id,
       classId: s.class_id,
-      courseCode: cls?.code || 'CS301',
-      className: cls?.name || 'Course Lecture',
+      courseCode: cls?.code || 'COURSE',
+      className: cls?.name || 'Class Session',
       date: s.started_at,
       totalEnrolled: enrolled,
       presentCount: present,
@@ -213,38 +213,53 @@ export const GET = withErrorHandler(async (_request: NextRequest) => {
   const avgPct =
     recentSessions.length > 0
       ? Math.round(totalAttendanceSum / recentSessions.length)
-      : 88;
+      : 0;
+
+  const teacherSessionIds = [
+    ...(endedSessions || []).map((s: any) => s.id),
+    ...(activeSessionRecord ? [activeSessionRecord.id] : []),
+  ];
 
   let proxiesBlocked = 0;
-  const { count: blockedCount } = await supabase
-    .from('attendance_verifications')
-    .select('*', { count: 'exact', head: true })
-    .in('status', ['invalid', 'expired', 'device_mismatch']);
-  proxiesBlocked = blockedCount ?? 0;
+  if (teacherSessionIds.length > 0) {
+    const { count: blockedCount } = await supabase
+      .from('attendance_verifications')
+      .select('*', { count: 'exact', head: true })
+      .in('session_id', teacherSessionIds)
+      .in('status', ['invalid', 'expired', 'device_mismatch']);
+    proxiesBlocked = blockedCount ?? 0;
+  }
 
   const nextClass = classes[0];
   const teacherProfile: TeacherProfile = {
     id: profile.id,
-    fullName: profile.fullName || 'Prof. Alan Turing',
-    identifier: profile.identifier || 'FAC-2026-001',
-    email: profile.email || 'prof.turing@university.edu',
-    department: 'Computer Science & Engineering',
-    office: 'Alan Turing Hall, Room 402',
+    fullName: profile.fullName || 'Faculty Member',
+    identifier: profile.identifier || 'FACULTY',
+    email: profile.email || user.email || '',
+    department: (profile as any).department || 'Academic Faculty',
+    office: (profile as any).office || 'Department Office',
   };
 
   const overviewPayload: TeacherOverviewData = {
     teacher: teacherProfile,
     metrics: {
-      totalStudents: totalUniqueStudents.size > 0 ? totalUniqueStudents.size : 4,
+      totalStudents: totalUniqueStudents.size,
       assignedClassesCount: classes.length,
       averageAttendancePercentage: avgPct,
       proxiesBlockedCount: proxiesBlocked,
-      nextLecture: {
-        courseCode: nextClass?.code || 'CS301',
-        courseName: nextClass?.name || 'Distributed Systems',
-        time: nextClass?.schedule || 'Mon/Wed 10:00 - 11:30',
-        room: 'Lecture Hall 101',
-      },
+      nextLecture: nextClass
+        ? {
+            courseCode: nextClass.code,
+            courseName: nextClass.name,
+            time: nextClass.schedule || 'Scheduled',
+            room: 'Campus Hall',
+          }
+        : {
+            courseCode: 'N/A',
+            courseName: 'No upcoming lectures scheduled',
+            time: '—',
+            room: '—',
+          },
     },
     classes,
     activeSession,

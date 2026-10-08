@@ -42,23 +42,8 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    // Update demo user cookie if present
-    const demoCookie = request.cookies.get('attendguard-demo-user')?.value;
-    if (demoCookie) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(demoCookie));
-        parsed.role = targetRole;
-        response.cookies.set(
-          'attendguard-demo-user',
-          encodeURIComponent(JSON.stringify(parsed)),
-          {
-            path: '/',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7,
-          }
-        );
-      } catch {}
-    }
+    // Delete legacy demo cookie if present
+    response.cookies.delete('attendguard-demo-user');
 
     return response;
   } catch (err: any) {

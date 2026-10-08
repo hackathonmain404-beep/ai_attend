@@ -2,45 +2,50 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Smartphone, ShieldCheck, HelpCircle, Lock, RefreshCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, Smartphone, ShieldCheck, HelpCircle, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { DeviceStatusCard } from "@/components/student/DeviceStatusCard";
 import { DeviceRegisterForm } from "@/components/student/DeviceRegisterForm";
 import { fetchStudentDeviceStatus } from "@/lib/services/device-client-service";
-import { getMockStudentDeviceStatus } from "@/mocks/device-ui";
 import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import type { StudentDeviceStatus } from "@/types/device-ui";
 
 export default function StudentDevicePage() {
-  const [deviceStatus, setDeviceStatus] = React.useState<StudentDeviceStatus | null>(() =>
-    getMockStudentDeviceStatus()
-  );
+  const [deviceStatus, setDeviceStatus] = React.useState<StudentDeviceStatus | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [userProfile, setUserProfile] = React.useState<any>(() => {
     return typeof window !== "undefined" ? getCurrentUserProfile() : null;
   });
 
+  const loadStatus = React.useCallback(async () => {
+    try {
+      const status = await fetchStudentDeviceStatus();
+      setDeviceStatus(status);
+    } catch {
+      setDeviceStatus({ isRegistered: false });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   React.useEffect(() => {
-    fetchStudentDeviceStatus().then(setDeviceStatus);
+    loadStatus();
     if (!userProfile) {
       resolveCurrentUserProfile().then(setUserProfile);
     }
-  }, [userProfile]);
-
-  const handleSimulateUnregister = () => {
-    setDeviceStatus({
-      isRegistered: false,
-    });
-  };
+  }, [loadStatus, userProfile]);
 
   const handleRegisteredSuccess = () => {
-    fetchStudentDeviceStatus().then(setDeviceStatus);
+    setIsLoading(true);
+    loadStatus();
   };
 
-  if (!deviceStatus) {
+  if (isLoading || !deviceStatus) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 space-y-3">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
         <p className="text-xs text-slate-400">Loading hardware device security status...</p>
       </div>
     );
@@ -85,10 +90,7 @@ export default function StudentDevicePage() {
 
         {/* Device Status or Registration Form */}
         {deviceStatus.isRegistered ? (
-          <DeviceStatusCard
-            status={deviceStatus}
-            onSimulateUnregister={handleSimulateUnregister}
-          />
+          <DeviceStatusCard status={deviceStatus} />
         ) : (
           <DeviceRegisterForm onRegistered={handleRegisteredSuccess} />
         )}
@@ -100,39 +102,34 @@ export default function StudentDevicePage() {
             Hardware Binding Policies & Anti-Proxy Architecture
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <Card className="p-4 border-slate-800 bg-slate-900/40 space-y-2">
-              <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-emerald-400" />
-                1-to-1 Device Ratio
-              </span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Each student account is locked to a single physical device fingerprint. Attendance cannot be submitted from another student&apos;s phone or a laptop browser.
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-slate-800 bg-slate-900/40 p-5 space-y-2">
+              <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <Lock className="h-4 w-4 text-emerald-400" />
+                Single Active Hardware Policy
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Each student account may only bind one primary hardware phone at any time. Scanning tokens from a friend&apos;s phone or unauthorized secondary browser is blocked by the cryptographic perimeter.
               </p>
             </Card>
 
-            <Card className="p-4 border-slate-800 bg-slate-900/40 space-y-2">
-              <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <RefreshCcw className="h-3.5 w-3.5 text-amber-400" />
-                Hardware Upgrades
-              </span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                If you purchase a new smartphone or your phone is repaired, inform your instructor. They will issue an administrative reset permitting new hardware registration.
-              </p>
-            </Card>
-
-            <Card className="p-4 border-slate-800 bg-slate-900/40 space-y-2">
-              <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-teal-400" />
-                Privacy Safeguards
-              </span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                AttendGuard never tracks GPS location or reads personal files. Fingerprints consist solely of standard browser and screen dimensions hashed via SHA-256.
+            <Card className="border-slate-800 bg-slate-900/40 p-5 space-y-2">
+              <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <ShieldCheck className="h-4 w-4 text-teal-400" />
+                Emergency Hardware Reset Procedure
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                If your phone is damaged, lost, or upgraded, visit your faculty instructor during designated office hours. Instructors can issue an authorized administrative reset logged to the security ledger.
               </p>
             </Card>
           </div>
         </div>
       </main>
+
+      {/* Bottom Footer */}
+      <footer className="border-t border-slate-900 bg-slate-950/90 py-3 text-center text-xs text-slate-500 font-mono">
+        AttendGuard Zero-Trust Hardware Coupled Architecture • SHA-256 Client Security Perimeter
+      </footer>
     </div>
   );
 }
