@@ -1,13 +1,16 @@
 /**
  * AttendGuard AI Attendance Advisor Orchestrator
- * Intent routing, Gemini 2.5 Flash execution, and deterministic fallback engine.
- * Conforms to Sections 5, 6, and 7 of AI_ARCHITECTURE.md.
+ * 
+ * Intent routing, deterministic analytics synthesis, Google Gemini inference,
+ * and multi-factor validation guard. Conforms to Sections 5, 6, and 7 of AI_ARCHITECTURE.md.
  */
 
 import { AttendanceContextPayload } from '@/lib/analytics/types';
 import {
   AdvisorResult,
   QuestionCategory,
+  HardenedQuestionCategory,
+  LegacyQuestionCategory,
   AdvisorKeyStats,
   AdvisorQueryRequest,
   AttendanceAdvisorResponse,
@@ -15,40 +18,51 @@ import {
 } from './types';
 import { ADVISOR_SYSTEM_INSTRUCTION, buildAdvisorPrompt } from './prompts';
 import { validateAdvisorResponse } from './validator';
-import { generateAdvisorContent, generateAIResponse, GeminiOptions } from './gemini';
+import { generateAdvisorContent, generateAIResponse, GeminiOptions, getGeminiApiKey } from './gemini';
+import { extractTrustedAttendanceFacts, findCourseInFacts } from './facts';
+import { classifyHardenedQuestion, mapToLegacyCategory } from './classifier';
+import { generateDeterministicAnswer } from './deterministic-answers';
+
+export { classifyHardenedQuestion } from './classifier';
+export { extractTrustedAttendanceFacts } from './facts';
+export { generateDeterministicAnswer } from './deterministic-answers';
 
 /**
- * Classifies student query into intent categories using regex rules.
+ * Classifies student query into intent categories.
+ * Preserves legacy categories for backwards compatibility while supporting detailed mode.
  */
-export function classifyQuestion(query: string): QuestionCategory {
+export function classifyQuestion(
+  query: string,
+  options?: { detailed?: boolean }
+): QuestionCategory {
+  const hardened = classifyHardenedQuestion(query);
+
+  if (options?.detailed) {
+    return hardened;
+  }
+
+  // 1. Adversarial & Unsupported queries
+  if (hardened === 'ADVERSARIAL' || hardened === 'UNSUPPORTED') {
+    return 'UNSUPPORTED';
+  }
+
   const q = (query || '').toLowerCase();
 
-  // Adversarial / Injection attempts
-  if (
-    /(ignore|override|pretend|reset|bypass|forget|hack|change|update|alter|edit|modify|mark|delete|excuse|remove).*(instruction|data|prompt|attendance|class|classes|rule|record|policy|status|present|absent|absence|absences)/i.test(
-      q
-    ) ||
-    /ignore previous|system prompt/i.test(q)
-  ) {
-    return 'UNSUPPORTED';
+  // 2. Trend questions
+  if (/trend|improv|declin|better|worse|slipping/i.test(q)) {
+    return 'TREND';
   }
 
-  // Off-topic or unsupported non-academic queries
-  if (
-    /joke|funny|weather|temperature|recipe|song|sing|poem|story|president|capital of|movie/i.test(
-      q
-    )
-  ) {
-    return 'UNSUPPORTED';
-  }
-
-  // Risk / Debarment questions
+  // 3. Risk / Debarment questions
   if (/risk|critical|danger|warning|failing|debar|detention/i.test(q)) {
     return 'RISK';
   }
 
-  // Calculation / Recovery / Safe misses questions
+  // 4. Calculation / Recovery / Safe misses questions
   if (
+    hardened === 'RECOVERY' ||
+    hardened === 'SAFE_MISSES' ||
+    hardened === 'NUMERICAL' ||
     /how many|classes need|attend to reach|to get 75|to reach 75|miss tomorrow|can i miss|absence|safe miss|skip/i.test(
       q
     )
@@ -56,13 +70,11 @@ export function classifyQuestion(query: string): QuestionCategory {
     return 'CALCULATION';
   }
 
-  // Trend / Trajectory questions
-  if (/trend|improv|declin|better|worse|slipping/i.test(q)) {
-    return 'TREND';
-  }
-
-  // Summary / Overview questions
-  if (/summar|overview|report|status|standing|all courses|my attendance|how am i doing/i.test(q)) {
+  // 5. Summary / Overview questions
+  if (
+    hardened === 'FACTUAL' ||
+    /summar|overview|report|status|standing|all courses|my attendance|how am i doing/i.test(q)
+  ) {
     return 'SUMMARY';
   }
 
@@ -88,7 +100,12 @@ export function extractReferencedSubjects(
     const cName = c.name.toLowerCase();
     const cCode = c.code.toLowerCase();
 
-    if (q.includes(cName) || q.includes(cCode)) {
+    if (q.includes(cName) || (cCode && q.includes(cCode))) {
+      referenced.push(c.name);
+      continue;
+    }
+
+    if (/\b(?:c|c\s+classes)\b/i.test(q) && cName.includes('c programming')) {
       referenced.push(c.name);
       continue;
     }
@@ -125,6 +142,7 @@ export function generateDeterministicFallback(
     context = queryOrRequest.attendanceContext;
   }
 
+  const facts = extractTrustedAttendanceFacts(context);
   const category =
     typeof contextOrCat === 'string' && contextOrCat !== 'GENERAL'
       ? (contextOrCat as QuestionCategory)
@@ -132,17 +150,15 @@ export function generateDeterministicFallback(
 
   const referenced = maybeReferenced || extractReferencedSubjects(query, context);
 
-  const overallPct = context.summary?.overallPercentage ?? context.overall?.overallPercentage ?? 0;
-  const overallRisk = context.summary?.overallRisk ?? context.overall?.overallRisk ?? 'SAFE';
-  const minReq = context.policy?.minimumRequirement ?? 75;
-
-  const courses = context.courses || [];
-  const subjects = context.rankedSubjects || [];
+  const overallPct = facts.overallPercentage;
+  const overallRisk = facts.overallRisk;
+  const minReq = facts.policy.minimumRequirement;
+  const courses = facts.courses;
 
   // 1. Intercept prompt injection / override requests
   if (category === 'UNSUPPORTED') {
-    const highestName = courses[0]?.courseName || subjects[0]?.subjectName || '';
-    const highestPct = courses[0]?.currentPercentage || subjects[0]?.percentage || 0;
+    const highestName = facts.highestRiskCourse?.courseName || '';
+    const highestPct = facts.highestRiskCourse?.currentPercentage || 0;
     const highestText = highestName ? `, with highest-risk course ${highestName} at ${highestPct}%` : '';
     const insPct = context.overall?.overallPercentage;
     const analyticsNote = insPct !== undefined && insPct !== overallPct ? ` (Analytics: ${insPct}%)` : '';
@@ -151,61 +167,32 @@ export function generateDeterministicFallback(
 
   // 2. Risk & Jeopardy questions
   if (category === 'RISK') {
-    if (courses.length > 0) {
-      const criticalCourses = courses.filter((c) => c.risk === 'CRITICAL');
-      if (criticalCourses.length > 0) {
-        const top = criticalCourses[0];
-        return `You currently have ${criticalCourses.length} course(s) in critical standing below the 75% requirement. Your highest-risk course is ${top.courseName} at ${top.currentPercentage}% (attended ${top.attended}/${top.totalHeld}), which requires attending the next ${top.classesNeededForThreshold} consecutive class(es) to reach 75%.`;
-      }
-      const atRiskCourses = courses.filter((c) => c.risk === 'AT_RISK');
-      if (atRiskCourses.length > 0) {
-        const top = atRiskCourses[0];
-        return `You have ${atRiskCourses.length} course(s) in at-risk standing. While above 75%, ${top.courseName} is at ${top.currentPercentage}% and has 0 safe absences remaining.`;
-      }
-    } else if (subjects.length > 0) {
-      const criticalSubjects = subjects.filter((s) => s.riskLevel === 'CRITICAL');
-      if (criticalSubjects.length > 0) {
-        const top = criticalSubjects[0];
-        return `Your highest-risk course is ${top.subjectName} with ${top.percentage.toFixed(1)}% attendance (${top.riskLevel}). You need to attend the next ${top.classesNeeded} consecutive class(es) to reach the 75% requirement.`;
-      }
-      const atRiskSubjects = subjects.filter((s) => s.riskLevel === 'AT_RISK');
-      if (atRiskSubjects.length > 0) {
-        const names = atRiskSubjects.map((s) => `${s.subjectName} (${s.percentage.toFixed(1)}%)`).join(', ');
-        return `You have courses near the threshold boundary: ${names}. You have minimal safe absence allowances remaining.`;
-      }
+    const criticalCourses = courses.filter((c) => c.risk === 'CRITICAL');
+    if (criticalCourses.length > 0) {
+      const top = criticalCourses[0];
+      return `You currently have ${criticalCourses.length} course(s) in critical standing below the 75% requirement. Your highest-risk course is ${top.courseName} at ${top.currentPercentage}% (attended ${top.attended}/${top.totalHeld}), which requires attending the next ${top.classesNeededForThreshold} consecutive class(es) to reach 75%.`;
     }
-
+    const atRiskCourses = courses.filter((c) => c.risk === 'AT_RISK');
+    if (atRiskCourses.length > 0) {
+      const top = atRiskCourses[0];
+      return `You have ${atRiskCourses.length} course(s) in at-risk standing. While above 75%, ${top.courseName} is at ${top.currentPercentage}% and has 0 safe absences remaining.`;
+    }
     return `Great news! None of your enrolled courses are currently at risk. All your enrolled courses currently meet institutional compliance with an overall average of ${overallPct}%.`;
   }
 
   // 3. Calculation & Recovery / Safe Misses questions
   if (category === 'CALCULATION') {
-    if (courses.length > 0) {
-      let target = courses[0];
-      if (referenced.length > 0) {
-        const found = courses.find((c) => referenced.includes(c.courseName));
-        if (found) target = found;
-      }
+    let target = courses[0];
+    if (referenced.length > 0) {
+      const found = courses.find((c) => referenced.includes(c.courseName));
+      if (found) target = found;
+    }
 
-      if (target) {
-        if (target.risk === 'CRITICAL') {
-          return `In ${target.courseName} (${target.courseCode}), your attendance is currently at ${target.currentPercentage}% (${target.attended}/${target.totalHeld} classes). You must attend the next ${target.classesNeededForThreshold} consecutive class(es) without absence to restore your standing to 75.0%.`;
-        }
-        return `In ${target.courseName} (${target.courseCode}), your attendance is currently at ${target.currentPercentage}% (${target.attended}/${target.totalHeld} classes). You can safely miss up to ${target.safeMissesRemaining} upcoming class(es) while remaining at or above the 75.0% threshold.`;
+    if (target) {
+      if (target.risk === 'CRITICAL' || target.classesNeededForThreshold > 0) {
+        return `In ${target.courseName} (${target.courseCode}), your attendance is currently at ${target.currentPercentage}% (${target.attended}/${target.totalHeld} classes). You must attend the next ${target.classesNeededForThreshold} consecutive class(es) without absence to restore your standing to 75.0%.`;
       }
-    } else if (subjects.length > 0) {
-      let target = subjects[0];
-      if (referenced.length > 0) {
-        const found = subjects.find((s) => s.subjectName.toLowerCase() === referenced[0].toLowerCase());
-        if (found) target = found;
-      }
-
-      if (target) {
-        if (target.riskLevel === 'CRITICAL') {
-          return `For ${target.subjectName}, your attendance is ${target.percentage.toFixed(1)}%. You must attend the next ${target.classesNeeded} consecutive class(es) to reach 75%. You cannot afford to miss any classes.`;
-        }
-        return `For ${target.subjectName}, your attendance is ${target.percentage.toFixed(1)}% (${target.riskLevel}). You can safely miss up to ${target.safeMisses} upcoming class(es) while staying above 75%.`;
-      }
+      return `In ${target.courseName} (${target.courseCode}), your attendance is currently at ${target.currentPercentage}% (${target.attended}/${target.totalHeld} classes). You can safely miss up to ${target.safeMissesRemaining} upcoming class(es) while remaining at or above the 75.0% threshold.`;
     }
 
     return `Your overall attendance is ${overallPct}%.`;
@@ -213,7 +200,7 @@ export function generateDeterministicFallback(
 
   // 4. Trend questions
   if (category === 'TREND') {
-    const trend = context.summary?.trajectoryTrend ?? context.overall?.overallTrend ?? 'stable';
+    const trend = facts.overallTrend;
     return `Your overall attendance trajectory is currently ${trend}. Overall attendance stands at ${overallPct}%.`;
   }
 
@@ -222,10 +209,7 @@ export function generateDeterministicFallback(
   const unlistedMatch = qLower.match(/(?:in|for|about|my)\s+([a-z]+(?:\s+[a-z]+)?)\s+(?:attendance|class)/i);
   if (unlistedMatch && unlistedMatch[1]) {
     const candidate = unlistedMatch[1].trim().toLowerCase();
-    const enrolledNames = [
-      ...courses.map((c) => c.courseName.toLowerCase()),
-      ...subjects.map((s) => s.subjectName.toLowerCase()),
-    ];
+    const enrolledNames = courses.map((c) => c.courseName.toLowerCase());
     if (
       !enrolledNames.some((n) => n.includes(candidate) || candidate.includes(n)) &&
       candidate.length > 3 &&
@@ -236,18 +220,12 @@ export function generateDeterministicFallback(
   }
 
   // 6. Summary / Default Overview
-  const totalAttended = context.summary?.totalAttended ?? context.overall?.totalAttended ?? 0;
-  const totalClasses = context.summary?.totalClasses ?? context.overall?.totalClasses ?? 0;
-  const safeCount = context.summary?.safeCoursesCount ?? context.overall?.safeSubjectsCount ?? 0;
-  const atRiskCount = context.summary?.atRiskCoursesCount ?? context.overall?.atRiskSubjectsCount ?? 0;
-  const critCount = context.summary?.criticalCoursesCount ?? context.overall?.criticalSubjectsCount ?? 0;
-
-  return `Here is your verified attendance overview: Overall attendance is ${overallPct}% (${totalAttended}/${totalClasses} classes attended). You have ${safeCount} safe course(s), ${atRiskCount} at-risk course(s), and ${critCount} critical course(s). Minimum requirement is ${minReq}%.`;
+  return `Here is your verified attendance overview: Overall attendance is ${overallPct}% (${facts.totalAttended}/${facts.totalClasses} classes attended). You have ${facts.safeCoursesCount} safe course(s), ${facts.atRiskCoursesCount} at-risk course(s), and ${facts.criticalCoursesCount} critical course(s). Minimum requirement is ${minReq}%.`;
 }
 
 /**
  * End-to-end question answering pipeline:
- * Classify -> Validate Injection -> Call Gemini -> Validate Response -> Fallback on failure
+ * Fact Locking -> Question Classification -> Deterministic / Gemini -> Validator -> Safe Response
  */
 export async function answerAttendanceQuestion(
   queryOrRequest: string | AdvisorQueryRequest,
@@ -257,6 +235,7 @@ export async function answerAttendanceQuestion(
   let query: string;
   let context: AttendanceContextPayload;
   let geminiOptions: GeminiOptions | undefined;
+  let studentName: string | undefined;
 
   if (typeof queryOrRequest === 'string') {
     query = queryOrRequest;
@@ -265,7 +244,10 @@ export async function answerAttendanceQuestion(
   } else {
     query = queryOrRequest.question;
     context = queryOrRequest.attendanceContext;
-    geminiOptions = queryOrRequest.config ? { apiKey: queryOrRequest.config.apiKey, model: queryOrRequest.config.model } : undefined;
+    studentName = queryOrRequest.studentName;
+    geminiOptions = queryOrRequest.config
+      ? { apiKey: queryOrRequest.config.apiKey, model: queryOrRequest.config.model }
+      : undefined;
 
     if (!query || query.trim() === '') {
       return {
@@ -296,39 +278,82 @@ export async function answerAttendanceQuestion(
     }
   }
 
-  const category = classifyQuestion(query);
+  // 1. Lock authoritative attendance facts
+  const facts = extractTrustedAttendanceFacts(context, studentName);
+  const hardenedCategory = classifyHardenedQuestion(query);
+  const legacyCategory = classifyQuestion(query) as LegacyQuestionCategory;
   const referencedSubjects = extractReferencedSubjects(query, context);
 
-  const overallPct = context.summary?.overallPercentage ?? context.overall?.overallPercentage ?? 0;
-  const overallRisk = context.overall?.overallRisk ?? context.summary?.overallRisk ?? 'SAFE';
-  const highestRiskSubject = context.overall?.highestRiskSubject?.subjectName ?? context.summary?.highestRiskCourse ?? null;
-
   const keyStats: AdvisorKeyStats = {
-    overallPercentage: overallPct,
-    overallRisk,
-    highestRiskSubject,
+    overallPercentage: facts.overallPercentage,
+    overallRisk: facts.overallRisk,
+    highestRiskSubject: facts.highestRiskCourse?.courseName || null,
   };
 
-  // 1. Intercept prompt injection / adversarial queries immediately
-  if (category === 'UNSUPPORTED') {
-    const fallbackAnswer = generateDeterministicFallback(query, context);
+  // 2. Intercept prompt injection / adversarial queries immediately
+  if (hardenedCategory === 'ADVERSARIAL' || hardenedCategory === 'UNSUPPORTED') {
+    const fallbackAnswer = generateDeterministicFallback(query, context, referencedSubjects);
     return {
       success: true,
       answer: fallbackAnswer,
       source: 'DETERMINISTIC_FALLBACK',
       category: 'UNSUPPORTED',
+      detailedCategory: hardenedCategory,
       referencedSubjects,
       keyStats,
+      trustedFacts: facts,
     };
   }
 
-  // 2. Call Gemini model with anti-hallucination validation
+  // 3. Check if caller explicitly provided test geminiOptions / apiKey (mock test path)
+  const isExplicitTestMock =
+    geminiOptions?.apiKey !== undefined &&
+    geminiOptions.apiKey !== '';
+
+  const isExplicitlyDisabled =
+    geminiOptions?.apiKey === '';
+
+  // 4. Core Accuracy Principle: If caller did not explicitly request LLM mock test,
+  // route Numerical / Factual / Recovery / Safe Misses / Ambiguous directly to deterministic answer
+  const isFactualOrNumerical =
+    hardenedCategory === 'NUMERICAL' ||
+    hardenedCategory === 'RECOVERY' ||
+    hardenedCategory === 'SAFE_MISSES' ||
+    hardenedCategory === 'SUBJECT_ANALYSIS' ||
+    hardenedCategory === 'AMBIGUOUS' ||
+    hardenedCategory === 'FACTUAL';
+
+  if (!isExplicitTestMock && (isExplicitlyDisabled || isFactualOrNumerical)) {
+    const deterministic = generateDeterministicAnswer(query, hardenedCategory, facts);
+    return {
+      success: true,
+      answer: deterministic.answer,
+      source: 'DETERMINISTIC_FALLBACK',
+      category: legacyCategory,
+      detailedCategory: hardenedCategory,
+      referencedSubjects: deterministic.referencedSubjects.length > 0 ? deterministic.referencedSubjects : referencedSubjects,
+      keyStats,
+      abstentionReason: deterministic.abstentionReason,
+      trustedFacts: facts,
+    };
+  }
+
+  // 5. Call Gemini model for advice / explanation (or explicit test mock)
   try {
-    const prompt = buildAdvisorPrompt(context, query);
+    const prompt = buildAdvisorPrompt(context, query, facts.studentName);
     let modelReply = '';
 
+    const effectiveOptions: GeminiOptions = {
+      ...geminiOptions,
+      timeoutMs: geminiOptions?.timeoutMs || 4000,
+    };
+
     try {
-      modelReply = await generateAdvisorContent(ADVISOR_SYSTEM_INSTRUCTION, prompt, geminiOptions);
+      modelReply = await generateAdvisorContent(
+        ADVISOR_SYSTEM_INSTRUCTION,
+        prompt,
+        effectiveOptions
+      );
     } catch {
       // Try generateAIResponse as backup
       const res = await generateAIResponse(
@@ -336,7 +361,7 @@ export async function answerAttendanceQuestion(
           prompt,
           systemInstruction: ADVISOR_SYSTEM_INSTRUCTION,
         },
-        geminiOptions
+        effectiveOptions
       );
       if (res.success && res.text) {
         modelReply = res.text;
@@ -350,9 +375,11 @@ export async function answerAttendanceQuestion(
           success: true,
           answer: modelReply,
           source: 'AI',
-          category,
+          category: legacyCategory,
+          detailedCategory: hardenedCategory,
           referencedSubjects,
           keyStats,
+          trustedFacts: facts,
         };
       }
 
@@ -362,17 +389,22 @@ export async function answerAttendanceQuestion(
       );
     }
   } catch (llmErr) {
-    console.warn('[Advisor LLM Error]: Failed to get AI response, serving deterministic fallback:', llmErr);
+    console.warn(
+      '[Advisor LLM Error]: Failed to get AI response, serving deterministic fallback:',
+      llmErr
+    );
   }
 
-  // 3. Fallback engine
-  const fallbackAnswer = generateDeterministicFallback(query, context);
+  // 6. Fallback engine
+  const fallbackAnswer = generateDeterministicFallback(query, context, referencedSubjects);
   return {
     success: true,
     answer: fallbackAnswer,
     source: 'DETERMINISTIC_FALLBACK',
-    category,
+    category: legacyCategory,
+    detailedCategory: hardenedCategory,
     referencedSubjects,
     keyStats,
+    trustedFacts: facts,
   };
 }

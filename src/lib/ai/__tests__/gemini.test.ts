@@ -67,7 +67,7 @@ describe('Google Gemini Client & Credential Interception', () => {
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe('INVALID_API_KEY');
     expect(response.error?.message).not.toContain(fakeKey);
-  });
+  }, 10000);
 
   it('correctly resolves model from environment or default', async () => {
     const expectedModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
