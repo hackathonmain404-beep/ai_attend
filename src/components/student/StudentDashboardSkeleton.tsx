@@ -4,17 +4,12 @@ import { Card } from "@/components/ui/card";
 
 export function StudentDashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      {/* Profile Header Skeleton */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-14 w-14 rounded-2xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-72" />
-          </div>
-        </div>
-        <Skeleton className="h-9 w-44 rounded-xl" />
+    <div className="space-y-4 sm:space-y-5 animate-pulse">
+      {/* Top Greeting Skeleton */}
+      <div className="pt-1 pb-1 space-y-2">
+        <Skeleton className="h-3 w-28 bg-slate-800/60" />
+        <Skeleton className="h-7 w-64 bg-slate-800/80" />
+        <Skeleton className="h-4 w-72 bg-slate-800/60" />
       </div>
 
       {/* Metrics Row Skeleton */}
