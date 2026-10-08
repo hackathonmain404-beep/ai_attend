@@ -20,8 +20,8 @@ export default function StudentLayout({
     return typeof window !== "undefined" ? getCurrentUserProfile() : null;
   });
 
-  // Sidebar collapse state with localStorage persistence
-  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(false);
+  // Sidebar collapse state with localStorage persistence (compact/collapsed by default)
+  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(true);
   const [isMobileOpen, setIsMobileOpen] = React.useState<boolean>(false);
 
   // Restore sidebar preference on client mount
@@ -88,8 +88,8 @@ export default function StudentLayout({
           ========================================================= */}
       <div
         className={cn(
-          "flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ease-in-out",
-          isCollapsed ? "md:pl-20" : "md:pl-60"
+          "flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isCollapsed ? "md:pl-[68px]" : "md:pl-56"
         )}
       >
         {/* Top Header with Breadcrumbs, Telemetry & Top-Right Profile */}

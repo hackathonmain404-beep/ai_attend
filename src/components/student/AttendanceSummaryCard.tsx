@@ -28,34 +28,34 @@ export function AttendanceSummaryCard({
   const attendanceRatio = safeHeld > 0 ? (safeAttended / safeHeld) * 100 : 0;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
       {/* 1. Overall Attendance / Academic XP */}
-      <TiltCard glowColor="emerald" maxTilt={4} scale={1.01} className="h-full">
-        <Card className="h-full p-3.5 sm:p-4 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-lg shadow-slate-950/40 hover:border-teal-500/30 transition-colors">
+      <TiltCard glowColor="emerald" maxTilt={3} scale={1.01} className="h-full">
+        <Card className="h-full p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-teal-500/30 transition-colors">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
                 <Target className="h-3.5 w-3.5 text-teal-400" />
                 Attendance XP
               </span>
-              <Badge variant={status.variant} className="text-[10px] font-semibold py-0 px-1.5">
+              <span className="text-[10px] font-mono text-teal-400 font-semibold">
                 {status.label}
-              </Badge>
+              </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className={`text-2xl font-black tracking-tight ${status.textClass}`}>
+              <span className={`text-xl sm:text-2xl font-black tracking-tight ${status.textClass}`}>
                 {safeOverall.toFixed(1)}%
               </span>
               <span className="text-[11px] font-mono text-slate-400">
                 ({xpCurrent} XP)
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              {overallPercentage >= 90 ? "Dean's List standing" : "Required min: 75%"}
+            <p className="text-[10.5px] text-slate-400 mt-0.5">
+              {overallPercentage >= 90 ? "Dean's List tier" : "Required min: 75%"}
             </p>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-slate-800/60">
+          <div className="mt-2.5 pt-2 border-t border-slate-800/60">
             <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
@@ -69,7 +69,7 @@ export function AttendanceSummaryCard({
               />
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-              <span>75% Target</span>
+              <span>75% Min</span>
               <span className="text-teal-400">
                 {overallPercentage >= 90 ? "Max Tier" : "Goal: 90%"}
               </span>
@@ -79,29 +79,29 @@ export function AttendanceSummaryCard({
       </TiltCard>
 
       {/* 2. Total Lectures Attended */}
-      <TiltCard glowColor="cyan" maxTilt={4} scale={1.01} className="h-full">
-        <Card className="h-full p-3.5 sm:p-4 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-lg shadow-slate-950/40 hover:border-cyan-500/30 transition-colors">
+      <TiltCard glowColor="cyan" maxTilt={3} scale={1.01} className="h-full">
+        <Card className="h-full p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-cyan-500/30 transition-colors">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
                 <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
                 Lectures Attended
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-white">
+              <span className="text-xl sm:text-2xl font-black text-white">
                 {totalAttended}
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 / {totalHeld} held
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              {totalHeld - totalAttended} missed lectures total
+            <p className="text-[10.5px] text-slate-400 mt-0.5">
+              {totalHeld - totalAttended} missed lectures
             </p>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-slate-800/60">
+          <div className="mt-2.5 pt-2 border-t border-slate-800/60">
             <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
@@ -117,27 +117,27 @@ export function AttendanceSummaryCard({
       </TiltCard>
 
       {/* 3. Current Streak & Consistency */}
-      <TiltCard glowColor="amber" maxTilt={4} scale={1.01} className="h-full">
-        <Card className="h-full p-3.5 sm:p-4 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-lg shadow-slate-950/40 hover:border-amber-500/30 transition-colors">
+      <TiltCard glowColor="amber" maxTilt={3} scale={1.01} className="h-full">
+        <Card className="h-full p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-amber-500/30 transition-colors">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
                 <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                 Attendance Streak
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-amber-300">
+              <span className="text-xl sm:text-2xl font-black text-amber-300">
                 {streakDays}
               </span>
               <span className="text-xs text-slate-400">Days</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[10.5px] text-slate-400 mt-0.5">
               Consistency: {streakDays >= 10 ? "Excellent" : "On Track"}
             </p>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
             <span>Status</span>
             <span className="text-amber-400 font-semibold">{streakDays >= 10 ? "Elite Tier" : "Active"}</span>
           </div>
@@ -145,29 +145,29 @@ export function AttendanceSummaryCard({
       </TiltCard>
 
       {/* 4. At-Risk Subjects & Exam Buffer */}
-      <TiltCard glowColor={atRiskCount > 0 ? "amber" : "emerald"} maxTilt={4} scale={1.01} className="h-full">
-        <Card className="h-full p-3.5 sm:p-4 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-lg shadow-slate-950/40 hover:border-slate-700 transition-colors">
+      <TiltCard glowColor={atRiskCount > 0 ? "amber" : "emerald"} maxTilt={3} scale={1.01} className="h-full">
+        <Card className="h-full p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-slate-700 transition-colors">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck className={`h-3.5 w-3.5 ${atRiskCount > 0 ? "text-amber-400" : "text-teal-400"}`} />
                 Eligibility Buffer
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className={`text-2xl font-black ${atRiskCount > 0 ? "text-amber-400" : "text-teal-400"}`}>
+              <span className={`text-xl sm:text-2xl font-black ${atRiskCount > 0 ? "text-amber-400" : "text-teal-400"}`}>
                 {atRiskCount > 0 ? atRiskCount : "Safe"}
               </span>
               <span className="text-xs text-slate-400">
                 {atRiskCount > 0 ? `course${atRiskCount === 1 ? "" : "s"} < 75%` : "100% Cleared"}
               </span>
             </div>
-            <p className={`text-[11px] mt-1 ${atRiskCount > 0 ? "text-amber-300" : "text-slate-400"}`}>
+            <p className={`text-[10.5px] mt-0.5 ${atRiskCount > 0 ? "text-amber-300" : "text-slate-400"}`}>
               {atRiskCount > 0 ? "Recovery required" : "Full exam eligibility"}
             </p>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
             <span>Standing</span>
             <span className={atRiskCount > 0 ? "text-amber-400 font-semibold" : "text-emerald-400 font-semibold"}>
               {atRiskCount > 0 ? "Warning" : "Good Standing"}

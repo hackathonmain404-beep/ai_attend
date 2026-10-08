@@ -12,14 +12,14 @@ export function LowAttendanceWarningBanner({ atRiskClasses }: LowAttendanceWarni
   if (!atRiskClasses || atRiskClasses.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/30 via-slate-900/90 to-slate-900/80 p-4 sm:p-5 backdrop-blur-md shadow-lg shadow-slate-950/40">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/25 via-slate-900/90 to-slate-900/80 p-3.5 sm:p-4 backdrop-blur-md shadow-md shadow-slate-950/40">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
         <div className="flex items-start gap-3 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
             <AlertTriangle className="h-4 w-4" />
           </div>
 
-          <div className="space-y-1.5 min-w-0">
+          <div className="space-y-1 min-w-0">
             {/* 1. WARNING TITLE */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-amber-400 tracking-wide uppercase font-mono">
@@ -31,7 +31,7 @@ export function LowAttendanceWarningBanner({ atRiskClasses }: LowAttendanceWarni
             </div>
 
             {/* 2. Important Sentence */}
-            <p className="text-xs sm:text-sm text-slate-300">
+            <p className="text-xs text-slate-300">
               You are currently below the required institutional minimum in:{" "}
               <span className="font-semibold text-amber-300">
                 {atRiskClasses.map((c) => `${c.code} (${(c.percentage ?? 0).toFixed(1)}%)`).join(", ")}
@@ -56,7 +56,12 @@ export function LowAttendanceWarningBanner({ atRiskClasses }: LowAttendanceWarni
         </div>
 
         {/* 5. AI Advisor Action */}
-        <Button asChild variant="amber" size="sm" className="gap-2 shrink-0 self-end sm:self-center font-semibold text-xs shadow-sm">
+        <Button
+          asChild
+          variant="amber"
+          size="sm"
+          className="gap-2 shrink-0 self-end sm:self-center font-bold text-xs h-8.5 px-3.5 transition-all duration-250 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_15px_rgba(245,158,11,0.25)] shadow-sm"
+        >
           <Link href="/student/advisor">
             <Sparkles className="h-3.5 w-3.5" />
             Ask AI Advisor
