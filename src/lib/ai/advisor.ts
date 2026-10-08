@@ -41,6 +41,11 @@ export function classifyQuestion(
     return hardened;
   }
 
+  // 0. Greetings
+  if (hardened === 'GREETING') {
+    return 'GREETING';
+  }
+
   // 1. Adversarial & Unsupported queries
   if (hardened === 'ADVERSARIAL' || hardened === 'UNSUPPORTED') {
     return 'UNSUPPORTED';
@@ -140,6 +145,33 @@ export function extractReferencedSubjects(
       'lowest',
       'today',
       'tomorrow',
+      'attend',
+      'attended',
+      'attending',
+      'many',
+      'more',
+      'much',
+      'safe',
+      'good',
+      'well',
+      'help',
+      'hello',
+      'which',
+      'what',
+      'when',
+      'where',
+      'have',
+      'does',
+      'doing',
+      'tell',
+      'show',
+      'give',
+      'about',
+      'with',
+      'from',
+      'into',
+      'over',
+      'than',
     ]);
 
     const queryTokens = q.split(/[\s:,-?!.]+/);
@@ -190,6 +222,11 @@ export function generateDeterministicFallback(
   const overallRisk = facts.overallRisk;
   const minReq = facts.policy.minimumRequirement;
   const courses = facts.courses;
+
+  // 0. Intercept greetings
+  if (category === 'GREETING') {
+    return 'Hello! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?';
+  }
 
   // 1. Intercept prompt injection / override requests
   if (category === 'UNSUPPORTED') {
@@ -325,6 +362,25 @@ export async function answerAttendanceQuestion(
     overallRisk: facts.overallRisk,
     highestRiskSubject: facts.highestRiskCourse?.courseName || null,
   };
+
+  // 1b. Intercept greetings immediately (no LLM, no attendance calculations, no course cards)
+  if (hardenedCategory === 'GREETING') {
+    const greetingName = studentName && studentName !== 'Student' ? ` ${studentName}` : '';
+    return {
+      success: true,
+      answer: `Hello${greetingName}! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?`,
+      source: 'DETERMINISTIC_FALLBACK',
+      category: 'GREETING',
+      detailedCategory: 'GREETING',
+      referencedSubjects: [],
+      keyStats: {
+        overallPercentage: facts.overallPercentage,
+        overallRisk: facts.overallRisk,
+        highestRiskSubject: null,
+      },
+      trustedFacts: facts,
+    };
+  }
 
   // 2. Intercept prompt injection / adversarial queries immediately
   if (hardenedCategory === 'ADVERSARIAL' || hardenedCategory === 'UNSUPPORTED') {

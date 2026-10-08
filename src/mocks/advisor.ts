@@ -7,6 +7,28 @@ import type { AdvisorResponseData } from "@/types/advisor";
 export function generateMockAdvisorReply(query: string): AdvisorResponseData {
   const q = query.toLowerCase();
 
+  // 0. Greetings
+  if (
+    /^(?:hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening|day))(?:\s+(?:there|attendguard|advisor|ai|bot|team|assistant|everyone))?[!.,\s]*$/i.test(
+      query.trim()
+    )
+  ) {
+    return {
+      reply:
+        "Hello! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?",
+      contextSnapshot: null,
+    };
+  }
+
+  // 0b. Inquiries about unlisted courses (e.g. Physics)
+  if (/\bphysics\b/i.test(q)) {
+    return {
+      reply:
+        "No attendance records found for Physics. You are not currently enrolled in Physics. I can only provide guidance for your active courses.",
+      contextSnapshot: null,
+    };
+  }
+
   // 1. Inquiries about MATH202 / Linear Algebra
   if (q.includes("linear algebra") || /\bmath202\b/i.test(q) || /\bmath\b/i.test(q)) {
     return {

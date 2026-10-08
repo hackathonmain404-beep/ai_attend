@@ -155,6 +155,24 @@ export async function queryAttendanceAdvisorLocal(
   const q = question.toLowerCase();
   const name = studentName || 'Student';
 
+  // Check greeting first
+  const GREETING_PATTERN =
+    /^(?:hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening|day))(?:\s+(?:there|attendguard|advisor|ai|bot|team|assistant|everyone))?[!.,\s]*$/i;
+  if (GREETING_PATTERN.test(question.trim())) {
+    return {
+      success: true,
+      answer: `Hello ${name}! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?`,
+      source: 'DETERMINISTIC_FALLBACK',
+      category: 'GREETING',
+      referencedSubjects: [],
+      keyStats: {
+        overallPercentage: context.summary?.overallPercentage ?? context.overall?.overallPercentage ?? 0,
+        overallRisk: context.summary?.overallRisk ?? context.overall?.overallRisk ?? 'SAFE',
+        highestRiskSubject: null,
+      },
+    };
+  }
+
   let category: QuestionCategory = 'GENERAL_ATTENDANCE';
   if (/summary|summarize|overview|standing/i.test(q) || (/status/i.test(q) && !/reach|need|miss/i.test(q))) {
     category = 'SUMMARY';
@@ -253,8 +271,6 @@ export async function queryAttendanceAdvisorLocal(
 
   const referencedName = targetSubject
     ? ((targetSubject as any).subjectName || (targetSubject as any).courseName || null)
-    : category === 'RISK' && highestSubjectName
-    ? highestSubjectName
     : null;
 
   return {

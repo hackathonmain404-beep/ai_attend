@@ -43,11 +43,17 @@ function findMentionedCourse(query: string, classes: ClassSummary[]): ClassSumma
     }
   }
 
-  // Common keyword matches (e.g. "linear", "algebra", "distributed", "systems")
+  // Common keyword matches (e.g. "linear", "algebra", "distributed")
+  const STOP_WORDS = new Set([
+    'class', 'classes', 'lecture', 'lectures', 'course', 'courses',
+    'subject', 'subjects', 'attendance', 'system', 'systems', 'general',
+    'status', 'overview', 'summary', 'introduction', 'advanced', 'applied',
+    'study', 'studies', 'science', 'sciences', 'engineering',
+  ]);
   for (const cls of classes) {
     const parts = (cls.className || '').toLowerCase().split(/[\s:,-]+/);
     for (const part of parts) {
-      if (part.length > 3 && normalizedQuery.includes(part)) {
+      if (part.length > 3 && !STOP_WORDS.has(part) && new RegExp(`\\b${part}\\b`, 'i').test(normalizedQuery)) {
         return cls;
       }
     }
@@ -86,6 +92,12 @@ export function generateDeterministicAdvice(
   query: string,
   summary: StudentAttendanceSummary
 ): string {
+  const GREETING_PATTERN =
+    /^(?:hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening|day))(?:\s+(?:there|attendguard|advisor|ai|bot|team|assistant|everyone))?[!.,\s]*$/i;
+  if (GREETING_PATTERN.test(query.trim())) {
+    return 'Hello! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?';
+  }
+
   if (!summary.classes || summary.classes.length === 0) {
     return 'You are not currently enrolled in any classes with recorded attendance sessions.';
   }
@@ -108,6 +120,48 @@ export function generateDeterministicAdvice(
   }
 
   const lowerQuery = query.toLowerCase();
+
+  // Check for unenrolled/unlisted course inquiry (e.g. "In Physics, can I safely miss one class?")
+  const commonAcademicSubjects = /\b(?:physics|chemistry|biology|math|mathematics|history|economics|literature|geography|art|french|spanish|german|sociology|psychology|philosophy|music|law|business|finance|english|statistics|calculus|algebra|electronics|circuits|mechanics|robotics)\b/i;
+  const courseMatch = lowerQuery.match(/\b(?:in|for|about)\s+([a-z0-9#+.]+)(?:,\s*|\s+(?:attendance|class|classes|standing|subject|course)\b)/i);
+  const nonCourseWords = new Set([
+    'overall', 'total', 'class', 'classes', 'general', 'current',
+    'every', 'other', 'real', 'actual', 'new', 'different', 'fake',
+    'status', 'biggest', 'problem', 'each', 'all', 'any', 'my', 'the',
+    'this', 'that', 'most', 'more', 'weakest', 'highest', 'lowest',
+    'safe', 'critical', 'courses', 'good', 'bad', 'high', 'low',
+    'terms', 'addition', 'case', 'short', 'brief', 'summary', 'upcoming',
+    'future', 'advance', 'detail', 'particular', 'fact', 'danger',
+    'trouble', 'risk', 'risks', 'jeopardy', 'default', 'defaulter',
+    'attendance', 'standing', 'eligibility', 'compliance', 'order',
+    'mind', 'place', 'need', 'front', 'line', 'touch', 'between', 'person',
+  ]);
+
+  let unlistedCourseName: string | null = null;
+  const commonMatch = lowerQuery.match(commonAcademicSubjects);
+  if (commonMatch && !mentionedCourse) {
+    const raw = commonMatch[0];
+    const isEnrolled = summary.classes.some(
+      (c) => c.className.toLowerCase().includes(raw) || c.courseCode.toLowerCase().includes(raw)
+    );
+    if (!isEnrolled) {
+      unlistedCourseName = raw.charAt(0).toUpperCase() + raw.slice(1);
+    }
+  } else if (courseMatch && courseMatch[1] && !mentionedCourse) {
+    const candidate = courseMatch[1].trim().toLowerCase();
+    if (!nonCourseWords.has(candidate) && candidate.length > 2) {
+      const isEnrolled = summary.classes.some(
+        (c) => c.className.toLowerCase().includes(candidate) || c.courseCode.toLowerCase().includes(candidate)
+      );
+      if (!isEnrolled) {
+        unlistedCourseName = candidate.charAt(0).toUpperCase() + candidate.slice(1);
+      }
+    }
+  }
+
+  if (unlistedCourseName) {
+    return `No attendance records found for ${unlistedCourseName}. You are not currently enrolled in ${unlistedCourseName}. I can only provide guidance for your active courses.`;
+  }
 
   // 1. Safe Misses inquiry (e.g. "Can I safely miss any upcoming classes?")
   if (
@@ -198,6 +252,16 @@ export async function getAttendanceAdvice(
   query: string,
   summary: StudentAttendanceSummary
 ): Promise<AdvisorResult> {
+  const GREETING_PATTERN =
+    /^(?:hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening|day))(?:\s+(?:there|attendguard|advisor|ai|bot|team|assistant|everyone))?[!.,\s]*$/i;
+  if (GREETING_PATTERN.test(query.trim())) {
+    return {
+      reply: 'Hello! I am your AttendGuard AI Academic Advisor. How can I help you with your attendance, course requirements, or absence planning today?',
+      contextSnapshot: null,
+      engine: 'deterministic_fallback',
+    };
+  }
+
   const mentionedCourse = findMentionedCourse(query, summary.classes);
   const contextSnapshot = buildContextSnapshot(mentionedCourse, summary);
 

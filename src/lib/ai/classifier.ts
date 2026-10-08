@@ -28,6 +28,12 @@ const ADVERSARIAL_PATTERNS = [
 ];
 
 /**
+ * Regex pattern for conversational greetings.
+ */
+const GREETING_PATTERN =
+  /^(?:hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening|day))(?:\s+(?:there|attendguard|advisor|ai|bot|team|assistant|everyone))?[!.,\s]*$/i;
+
+/**
  * Regex patterns for unsupported non-academic queries.
  */
 const UNSUPPORTED_PATTERNS = [
@@ -149,6 +155,11 @@ export function classifyHardenedQuestion(query: string): HardenedQuestionCategor
     }
   }
 
+  // 1b. Greetings
+  if (GREETING_PATTERN.test(q)) {
+    return 'GREETING';
+  }
+
   // 2. Unsupported / Off-topic
   for (const pat of UNSUPPORTED_PATTERNS) {
     if (pat.test(q)) {
@@ -220,6 +231,8 @@ export function mapToLegacyCategory(
   hardened: HardenedQuestionCategory
 ): LegacyQuestionCategory {
   switch (hardened) {
+    case 'GREETING':
+      return 'GREETING';
     case 'ADVERSARIAL':
     case 'UNSUPPORTED':
       return 'UNSUPPORTED';

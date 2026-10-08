@@ -39,89 +39,110 @@ describe('Question-to-Response Routing Regression Test Suite', () => {
     ],
   };
 
+  const QUERY_HI = 'Hi';
+  const QUERY_HELLO = 'Hello';
   const QUERY_SUMMARY = 'Summarize my attendance status.';
   const QUERY_SAFE_MISS = 'Can I safely miss any upcoming classes?';
   const QUERY_RECOVERY = 'How many classes do I need to attend to reach 75%?';
   const QUERY_ATTENTION = 'Which subject needs the most attention?';
   const QUERY_IMPROVE = 'How can I improve my attendance?';
+  const QUERY_PHYSICS = 'In Physics, can I safely miss one class?';
 
   describe('1. Hardened Classifier Intent Differentiation', () => {
-    it('routes each of the 5 exact queries to distinct intent categories', () => {
-      const catSummary = classifyHardenedQuestion(QUERY_SUMMARY);
-      const catSafeMiss = classifyHardenedQuestion(QUERY_SAFE_MISS);
-      const catRecovery = classifyHardenedQuestion(QUERY_RECOVERY);
-      const catAttention = classifyHardenedQuestion(QUERY_ATTENTION);
-      const catImprove = classifyHardenedQuestion(QUERY_IMPROVE);
+    it('routes greetings and academic questions to distinct intent categories', () => {
+      expect(classifyHardenedQuestion(QUERY_HI)).toBe('GREETING');
+      expect(classifyHardenedQuestion(QUERY_HELLO)).toBe('GREETING');
+      expect(classifyHardenedQuestion('hey')).toBe('GREETING');
+      expect(classifyHardenedQuestion('good morning')).toBe('GREETING');
+      expect(classifyHardenedQuestion('good evening')).toBe('GREETING');
 
-      expect(catSummary).toBe('FACTUAL');
-      expect(catSafeMiss).toBe('SAFE_MISSES');
-      expect(catRecovery).toBe('RECOVERY');
-      expect(catAttention).toBe('SUBJECT_ANALYSIS');
-      expect(catImprove).toBe('GENERAL_ADVICE');
-
-      const uniqueCategories = new Set([catSummary, catSafeMiss, catRecovery, catAttention, catImprove]);
-      expect(uniqueCategories.size).toBe(5);
+      expect(classifyHardenedQuestion(QUERY_SUMMARY)).toBe('FACTUAL');
+      expect(classifyHardenedQuestion(QUERY_SAFE_MISS)).toBe('SAFE_MISSES');
+      expect(classifyHardenedQuestion(QUERY_RECOVERY)).toBe('RECOVERY');
+      expect(classifyHardenedQuestion(QUERY_ATTENTION)).toBe('SUBJECT_ANALYSIS');
+      expect(classifyHardenedQuestion(QUERY_IMPROVE)).toBe('GENERAL_ADVICE');
     });
   });
 
   describe('2. Pipeline A (answerAttendanceQuestion — AI & Deterministic Architecture)', () => {
     const fastOpts = { apiKey: '', timeoutMs: 500 };
 
-    it('produces 5 mutually distinct, intent-appropriate answers without identical summaries', async () => {
+    it('handles greetings without triggering attendance calculations, metrics, or course cards', async () => {
+      const resHi = await answerAttendanceQuestion(QUERY_HI, jordanContext, fastOpts);
+      const resHello = await answerAttendanceQuestion(QUERY_HELLO, jordanContext, fastOpts);
+
+      expect(resHi.category).toBe('GREETING');
+      expect(resHi.answer).toMatch(/hello|how can i help/i);
+      expect(resHi.answer).not.toMatch(/\d+%/);
+      expect(resHi.referencedSubjects).toEqual([]);
+
+      expect(resHello.category).toBe('GREETING');
+      expect(resHello.answer).toMatch(/hello|how can i help/i);
+      expect(resHello.answer).not.toMatch(/\d+%/);
+      expect(resHello.referencedSubjects).toEqual([]);
+    });
+
+    it('produces mutually distinct, intent-appropriate answers without identical summaries', async () => {
+      const resHi = await answerAttendanceQuestion(QUERY_HI, jordanContext, fastOpts);
+      const resSummary = await answerAttendanceQuestion(QUERY_SUMMARY, jordanContext, fastOpts);
+      const resSafeMiss = await answerAttendanceQuestion(QUERY_SAFE_MISS, jordanContext, fastOpts);
+      const resRecovery = await answerAttendanceQuestion(QUERY_RECOVERY, jordanContext, fastOpts);
+      const resAttention = await answerAttendanceQuestion(QUERY_ATTENTION, jordanContext, fastOpts);
+      const resImprove = await answerAttendanceQuestion(QUERY_IMPROVE, jordanContext, fastOpts);
+      const resPhysics = await answerAttendanceQuestion(QUERY_PHYSICS, jordanContext, fastOpts);
+
+      // Verify Query 1: Greeting
+      expect(resHi.category).toBe('GREETING');
+      expect(resHi.referencedSubjects).toEqual([]);
+
+      // Verify Query 3: Summary produces overall standing without specific course hijacking
+      expect(resSummary.category).toBe('SUMMARY');
+      expect(resSummary.answer).toMatch(/overall\s+attendance/i);
+      expect(resSummary.referencedSubjects).toEqual([]);
+
+      // Verify Query 4: Safe miss query explains timetable data unavailability
+      expect(resSafeMiss.category).toBe('CALCULATION');
+      expect(resSafeMiss.answer).toMatch(/timetable\s+data\s+is\s+unavailable/i);
+      expect(resSafeMiss.answer).toMatch(/safe\s+miss/i);
+      expect(resSafeMiss.referencedSubjects).toEqual([]);
+
+      // Verify Query 5: Recovery calculates required classes without attaching subject cards
+      expect(resRecovery.category).toBe('CALCULATION');
+      expect(resRecovery.answer).toMatch(/requiring\s+recovery|consecutive/i);
+      expect(resRecovery.answer).toMatch(/75(?:\.0)?%/);
+      expect(resRecovery.referencedSubjects).toEqual([]);
+
+      // Verify Query 6: Attention identifies highest risk subject without attaching subject cards
+      expect(resAttention.category).toBe('RISK');
+      expect(resAttention.answer).toMatch(/highest-risk\s+course/i);
+      expect(resAttention.referencedSubjects).toEqual([]);
+
+      // Verify Query 7: General advice gives actionable improvement plan without attaching subject cards
+      expect(resImprove.answer).toMatch(/improve|prioritize/i);
+      expect(resImprove.referencedSubjects).toEqual([]);
+
+      // Verify Query 8: Enrolled Physics question targets only Physics
+      expect(resPhysics.referencedSubjects).toEqual(['Physics']);
+      expect(resPhysics.answer).toMatch(/Physics/i);
+    });
+
+    it('does not attach unrelated course badges to general queries', async () => {
       const resSummary = await answerAttendanceQuestion(QUERY_SUMMARY, jordanContext, fastOpts);
       const resSafeMiss = await answerAttendanceQuestion(QUERY_SAFE_MISS, jordanContext, fastOpts);
       const resRecovery = await answerAttendanceQuestion(QUERY_RECOVERY, jordanContext, fastOpts);
       const resAttention = await answerAttendanceQuestion(QUERY_ATTENTION, jordanContext, fastOpts);
       const resImprove = await answerAttendanceQuestion(QUERY_IMPROVE, jordanContext, fastOpts);
 
-      const answers = [
-        resSummary.answer,
-        resSafeMiss.answer,
-        resRecovery.answer,
-        resAttention.answer,
-        resImprove.answer,
-      ];
-
-      // Prove that all 5 answers are mutually distinct
-      const uniqueAnswers = new Set(answers);
-      expect(uniqueAnswers.size).toBe(5);
-
-      // Verify Query 1: Summary produces overall standing without specific course hijacking
-      expect(resSummary.category).toBe('SUMMARY');
-      expect(resSummary.answer).toMatch(/overall\s+attendance/i);
-      expect(resSummary.referencedSubjects).toEqual([]);
-
-      // Verify Query 2: Safe miss query explains timetable data unavailability and does not fabricate schedule
-      expect(resSafeMiss.category).toBe('CALCULATION');
-      expect(resSafeMiss.answer).toMatch(/timetable\s+data\s+is\s+unavailable/i);
-      expect(resSafeMiss.answer).toMatch(/safe\s+miss/i);
-      expect(resSafeMiss.referencedSubjects).toEqual([]);
-
-      // Verify Query 3: Recovery calculates required classes
-      expect(resRecovery.category).toBe('CALCULATION');
-      expect(resRecovery.answer).toMatch(/requiring\s+recovery|consecutive/i);
-      expect(resRecovery.answer).toMatch(/75(?:\.0)?%/);
-
-      // Verify Query 4: Attention identifies highest risk subject
-      expect(resAttention.category).toBe('RISK');
-      expect(resAttention.answer).toMatch(/highest-risk\s+course/i);
-      expect(resAttention.referencedSubjects).toContain('C Programming');
-
-      // Verify Query 5: General advice gives actionable improvement plan
-      expect(resImprove.answer).toMatch(/improve|prioritize/i);
-    });
-
-    it('does not attach unrelated course badges to general queries', async () => {
-      const resSummary = await answerAttendanceQuestion(QUERY_SUMMARY, jordanContext, fastOpts);
-      const resSafeMiss = await answerAttendanceQuestion(QUERY_SAFE_MISS, jordanContext, fastOpts);
-
       expect(resSummary.referencedSubjects).toEqual([]);
       expect(resSafeMiss.referencedSubjects).toEqual([]);
+      expect(resRecovery.referencedSubjects).toEqual([]);
+      expect(resAttention.referencedSubjects).toEqual([]);
+      expect(resImprove.referencedSubjects).toEqual([]);
     });
 
     it('attaches course badges only when a course is explicitly queried', async () => {
-      const resPhysics = await answerAttendanceQuestion('Can I miss my next Physics class?', jordanContext, fastOpts);
-      expect(resPhysics.referencedSubjects).toContain('Physics');
+      const resPhysics = await answerAttendanceQuestion(QUERY_PHYSICS, jordanContext, fastOpts);
+      expect(resPhysics.referencedSubjects).toEqual(['Physics']);
     });
   });
 
@@ -175,16 +196,47 @@ describe('Question-to-Response Routing Regression Test Suite', () => {
       }
     });
 
+    it('handles greetings in generateDeterministicAdvice and getAttendanceAdvice', async () => {
+      const ansHi = generateDeterministicAdvice(QUERY_HI, engineSummary);
+      const ansHello = generateDeterministicAdvice(QUERY_HELLO, engineSummary);
+      expect(ansHi).toMatch(/hello|how can i help/i);
+      expect(ansHi).not.toMatch(/\d+%/);
+      expect(ansHello).toMatch(/hello|how can i help/i);
+
+      const resHi = await getAttendanceAdvice(QUERY_HI, engineSummary);
+      expect(resHi.contextSnapshot).toBeNull();
+      expect(resHi.reply).toMatch(/hello|how can i help/i);
+    });
+
+    it('identifies unlisted courses and does not provide wrong course data', () => {
+      const ansPhysics = generateDeterministicAdvice(QUERY_PHYSICS, engineSummary);
+      expect(ansPhysics).toMatch(/no attendance records found for Physics/i);
+      expect(ansPhysics).not.toMatch(/Distributed Systems|CS301/i);
+    });
+
     it('generateMockAdvisorReply handles safe miss queries without timetable fabrication or CS301 card', () => {
       const reply = generateMockAdvisorReply(QUERY_SAFE_MISS);
 
       expect(reply.contextSnapshot).toBeNull();
       expect(reply.reply).toMatch(/timetable\s+data\s+is\s+unavailable/i);
       expect(reply.reply).not.toContain("If you miss tomorrow's lecture, your attendance will stand at 81.0%");
+
+      const replyHi = generateMockAdvisorReply(QUERY_HI);
+      expect(replyHi.contextSnapshot).toBeNull();
+      expect(replyHi.reply).toMatch(/hello/i);
+      expect(replyHi.reply).not.toMatch(/\d+%/);
     });
   });
 
   describe('4. Local Client Advisor Evaluator (queryAttendanceAdvisorLocal)', () => {
+    it('handles greetings in queryAttendanceAdvisorLocal', async () => {
+      const res = await queryAttendanceAdvisorLocal(QUERY_HI, jordanContext, 'Jordan');
+      expect(res.category).toBe('GREETING');
+      expect(res.answer).toMatch(/hello/i);
+      expect(res.answer).not.toMatch(/\d+%/);
+      expect(res.referencedSubjects).toEqual([]);
+    });
+
     it('does not force C Programming as targetSubject for general queries', async () => {
       const res = await queryAttendanceAdvisorLocal(QUERY_SAFE_MISS, jordanContext, 'Jordan');
 

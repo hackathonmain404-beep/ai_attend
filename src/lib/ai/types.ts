@@ -8,6 +8,7 @@ import { RiskLevel, AttendanceContextPayload } from '@/lib/analytics/types';
 export type { AttendanceContextPayload, RiskLevel };
 
 export type HardenedQuestionCategory =
+  | 'GREETING'
   | 'FACTUAL'
   | 'NUMERICAL'
   | 'SUBJECT_ANALYSIS'
@@ -19,6 +20,7 @@ export type HardenedQuestionCategory =
   | 'ADVERSARIAL';
 
 export type LegacyQuestionCategory =
+  | 'GREETING'
   | 'RISK'
   | 'CALCULATION'
   | 'SUMMARY'
