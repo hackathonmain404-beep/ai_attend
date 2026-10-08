@@ -57,7 +57,7 @@ export default function StudentScannerPage() {
       </section>
 
       {/* 3. Security Perimeter Guidance Strip */}
-      <div className="max-w-xl mx-auto w-full p-4 rounded-xl border border-zinc-800/80 bg-[#0B0D10] text-center text-xs font-mono text-zinc-400 flex items-center justify-center gap-2">
+      <div className="max-w-2xl mx-auto w-full p-4 rounded-xl border border-zinc-800/80 bg-[#0B0D10] text-center text-xs font-mono text-zinc-400 flex items-center justify-center gap-2 transition-all duration-300 hover:border-blue-500/30 shadow-lg">
         <Smartphone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
         <span>Hardware bound to student profile • Ensure active institutional perimeter connection</span>
       </div>
