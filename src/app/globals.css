@@ -304,12 +304,6 @@ html {
   animation: fade-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Scroll-linked progress line glow */
-.scroll-progress-line {
-  background: linear-gradient(90deg, #10b981 0%, #14b8a6 45%, #06b6d4 100%);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.6), 0 0 32px rgba(6, 182, 212, 0.4);
-}
-
 /* Pause marquee animation on hover */
 .pause-on-hover:hover {
   animation-play-state: paused;

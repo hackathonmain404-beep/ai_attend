@@ -4,7 +4,6 @@ import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "sonner";
 import { DemoTourFloatingButton } from "@/components/presentation/DemoTourFloatingButton";
-import { ScrollProgressBar } from "@/components/ui/ScrollProgressBar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +31,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-[#070b12] text-slate-100 min-h-screen antialiased flex flex-col`}>
-        <ScrollProgressBar />
         <QueryProvider>
           {children}
           <DemoTourFloatingButton />
