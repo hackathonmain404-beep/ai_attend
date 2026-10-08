@@ -40,21 +40,40 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     );
   }
 
-  // Fetch matching profile from public.profiles
-  const { data: profile, error: profileError } = await supabase
+  // Fetch matching profile from public.profiles with authoritative self-healing
+  let profile: any = null;
+  const { data: dbProfile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', data.user.id)
     .maybeSingle();
 
-  if (profileError || !profile) {
+  if (dbProfile) {
+    profile = dbProfile;
+  } else {
+    try {
+      const { ensureUserProfile } = await import('@/lib/auth/profile-provisioning');
+      const resolution = await ensureUserProfile(data.user);
+      profile = {
+        id: resolution.profile.id,
+        email: resolution.profile.email,
+        full_name: resolution.profile.fullName,
+        role: resolution.profile.role,
+        identifier: resolution.profile.identifier,
+      };
+    } catch (provisionErr) {
+      console.error('[Login Profile Lookup Error]:', provisionErr);
+    }
+  }
+
+  if (!profile) {
     throw new UnauthorizedError('User profile not found in academic registry.');
   }
 
   const userProfile = {
     id: profile.id,
     email: profile.email || data.user.email || normalizedEmail,
-    fullName: profile.full_name || 'Academic User',
+    fullName: profile.full_name || profile.fullName || 'Academic User',
     role: profile.role || 'student',
     identifier: profile.identifier || 'USER-001',
   };

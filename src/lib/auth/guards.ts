@@ -5,7 +5,7 @@
 
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { ensureUserProfile } from '@/lib/auth/profile-provisioning';
 import { UnauthorizedError, ForbiddenError } from '@/lib/errors';
 import { Profile, UserRole } from '@/types/database';
 
@@ -32,7 +32,7 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
     throw new UnauthorizedError('Authentication required. Please log in.');
   }
 
-  // Fetch verified profile from database
+  // Fetch verified profile from database (respects RLS)
   let profile: any = null;
   const profileQuery = supabase
     .from('profiles')
@@ -51,129 +51,24 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
     }
   }
 
-  // If profile is missing from public.profiles, attempt admin lookup or auto-provisioning
+  // If profile is missing from public.profiles, attempt authoritative provisioning
   if (!profile && UUID_REGEX.test(user.id)) {
     try {
-      const admin = createAdminClient();
-
-      // Check if admin can find the profile (in case RLS blocked the user client)
-      const { data: adminProfile } = await admin
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (adminProfile) {
-        profile = adminProfile;
-      } else {
-        // Auto-provision profile from verified Supabase Auth identity
-        const metadata = user.user_metadata || {};
-        const role = (metadata.role === 'teacher' ? 'teacher' : 'student') as UserRole;
-        let email = user.email || `${user.id}@university.edu`;
-        const fullName =
-          metadata.full_name ||
-          metadata.name ||
-          (user.email ? user.email.split('@')[0] : 'Academic User');
-
-        const idPrefix = role === 'teacher' ? 'FAC-' : 'STU-';
-        const cleanId = user.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || '0001';
-        let identifier = metadata.identifier || `${idPrefix}${cleanId}`;
-
-        // Ensure unique identifier
-        const { data: existingIdProfile } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('identifier', identifier)
-          .maybeSingle();
-
-        if (existingIdProfile && existingIdProfile.id !== user.id) {
-          identifier = `${idPrefix}${user.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`;
-        }
-
-        // Ensure unique email
-        const { data: existingEmailProfile } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (existingEmailProfile && existingEmailProfile.id !== user.id) {
-          email = `${user.id}@university.edu`;
-        }
-
-        const { data: createdProfile, error: insertError } = await admin
-          .from('profiles')
-          .upsert(
-            {
-              id: user.id,
-              email,
-              full_name: fullName,
-              role,
-              identifier,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'id' }
-          )
-          .select('*')
-          .maybeSingle();
-
-        if (createdProfile && !insertError) {
-          profile = createdProfile;
-
-          // If new student, auto-bind device and auto-enroll in courses
-          if (role === 'student') {
-            try {
-              const { data: existingDev } = await admin
-                .from('registered_devices')
-                .select('id')
-                .eq('student_id', user.id)
-                .eq('is_active', true)
-                .maybeSingle();
-
-              if (!existingDev) {
-                await admin.from('registered_devices').insert({
-                  student_id: user.id,
-                  device_fingerprint: `fp-${user.id.slice(0, 8)}`,
-                  device_name: `${fullName.split(' ')[0]}'s Device`,
-                  is_active: true,
-                });
-              }
-            } catch (devErr) {
-              console.warn('[requireAuth] Auto-device notice:', devErr);
-            }
-
-            try {
-              const { count } = await admin
-                .from('class_enrollments')
-                .select('*', { count: 'exact', head: true })
-                .eq('student_id', user.id);
-
-              if ((count ?? 0) === 0) {
-                const { data: availableClasses } = await admin
-                  .from('classes')
-                  .select('id')
-                  .limit(10);
-
-                if (availableClasses && availableClasses.length > 0) {
-                  const enrollRows = availableClasses.map((cls) => ({
-                    class_id: cls.id,
-                    student_id: user.id,
-                  }));
-                  await admin
-                    .from('class_enrollments')
-                    .upsert(enrollRows, { onConflict: 'class_id,student_id', ignoreDuplicates: true });
-                }
-              }
-            } catch (enrErr) {
-              console.warn('[requireAuth] Auto-enrollment notice:', enrErr);
-            }
-          }
-        } else if (insertError) {
-          console.warn('[requireAuth] Profile auto-provisioning notice:', insertError.message);
-        }
-      }
-    } catch {
-      // In local environments or testing where admin client is not initialized, silently continue
+      const resolution = await ensureUserProfile(user);
+      profile = {
+        id: resolution.profile.id,
+        email: resolution.profile.email,
+        full_name: resolution.profile.fullName,
+        role: resolution.profile.role,
+        identifier: resolution.profile.identifier,
+        created_at: resolution.profile.createdAt,
+        updated_at: resolution.profile.updatedAt,
+      };
+    } catch (provisionErr: any) {
+      console.error(
+        `[requireAuth] Profile provisioning failed for user ${user.id}:`,
+        provisionErr?.message || provisionErr
+      );
     }
   }
 
@@ -186,11 +81,11 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
     profile: {
       id: profile.id,
       email: profile.email,
-      fullName: profile.full_name,
-      role: profile.role as UserRole,
+      fullName: profile.full_name || profile.fullName,
+      role: (profile.role as UserRole),
       identifier: profile.identifier,
-      createdAt: profile.created_at,
-      updatedAt: profile.updated_at,
+      createdAt: profile.created_at || profile.createdAt,
+      updatedAt: profile.updated_at || profile.updatedAt,
     },
   };
 }

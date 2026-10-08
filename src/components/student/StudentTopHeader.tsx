@@ -149,10 +149,16 @@ export function StudentTopHeader({
                 <span className="text-[9px] text-zinc-400 font-medium truncate">
                   {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-blue-400">
-                  <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
-                  VERIFIED
-                </span>
+                {userProfile?.device?.isRegistered ? (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-blue-400">
+                    <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
+                    VERIFIED
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-zinc-500">
+                    UNBOUND
+                  </span>
+                )}
               </div>
             </div>
 

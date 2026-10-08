@@ -178,7 +178,7 @@ export async function resolveCurrentUserProfile(): Promise<UserProfile | null> {
     // Unauthenticated or network issue
   }
 
-  // 3. Try checking Supabase client session in browser (e.g., OAuth return)
+  // 3. Try checking Supabase client session in browser with real database profile lookup
   try {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -189,23 +189,17 @@ export async function resolveCurrentUserProfile(): Promise<UserProfile | null> {
         .eq("id", session.user.id)
         .maybeSingle();
 
-      const email = session.user.email || "";
-      const meta = session.user.user_metadata || {};
-      const storedRole =
-        (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
-        dbProfile?.role ||
-        meta.role ||
-        "student";
-
-      const liveProfile: UserProfile = {
-        id: session.user.id,
-        email: dbProfile?.email || email,
-        fullName: dbProfile?.full_name || meta.full_name || meta.name || email.split("@")[0] || "Academic User",
-        role: storedRole,
-        identifier: dbProfile?.identifier || meta.identifier || (storedRole === "teacher" ? `FAC-${session.user.id.slice(0, 4)}` : `STU-${session.user.id.slice(0, 4)}`),
-      };
-      saveCurrentUserProfile(liveProfile);
-      return liveProfile;
+      if (dbProfile) {
+        const liveProfile: UserProfile = {
+          id: dbProfile.id,
+          email: dbProfile.email,
+          fullName: dbProfile.full_name,
+          role: dbProfile.role as "student" | "teacher",
+          identifier: dbProfile.identifier,
+        };
+        saveCurrentUserProfile(liveProfile);
+        return liveProfile;
+      }
     }
   } catch {}
 

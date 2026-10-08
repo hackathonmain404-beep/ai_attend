@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { ensureUserProfile } from '@/lib/auth/profile-provisioning';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -19,42 +19,9 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (!error && data?.user) {
-        // 1. Verify profile existence
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .maybeSingle();
-
-        let targetRole = profile?.role;
-
-        // 2. Provision profile if new social login user
-        if (!profile) {
-          const metadata = data.user.user_metadata || {};
-          const role = metadata.role || 'student';
-          targetRole = role;
-
-          try {
-            const admin = createAdminClient();
-            await admin.from('profiles').insert({
-              id: data.user.id,
-              email: data.user.email || 'user@university.edu',
-              full_name:
-                metadata.full_name ||
-                metadata.name ||
-                data.user.email?.split('@')[0] ||
-                'Academic User',
-              role,
-              identifier:
-                metadata.identifier ||
-                (role === 'teacher'
-                  ? `FAC-${Math.floor(1000 + Math.random() * 9000)}`
-                  : `STU-${Math.floor(1000 + Math.random() * 9000)}`),
-            });
-          } catch (e) {
-            console.error('Failed to auto-provision profile:', e);
-          }
-        }
+        // Authoritatively ensure profile existence before redirecting
+        const { profile } = await ensureUserProfile(data.user);
+        const targetRole = profile.role;
 
         const destination =
           redirectTarget && redirectTarget.startsWith('/')
@@ -66,7 +33,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(destination, request.url));
       }
     } catch (err) {
-      console.error('OAuth exchange error:', err);
+      console.error('[OAuth Callback Error]:', err);
     }
   }
 

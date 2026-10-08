@@ -109,6 +109,18 @@ describe('Authentication & RBAC Guards (src/lib/auth/guards.ts)', () => {
             maybeSingle: vi.fn().mockResolvedValue({ data: null }),
             upsert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    id: validUuid,
+                    email: 'hackathon-main@university.edu',
+                    full_name: 'Hackathon Main',
+                    role: 'student',
+                    identifier: 'STU-1234',
+                    created_at: '2026-10-08T00:00:00Z',
+                    updated_at: '2026-10-08T00:00:00Z',
+                  },
+                  error: null,
+                }),
                 maybeSingle: vi.fn().mockResolvedValue({
                   data: {
                     id: validUuid,

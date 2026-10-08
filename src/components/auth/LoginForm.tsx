@@ -123,41 +123,23 @@ export function LoginForm() {
         }
 
         if (session?.user) {
-          const email = session.user.email || "";
-          const meta = session.user.user_metadata || {};
-          const fullName =
-            meta.full_name || meta.name || (email ? email.split("@")[0] : "Verified Academic");
-          const identifier =
-            meta.identifier ||
-            (storedRole === "teacher"
-              ? `FAC-${session.user.id.slice(0, 4)}`
-              : `STU-${session.user.id.slice(0, 4)}`);
-
-          const profile = {
-            id: session.user.id,
-            email,
-            fullName,
-            role: storedRole,
-            identifier,
-          };
-
-          saveCurrentUserProfile(profile);
+          const { resolveCurrentUserProfile } = await import("@/lib/auth/auth-client");
+          const profile = await resolveCurrentUserProfile();
           localStorage.removeItem("attendguard-oauth-provider");
           localStorage.removeItem("attendguard-oauth-role");
 
-          if (isMounted) {
+          if (profile && isMounted) {
             setCurrentUser(profile);
             toast.success(`Authentication Confirmed!`, {
               description: `Signed in as ${profile.fullName} (${
-                storedRole === "student" ? "Student" : "Faculty"
+                profile.role === "student" ? "Student" : "Faculty"
               }).`,
             });
+            const target = redirectTarget || (profile.role === "student" ? "/student" : "/teacher");
+            router.push(target);
+            router.refresh();
+            return;
           }
-
-          const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
-          router.push(target);
-          router.refresh();
-          return;
         } else if (oauthError) {
           localStorage.removeItem("attendguard-oauth-provider");
           localStorage.removeItem("attendguard-oauth-role");
@@ -178,32 +160,20 @@ export function LoginForm() {
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           if (event === "SIGNED_IN" && session?.user && isMounted) {
-            const storedRole =
-              (localStorage.getItem("attendguard-oauth-role") as "student" | "teacher") ||
-              "student";
-            const email = session.user.email || "";
-            const meta = session.user.user_metadata || {};
-            const profile = {
-              id: session.user.id,
-              email,
-              fullName:
-                meta.full_name || meta.name || (email ? email.split("@")[0] : "Verified Academic"),
-              role: storedRole,
-              identifier:
-                meta.identifier || (storedRole === "teacher" ? `FAC-${session.user.id.slice(0, 4)}` : `STU-${session.user.id.slice(0, 4)}`),
-            };
-
-            saveCurrentUserProfile(profile);
+            const { resolveCurrentUserProfile } = await import("@/lib/auth/auth-client");
+            const profile = await resolveCurrentUserProfile();
             localStorage.removeItem("attendguard-oauth-provider");
             localStorage.removeItem("attendguard-oauth-role");
 
-            setCurrentUser(profile);
-            toast.success(`Signed in via Connected Account!`, {
-              description: `Redirecting to ${storedRole === "student" ? "Student Command Center" : "Faculty Console"}...`,
-            });
-            const target = redirectTarget || (storedRole === "student" ? "/student" : "/teacher");
-            router.push(target);
-            router.refresh();
+            if (profile) {
+              setCurrentUser(profile);
+              toast.success(`Signed in via Connected Account!`, {
+                description: `Redirecting to ${profile.role === "student" ? "Student Command Center" : "Faculty Console"}...`,
+              });
+              const target = redirectTarget || (profile.role === "student" ? "/student" : "/teacher");
+              router.push(target);
+              router.refresh();
+            }
           }
         }
       );

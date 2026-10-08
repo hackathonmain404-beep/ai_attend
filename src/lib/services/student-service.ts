@@ -76,9 +76,9 @@ export async function getStudentAttendanceSummary(
               registeredAt: profile.device.registeredAt ?? null,
             }
           : {
-              isRegistered: true,
-              deviceName: `${(profile.fullName || "Student").split(" ")[0]}'s Device`,
-              registeredAt: new Date().toISOString(),
+              isRegistered: false,
+              deviceName: null,
+              registeredAt: null,
             },
       }
     : MOCK_STUDENT_SUMMARY.student;
