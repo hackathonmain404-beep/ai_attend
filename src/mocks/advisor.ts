@@ -8,7 +8,7 @@ export function generateMockAdvisorReply(query: string): AdvisorResponseData {
   const q = query.toLowerCase();
 
   // 1. Inquiries about MATH202 / Linear Algebra
-  if (q.includes("linear algebra") || q.includes("math202") || q.includes("math")) {
+  if (q.includes("linear algebra") || /\bmath202\b/i.test(q) || /\bmath\b/i.test(q)) {
     return {
       reply:
         "In MATH202 (Linear Algebra), your attendance is currently at 68.2% (15 out of 22 classes attended), which is below the required 75% threshold. You cannot afford to miss any upcoming classes. You must attend the next 3 consecutive classes without absence to restore your attendance back to 75.0%.",
@@ -25,12 +25,7 @@ export function generateMockAdvisorReply(query: string): AdvisorResponseData {
   }
 
   // 2. Inquiries about CS301 / Distributed Systems
-  if (
-    q.includes("distributed") ||
-    q.includes("cs301") ||
-    q.includes("miss tomorrow") ||
-    q.includes("can i miss")
-  ) {
+  if (/\bdistributed\b/i.test(q) || /\bcs301\b/i.test(q)) {
     return {
       reply:
         "In CS301 (Distributed Systems & Cloud), your attendance is in safe standing at 85.0% (17 out of 20 classes attended). You currently have a safety buffer of 2 allowable absences before dropping below the mandated 75.0% threshold. If you miss tomorrow's lecture, your attendance will stand at 81.0%, which remains safely compliant.",
@@ -47,7 +42,7 @@ export function generateMockAdvisorReply(query: string): AdvisorResponseData {
   }
 
   // 3. Inquiries about CS205 / Operating Systems
-  if (q.includes("operating systems") || q.includes("cs205") || q.includes("os")) {
+  if (/\boperating\s+systems?\b/i.test(q) || /\bcs205\b/i.test(q) || /\bos\b/i.test(q)) {
     return {
       reply:
         "In CS205 (Operating Systems), your attendance is currently at 71.4% (10 out of 14 classes attended). You are slightly below the required 75% mark. Attending the next 2 consecutive lectures without absence will elevate your attendance back to 75.0%.",
@@ -63,7 +58,48 @@ export function generateMockAdvisorReply(query: string): AdvisorResponseData {
     };
   }
 
-  // 4. Inquiries about At-Risk / Defaulter status
+  // 4. Safe Misses general inquiry (e.g. "Can I safely miss any upcoming classes?")
+  if (
+    /safely\s+(?:miss|skip)/i.test(q) ||
+    /can\s+i\s+(?:safely\s+)?(?:miss|skip)/i.test(q) ||
+    /safe\s+miss/i.test(q) ||
+    /afford\s+to\s+(?:miss|skip)/i.test(q)
+  ) {
+    return {
+      reply:
+        "Upcoming timetable data is unavailable, so please specify which course you are asking about to evaluate a specific upcoming class session. Across your active courses, your safe miss allowances are: CS301 (2 safe misses), MATH202 (0 safe misses - at risk), CS205 (0 safe misses - at risk). Minimum requirement is 75.0%.",
+      contextSnapshot: null,
+    };
+  }
+
+  // 5. Recovery general inquiry (e.g. "How many classes do I need to attend to reach 75%?")
+  if (
+    /how\s+many\s+classes/i.test(q) ||
+    /reach\s+75/i.test(q) ||
+    /classes\s+needed/i.test(q) ||
+    /consecutive/i.test(q) ||
+    /recover/i.test(q)
+  ) {
+    return {
+      reply:
+        "To reach the 75.0% threshold, you currently have 2 courses requiring recovery: MATH202 requires attending the next 3 consecutive classes, and CS205 requires attending the next 2 consecutive classes.",
+      contextSnapshot: null,
+    };
+  }
+
+  // 6. Subject-risk / Attention inquiry (e.g. "Which subject needs the most attention?")
+  if (
+    /attention|focus\s+on|weakest|lowest|worst/i.test(q) ||
+    /which\s+subject/i.test(q)
+  ) {
+    return {
+      reply:
+        "The subject that needs the most attention is MATH202 (Linear Algebra) at 68.2% attendance (15 out of 22 classes attended). It is below the 75% threshold and requires attending the next 3 consecutive classes without absence.",
+      contextSnapshot: null,
+    };
+  }
+
+  // 7. General Risk / Below 75 inquiry (e.g. "Which of my classes are currently at risk or below 75%?")
   if (
     q.includes("risk") ||
     q.includes("defaulter") ||
@@ -74,19 +110,29 @@ export function generateMockAdvisorReply(query: string): AdvisorResponseData {
     return {
       reply:
         "According to your verified ledger, 2 out of your 5 enrolled courses are currently under the 75% regulatory requirement: 1) MATH202 (Linear Algebra) at 68.2% (requires 3 consecutive classes), and 2) CS205 (Operating Systems) at 71.4% (requires 2 consecutive classes). Your overall cumulative attendance is 82.5% across 51 total lectures.",
-      contextSnapshot: {
-        classCode: "MATH202",
-        currentPercentage: 68.2,
-        attended: 15,
-        totalHeld: 22,
-        targetPercentage: 75.0,
-        classesNeeded: 3,
-        canMiss: 0,
-      },
+      contextSnapshot: null,
     };
   }
 
-  // 5. Default General Response
+  // 7. General advice inquiry (e.g. "How can I improve my attendance?")
+  if (/improve/i.test(q) || /advice|strategy|action\s+plan|tips/i.test(q)) {
+    return {
+      reply:
+        "To improve your overall attendance, prioritize attending all upcoming sessions in MATH202 (currently 68.2%, needs 3 consecutive classes) and CS205 (currently 71.4%, needs 2 consecutive classes). Avoid any absences until your attendance in both subjects rises above 75.0%.",
+      contextSnapshot: null,
+    };
+  }
+
+  // 8. Summary inquiry (e.g. "Summarize my attendance status.")
+  if (/summar|status|standing|overview/i.test(q)) {
+    return {
+      reply:
+        "Your overall attendance is currently at 82.5% across 5 enrolled courses. You have 3 courses in safe standing and 2 courses (MATH202 at 68.2%, CS205 at 71.4%) currently below the 75.0% regulatory threshold.",
+      contextSnapshot: null,
+    };
+  }
+
+  // 9. Default General Response
   return {
     reply:
       "I am your AttendGuard AI Attendance Advisor. I evaluate official university attendance records and calculate your regulatory 75% margins. You can ask me specific questions such as: 'Am I safe in Linear Algebra?', 'Can I miss Distributed Systems tomorrow?', or 'How many consecutive classes do I need to attend to restore 75%?'",

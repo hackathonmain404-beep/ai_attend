@@ -165,7 +165,7 @@ export async function generateAdvisorContent(
     throw new Error('MISSING_GEMINI_API_KEY: No Gemini API key configured in environment.');
   }
 
-  const model = options?.model || 'gemini-2.5-flash';
+  const model = options?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
   const timeoutMs = options?.timeoutMs || 8000;
 
   const ai = new GoogleGenAI({ apiKey });

@@ -24,7 +24,7 @@ export interface AdvisorContextSnapshot {
 
 export interface AdvisorResult {
   reply: string;
-  contextSnapshot: AdvisorContextSnapshot;
+  contextSnapshot: AdvisorContextSnapshot | null;
   engine: 'llm' | 'deterministic_fallback';
 }
 
@@ -58,11 +58,12 @@ function findMentionedCourse(query: string, classes: ClassSummary[]): ClassSumma
 
 /**
  * Builds the context snapshot for the API response.
+ * Strictly returns a snapshot only when a course is referenced.
  */
 function buildContextSnapshot(
   targetClass: ClassSummary | null,
-  summary: StudentAttendanceSummary
-): AdvisorContextSnapshot {
+  _summary: StudentAttendanceSummary
+): AdvisorContextSnapshot | null {
   if (targetClass) {
     return {
       classCode: targetClass.courseCode,
@@ -75,30 +76,7 @@ function buildContextSnapshot(
     };
   }
 
-  const atRisk = summary.classes.find((c) => c.status === 'at_risk');
-  const first = atRisk || summary.classes[0];
-
-  if (first) {
-    return {
-      classCode: first.courseCode,
-      currentPercentage: first.percentage,
-      attended: first.attended,
-      totalHeld: first.totalHeld,
-      targetPercentage: 75.0,
-      classesNeeded: first.classesNeededFor75,
-      canMiss: first.canMissNext,
-    };
-  }
-
-  return {
-    classCode: 'OVERALL',
-    currentPercentage: summary.overallPercentage,
-    attended: 0,
-    totalHeld: 0,
-    targetPercentage: 75.0,
-    classesNeeded: 0,
-    canMiss: 0,
-  };
+  return null;
 }
 
 /**
@@ -131,24 +109,82 @@ export function generateDeterministicAdvice(
 
   const lowerQuery = query.toLowerCase();
 
-  // Query: "Which subject is at risk?" / "at risk"
-  if (lowerQuery.includes('risk') || lowerQuery.includes('danger') || lowerQuery.includes('jeopardy')) {
+  // 1. Safe Misses inquiry (e.g. "Can I safely miss any upcoming classes?")
+  if (
+    /safely\s+(?:miss|skip)/i.test(lowerQuery) ||
+    /can\s+i\s+(?:safely\s+)?(?:miss|skip)/i.test(lowerQuery) ||
+    /safe\s+miss/i.test(lowerQuery) ||
+    /afford\s+to\s+(?:miss|skip)/i.test(lowerQuery) ||
+    /how\s+many\s+classes\s+can\s+i\s+miss/i.test(lowerQuery)
+  ) {
+    const isUpcoming = /upcoming|tomorrow|next/i.test(lowerQuery);
+    const prefix = isUpcoming
+      ? 'Upcoming timetable data is unavailable, so please specify which course you are asking about to evaluate a specific upcoming class session. '
+      : '';
+    const breakdown = summary.classes
+      .map(
+        (c) =>
+          `${c.courseCode} (${c.className}): ${c.canMissNext} safe miss(es) (currently ${c.percentage}%)`
+      )
+      .join(', ');
+    return `${prefix}Across your active courses, your current safe miss allowances are: ${breakdown}. Institutional bylaws require maintaining at least 75.0% attendance.`;
+  }
+
+  // 2. Recovery inquiry (e.g. "How many classes do I need to attend to reach 75%?")
+  if (
+    /how\s+many\s+classes\s+(?:do\s+i\s+)?need\s+to\s+attend/i.test(lowerQuery) ||
+    /to\s+reach\s+75/i.test(lowerQuery) ||
+    /classes\s+needed/i.test(lowerQuery) ||
+    /consecutive\s+classes/i.test(lowerQuery) ||
+    /recover/i.test(lowerQuery)
+  ) {
     const atRiskCourses = summary.classes.filter((c) => c.status === 'at_risk');
     if (atRiskCourses.length === 0) {
-      return `Great news! All your enrolled courses are currently in good standing above the 75% threshold. Your overall average attendance is ${summary.overallPercentage}%.`;
+      return `Great news! All your enrolled courses currently meet or exceed the 75.0% attendance threshold. You need 0 consecutive recovery classes. Your overall average attendance is ${summary.overallPercentage}%.`;
     }
-
     const items = atRiskCourses
       .map(
         (c) =>
-          `• ${c.courseCode} (${c.className}): currently ${c.percentage}% (${c.attended}/${c.totalHeld}), you need ${c.classesNeededFor75} consecutive classes.`
+          `• ${c.courseCode} (${c.className}): currently ${c.percentage}% (${c.attended}/${c.totalHeld}), requires ${c.classesNeededFor75} consecutive classes`
       )
       .join('\n');
-
-    return `Attention needed! You have ${atRiskCourses.length} course(s) below the 75% threshold:\n${items}`;
+    return `To reach the 75.0% requirement, you have ${atRiskCourses.length} course(s) requiring recovery:\n${items}`;
   }
 
-  // Query: General summary
+  // 3. Subject-risk & Attention inquiry (e.g. "Which subject needs the most attention?")
+  if (
+    /attention|focus\s+on|weakest|lowest|worst/i.test(lowerQuery) ||
+    /which\s+(?:subject|course|class)s?\s+(?:is|needs|are)/i.test(lowerQuery) ||
+    lowerQuery.includes('risk') ||
+    lowerQuery.includes('danger') ||
+    lowerQuery.includes('jeopardy')
+  ) {
+    const atRiskCourses = summary.classes.filter((c) => c.status === 'at_risk');
+    const sorted = [...summary.classes].sort((a, b) => a.percentage - b.percentage);
+    const worst = sorted[0];
+
+    if (atRiskCourses.length === 0) {
+      return `All your enrolled courses are currently in good standing above 75%. Your lowest standing course is ${worst.courseCode} (${worst.className}) at ${worst.percentage}%, with ${worst.canMissNext} allowable absences. Overall attendance is ${summary.overallPercentage}%.`;
+    }
+
+    return `The subject that needs the most attention is ${worst.courseCode} (${worst.className}) at ${worst.percentage}% (${worst.attended}/${worst.totalHeld} classes attended). You cannot afford any absences in this course and must attend the next ${worst.classesNeededFor75} consecutive classes to restore compliance with the 75.0% threshold.`;
+  }
+
+  // 4. General advice inquiry (e.g. "How can I improve my attendance?")
+  if (
+    /how\s+can\s+i\s+improve/i.test(lowerQuery) ||
+    /improve\s+(?:my\s+)?attendance/i.test(lowerQuery) ||
+    /advice|tips|strategy|action\s+plan|recommend/i.test(lowerQuery)
+  ) {
+    const atRiskCourses = summary.classes.filter((c) => c.status === 'at_risk');
+    if (atRiskCourses.length > 0) {
+      const topRisk = atRiskCourses.sort((a, b) => a.percentage - b.percentage)[0];
+      return `To improve your overall attendance, prioritize attending every scheduled session in ${topRisk.courseCode} (${topRisk.className}), where you are currently at ${topRisk.percentage}% and need ${topRisk.classesNeededFor75} consecutive classes to reach 75%. Maintain perfect attendance across all upcoming classes until your margin recovers.`;
+    }
+    return `Your attendance is in good standing at ${summary.overallPercentage}%. To maintain and improve it, continue attending your scheduled lectures consistently, monitor your safe absence buffers, and avoid unnecessary absences.`;
+  }
+
+  // 5. Query: General summary
   const safeCount = summary.classes.filter((c) => c.status === 'safe').length;
   const atRiskCount = summary.classes.filter((c) => c.status === 'at_risk').length;
 

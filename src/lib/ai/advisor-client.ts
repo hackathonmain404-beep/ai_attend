@@ -156,37 +156,38 @@ export async function queryAttendanceAdvisorLocal(
   const name = studentName || 'Student';
 
   let category: QuestionCategory = 'GENERAL_ATTENDANCE';
-  if (/risk|danger|worst|lowest|critical|warning|trouble/i.test(q)) {
+  if (/summary|summarize|overview|standing/i.test(q) || (/status/i.test(q) && !/reach|need|miss/i.test(q))) {
+    category = 'SUMMARY';
+  } else if (/risk|danger|worst|lowest|critical|warning|trouble|attention/i.test(q)) {
     category = 'RISK';
-  } else if (/need|attend|recover|catch up|classes needed|reach|target|consecutive|how many/i.test(q)) {
+  } else if (/\bneed\b|\bclasses\s+needed\b|\brecover\b|\bcatch\s+up\b|\breach\b|\btarget\b|\bconsecutive\b|\bhow\s+many\b|\battend\s+to\b/i.test(q)) {
     category = 'CALCULATION';
   } else if (/miss|skip|bunk|leave|safe to miss|can i miss/i.test(q)) {
     category = 'CALCULATION';
-  } else if (/summary|summarize|overview|status|standing/i.test(q)) {
-    category = 'SUMMARY';
   } else if (/trend|improve|decline|drop/i.test(q)) {
     category = 'TREND';
   }
 
-  // Find referenced subject or default to top ranked
+  // Find referenced subject ONLY if explicitly mentioned in query
   const targetSubject =
     (context.rankedSubjects || []).find((s) => q.includes(s.subjectName.toLowerCase())) ||
     (context.courses || []).find((c) => q.includes(c.courseName.toLowerCase())) ||
-    (context.rankedSubjects && context.rankedSubjects[0]);
+    null;
 
   let answerText = '';
 
   const overallPct = context.summary?.overallPercentage ?? context.overall?.overallPercentage ?? 0;
   const overallRisk = context.summary?.overallRisk ?? context.overall?.overallRisk ?? 'SAFE';
+  const highestSubject = context.overall?.highestRiskSubject || (context.rankedSubjects && context.rankedSubjects[0]);
   const highestSubjectName =
     context.overall?.highestRiskSubject?.subjectName ??
     context.summary?.highestRiskCourse ??
-    (targetSubject as any)?.subjectName ??
-    (targetSubject as any)?.courseName ??
+    (highestSubject as any)?.subjectName ??
+    (highestSubject as any)?.courseName ??
     null;
 
   if (category === 'RISK') {
-    const highest = context.overall?.highestRiskSubject || targetSubject;
+    const highest = targetSubject || context.overall?.highestRiskSubject || highestSubject;
     const highestName = (highest as any)?.subjectName || (highest as any)?.courseName || highestSubjectName;
     const highestPct = (highest as any)?.percentage ?? (highest as any)?.currentPercentage ?? 68.0;
     const highestRiskLevel = (highest as any)?.riskLevel ?? (highest as any)?.risk ?? 'CRITICAL';
@@ -196,29 +197,65 @@ export async function queryAttendanceAdvisorLocal(
       ? `Hello ${name}, your subject most at risk is ${highestName} with an attendance of ${Number(highestPct).toFixed(1)}% (${highestRiskLevel}). You need to attend ${needed} consecutive classes to reach 75%.`
       : `Hello ${name}, all your registered courses currently meet or exceed attendance criteria.`;
   } else if (category === 'CALCULATION') {
-    const subName = (targetSubject as any)?.subjectName || (targetSubject as any)?.courseName || 'C Programming';
-    const needed = (targetSubject as any)?.classesNeeded ?? (targetSubject as any)?.classesNeededForThreshold ?? 7;
-    const misses = (targetSubject as any)?.safeMisses ?? (targetSubject as any)?.safeMissesRemaining ?? 0;
-    const reqPct = (targetSubject as any)?.requiredPercentage ?? 75;
+    if (targetSubject) {
+      const subName = (targetSubject as any)?.subjectName || (targetSubject as any)?.courseName;
+      const needed = (targetSubject as any)?.classesNeeded ?? (targetSubject as any)?.classesNeededForThreshold ?? 0;
+      const misses = (targetSubject as any)?.safeMisses ?? (targetSubject as any)?.safeMissesRemaining ?? 0;
+      const reqPct = (targetSubject as any)?.requiredPercentage ?? 75;
 
-    if (/miss|skip|bunk|leave/i.test(q)) {
-      if (misses > 0) {
-        answerText = `Hello ${name}, in ${subName}, you have ${misses} safe absence(s) available while staying above ${reqPct}%.`;
+      if (/miss|skip|bunk|leave/i.test(q)) {
+        if (misses > 0) {
+          answerText = `Hello ${name}, in ${subName}, you have ${misses} safe absence(s) available while staying above ${reqPct}%.`;
+        } else {
+          answerText = `Hello ${name}, you cannot afford to miss any classes in ${subName} without falling below the required ${reqPct}%.`;
+        }
       } else {
-        answerText = `Hello ${name}, you cannot afford to miss any classes in ${subName} without falling below the required ${reqPct}%.`;
+        if (needed > 0) {
+          answerText = `Hello ${name}, in ${subName}, you need to attend ${needed} consecutive classes to restore your attendance to ${reqPct}%.`;
+        } else {
+          answerText = `Hello ${name}, you are already above the required threshold in ${subName}. You do not need any catch-up classes.`;
+        }
       }
     } else {
-      if (needed > 0) {
-        answerText = `Hello ${name}, in ${subName}, you need to attend ${needed} consecutive classes to restore your attendance to ${reqPct}%.`;
+      // General calculation inquiry without specific course
+      if (/miss|skip|bunk|leave|can i miss|safe to miss/i.test(q)) {
+        const isUpcoming = /upcoming|tomorrow|next/i.test(q);
+        const prefix = isUpcoming
+          ? `Upcoming timetable data is unavailable, so please specify which course you are asking about to evaluate a specific upcoming class session. `
+          : '';
+        const list = (context.rankedSubjects || context.courses || [])
+          .map((s: any) => `${s.subjectName || s.courseName}: ${s.safeMisses ?? s.safeMissesRemaining ?? 0} safe misses`)
+          .join(', ');
+        answerText = `Hello ${name}, ${prefix}across your active courses, your safe miss allowances are: ${list}. Institutional threshold is 75%.`;
       } else {
-        answerText = `Hello ${name}, you are already above the required threshold in ${subName}. You do not need any catch-up classes.`;
+        const atRiskList = (context.rankedSubjects || context.courses || []).filter(
+          (s: any) => (s.classesNeeded ?? s.classesNeededForThreshold ?? 0) > 0
+        );
+        if (atRiskList.length > 0) {
+          const breakdown = atRiskList
+            .map((s: any) => `${s.subjectName || s.courseName} (needs ${s.classesNeeded ?? s.classesNeededForThreshold} classes)`)
+            .join(', ');
+          answerText = `Hello ${name}, you have ${atRiskList.length} course(s) requiring attendance recovery: ${breakdown} to reach 75%.`;
+        } else {
+          answerText = `Hello ${name}, all your courses currently meet or exceed the 75% threshold. You need 0 consecutive recovery classes.`;
+        }
       }
     }
+  } else if (/improve|strategy|plan|advice/i.test(q)) {
+    if (highestSubjectName) {
+      answerText = `Hello ${name}, to improve your attendance, prioritize attending upcoming classes in ${highestSubjectName} without absence to restore your margin above 75%.`;
+    } else {
+      answerText = `Hello ${name}, to maintain and improve your attendance, continue attending all scheduled lectures consistently.`;
+    }
   } else {
-    answerText = `Hello ${name}, your overall attendance stands at ${overallPct}% (${overallRisk}).`;
+    answerText = `Hello ${name}, your overall attendance stands at ${overallPct}% (${overallRisk}). Institutional threshold is 75%.`;
   }
 
-  const referencedName = (targetSubject as any)?.subjectName || (targetSubject as any)?.courseName || highestSubjectName;
+  const referencedName = targetSubject
+    ? ((targetSubject as any).subjectName || (targetSubject as any).courseName || null)
+    : category === 'RISK' && highestSubjectName
+    ? highestSubjectName
+    : null;
 
   return {
     success: true,

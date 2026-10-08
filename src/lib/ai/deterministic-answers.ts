@@ -196,9 +196,15 @@ export function generateDeterministicAnswer(
             `${c.courseName}: ${c.safeMissesRemaining} safe miss(es) (${c.currentPercentage.toFixed(1)}%)`
         )
         .join(', ');
+
+      const isUpcomingInquiry = /upcoming|tomorrow|next|schedule/i.test(query);
+      const prefix = isUpcomingInquiry
+        ? `Upcoming timetable data is unavailable, so please specify which course you are asking about to evaluate a specific upcoming class session. Across your enrolled courses, your current safe miss allowances are: `
+        : `Here is your safe miss allowance across your enrolled courses: `;
+
       return {
-        answer: `Here is your safe miss allowance across your enrolled courses: ${items}. Institutional threshold is ${minReq.toFixed(1)}%.`,
-        referencedSubjects: facts.courses.map((c) => c.courseName),
+        answer: `${prefix}${items}. Institutional threshold is ${minReq.toFixed(1)}%.`,
+        referencedSubjects: [],
       };
     }
 

@@ -54,7 +54,10 @@ export function classifyQuestion(
   }
 
   // 3. Risk / Debarment questions
-  if (/risk|critical|danger|warning|failing|debar|detention/i.test(q)) {
+  if (
+    hardened === 'SUBJECT_ANALYSIS' ||
+    /risk|critical|danger|warning|failing|debar|detention|attention|weakest|worst|lowest/i.test(q)
+  ) {
     return 'RISK';
   }
 
@@ -110,9 +113,42 @@ export function extractReferencedSubjects(
       continue;
     }
 
+    const QUERY_STOPWORDS = new Set([
+      'class',
+      'classes',
+      'attendance',
+      'status',
+      'standing',
+      'summary',
+      'summarize',
+      'overview',
+      'upcoming',
+      'safely',
+      'improve',
+      'subject',
+      'subjects',
+      'course',
+      'courses',
+      'miss',
+      'missed',
+      'skip',
+      'reach',
+      'need',
+      'needed',
+      'attention',
+      'worst',
+      'lowest',
+      'today',
+      'tomorrow',
+    ]);
+
     const queryTokens = q.split(/[\s:,-?!.]+/);
     for (const token of queryTokens) {
-      if (token.length >= 4 && (cName.includes(token) || token.includes(cName))) {
+      if (
+        token.length >= 4 &&
+        !QUERY_STOPWORDS.has(token) &&
+        (cName.includes(token) || (token.length >= 5 && token.includes(cName)))
+      ) {
         referenced.push(c.name);
         break;
       }
@@ -331,7 +367,7 @@ export async function answerAttendanceQuestion(
       source: 'DETERMINISTIC_FALLBACK',
       category: legacyCategory,
       detailedCategory: hardenedCategory,
-      referencedSubjects: deterministic.referencedSubjects.length > 0 ? deterministic.referencedSubjects : referencedSubjects,
+      referencedSubjects: deterministic.referencedSubjects,
       keyStats,
       abstentionReason: deterministic.abstentionReason,
       trustedFacts: facts,
@@ -345,7 +381,7 @@ export async function answerAttendanceQuestion(
 
     const effectiveOptions: GeminiOptions = {
       ...geminiOptions,
-      timeoutMs: geminiOptions?.timeoutMs || 4000,
+      timeoutMs: geminiOptions?.timeoutMs || 8000,
     };
 
     try {
@@ -396,14 +432,14 @@ export async function answerAttendanceQuestion(
   }
 
   // 6. Fallback engine
-  const fallbackAnswer = generateDeterministicFallback(query, context, referencedSubjects);
+  const deterministicFallback = generateDeterministicAnswer(query, hardenedCategory, facts);
   return {
     success: true,
-    answer: fallbackAnswer,
+    answer: deterministicFallback.answer,
     source: 'DETERMINISTIC_FALLBACK',
     category: legacyCategory,
     detailedCategory: hardenedCategory,
-    referencedSubjects,
+    referencedSubjects: deterministicFallback.referencedSubjects,
     keyStats,
     trustedFacts: facts,
   };
