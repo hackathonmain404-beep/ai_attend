@@ -40,16 +40,16 @@ export function Hero({ destinationHref }: HeroProps) {
       ref={heroRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className="relative min-h-[85vh] lg:min-h-screen flex flex-col items-center justify-center pt-32 sm:pt-36 pb-24 px-6 overflow-hidden bg-[#030712] border-b border-zinc-900/80"
+      className="relative min-h-[88vh] lg:min-h-screen flex flex-col items-center justify-center pt-32 sm:pt-36 pb-32 sm:pb-40 px-6 overflow-hidden bg-gradient-to-b from-[#030712] via-[#030712] to-zinc-950"
     >
-      {/* 1. Scoped Hero Atmospheric Light Waves (Clipped strictly inside Hero) */}
+      {/* 1. Scoped Hero Atmospheric Light Waves (Feathered softly toward base) */}
       <div
         aria-hidden="true"
-        className="absolute -bottom-28 -left-36 w-[560px] sm:w-[760px] h-[520px] rounded-full bg-gradient-to-tr from-cyan-500/25 via-blue-600/30 to-indigo-600/20 blur-[110px] pointer-events-none opacity-50 mix-blend-screen"
+        className="absolute -bottom-16 -left-36 w-[560px] sm:w-[760px] h-[480px] rounded-full bg-gradient-to-tr from-cyan-500/20 via-blue-600/25 to-indigo-600/15 blur-[120px] pointer-events-none opacity-40 mix-blend-screen"
       />
       <div
         aria-hidden="true"
-        className="absolute -bottom-32 -right-36 w-[540px] sm:w-[740px] h-[500px] rounded-full bg-gradient-to-tl from-violet-600/25 via-indigo-600/25 to-blue-600/20 blur-[120px] pointer-events-none opacity-45 mix-blend-screen"
+        className="absolute -bottom-20 -right-36 w-[540px] sm:w-[740px] h-[460px] rounded-full bg-gradient-to-tl from-violet-600/20 via-indigo-600/20 to-blue-600/15 blur-[130px] pointer-events-none opacity-35 mix-blend-screen"
       />
       <div
         aria-hidden="true"
@@ -58,6 +58,12 @@ export function Hero({ destinationHref }: HeroProps) {
 
       {/* 2. Scoped Interactive Particle Field Canvas (Contains mouse tracking inside Hero only) */}
       <ParticleField heroRef={heroRef} />
+
+      {/* 3. Seamless Bottom Gradient Dissolve into zinc-950 (Smooth zero-seam transition to Security Pillars) */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-48 sm:h-72 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent pointer-events-none z-[5]"
+      />
 
       {/* 3. Hero Content Composition with Subtle Soft Parallax */}
       <motion.div

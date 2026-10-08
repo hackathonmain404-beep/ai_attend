@@ -226,15 +226,23 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
         p.x = p.originX + p.currentOffsetX;
         p.y = p.originY + p.currentOffsetY;
 
+        // Smooth bottom fade-out to blend seamlessly with subsequent page sections
+        const bottomFadeThreshold = height * 0.72;
+        const bottomFade = p.y > bottomFadeThreshold
+          ? Math.max(0, 1 - (p.y - bottomFadeThreshold) / (height - bottomFadeThreshold))
+          : 1;
+
         // Dynamic brightness & size
         const radius = p.baseRadius + normFactor * 1.35;
-        const alpha = Math.min(p.baseAlpha + normFactor * 0.55, 0.95);
+        const alpha = Math.min(p.baseAlpha + normFactor * 0.55, 0.95) * bottomFade;
 
-        // Draw particle dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(224, 242, 254, ${alpha})`;
-        ctx.fill();
+        if (alpha > 0.005) {
+          // Draw particle dot
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(224, 242, 254, ${alpha})`;
+          ctx.fill();
+        }
 
         // 3. Connect nearby particles with faint lines (futuristic technical mesh)
         for (let j = i + 1; j < pLen; j++) {
@@ -244,6 +252,11 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
           const cDist = Math.hypot(cdx, cdy);
 
           if (cDist < connectionDist) {
+            const p2BottomFade = p2.y > bottomFadeThreshold
+              ? Math.max(0, 1 - (p2.y - bottomFadeThreshold) / (height - bottomFadeThreshold))
+              : 1;
+            const lineBottomFade = Math.min(bottomFade, p2BottomFade);
+
             const lineFactor = 1 - cDist / connectionDist;
             let lineAlpha = lineFactor * 0.055;
 
@@ -252,12 +265,15 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
               lineAlpha += normFactor * 0.18;
             }
 
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(147, 197, 253, ${Math.min(lineAlpha, 0.45)})`;
-            ctx.lineWidth = 0.75;
-            ctx.stroke();
+            const finalLineAlpha = Math.min(lineAlpha, 0.45) * lineBottomFade;
+            if (finalLineAlpha > 0.005) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(147, 197, 253, ${finalLineAlpha})`;
+              ctx.lineWidth = 0.75;
+              ctx.stroke();
+            }
           }
         }
       }
@@ -286,7 +302,7 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none z-0"
+      className="absolute inset-0 w-full h-full pointer-events-none z-0 [mask-image:linear-gradient(to_bottom,black_65%,transparent_98%)]"
       aria-hidden="true"
     />
   );
