@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ParticleField } from "@/components/hero/ParticleField";
@@ -13,6 +15,119 @@ interface HeroProps {
 
 export function Hero({ destinationHref }: HeroProps) {
   const heroRef = React.useRef<HTMLElement>(null);
+  const headlineRef = React.useRef<HTMLDivElement>(null);
+  const copyRef = React.useRef<HTMLDivElement>(null);
+  const ctaRef = React.useRef<HTMLDivElement>(null);
+  const particleWrapRef = React.useRef<HTMLDivElement>(null);
+  const lightsRef = React.useRef<HTMLDivElement>(null);
+  const scrollIndicatorRef = React.useRef<HTMLDivElement>(null);
+
+  // GSAP ScrollTrigger scrolling animations
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      // 1. Headline Parallax & Scale Scrub
+      if (headlineRef.current) {
+        gsap.to(headlineRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+          y: -85,
+          scale: 0.94,
+          opacity: 0.2,
+          ease: "power1.out",
+        });
+      }
+
+      // 2. Supporting Copy Scrub
+      if (copyRef.current) {
+        gsap.to(copyRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "65% top",
+            scrub: 1,
+          },
+          y: -55,
+          opacity: 0,
+          ease: "power1.out",
+        });
+      }
+
+      // 3. CTA Buttons Scrub
+      if (ctaRef.current) {
+        gsap.to(ctaRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "50% top",
+            scrub: 0.8,
+          },
+          y: -35,
+          opacity: 0,
+          scale: 0.96,
+          ease: "power1.out",
+        });
+      }
+
+      // 4. Subtle Particle Field Depth Shift
+      if (particleWrapRef.current) {
+        gsap.to(particleWrapRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1.5,
+          },
+          y: 70,
+          opacity: 0.35,
+          ease: "none",
+        });
+      }
+
+      // 5. Atmospheric Lights Dissipation
+      if (lightsRef.current) {
+        gsap.to(lightsRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1.5,
+          },
+          y: 50,
+          scale: 1.15,
+          opacity: 0.15,
+          ease: "none",
+        });
+      }
+
+      // 6. Scroll Indicator Fade on Scroll
+      if (scrollIndicatorRef.current) {
+        gsap.to(scrollIndicatorRef.current, {
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "15% top",
+            scrub: 0.5,
+          },
+          y: -20,
+          opacity: 0,
+          ease: "power1.out",
+        });
+      }
+    }, heroRef);
+
+    return () => ctx.revert();
+  }, []);
 
   // Subtle 1-3px soft parallax for hero content
   const mouseX = useMotionValue(0);
@@ -42,22 +157,26 @@ export function Hero({ destinationHref }: HeroProps) {
       onPointerLeave={handlePointerLeave}
       className="relative min-h-[88vh] lg:min-h-screen flex flex-col items-center justify-center pt-32 sm:pt-36 pb-32 sm:pb-40 px-6 overflow-hidden bg-gradient-to-b from-[#030712] via-[#030712] to-zinc-950"
     >
-      {/* 1. Scoped Hero Atmospheric Light Waves (Feathered softly toward base) */}
-      <div
-        aria-hidden="true"
-        className="absolute -bottom-16 -left-36 w-[560px] sm:w-[760px] h-[480px] rounded-full bg-gradient-to-tr from-cyan-500/20 via-blue-600/25 to-indigo-600/15 blur-[120px] pointer-events-none opacity-40 mix-blend-screen"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -bottom-20 -right-36 w-[540px] sm:w-[740px] h-[460px] rounded-full bg-gradient-to-tl from-violet-600/20 via-indigo-600/20 to-blue-600/15 blur-[130px] pointer-events-none opacity-35 mix-blend-screen"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[400px] rounded-full bg-blue-600/15 blur-[120px] pointer-events-none opacity-40"
-      />
+      {/* 1. Scoped Hero Atmospheric Light Waves (Feathered softly toward base, animated by GSAP) */}
+      <div ref={lightsRef} className="absolute inset-0 pointer-events-none will-change-transform">
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-16 -left-36 w-[560px] sm:w-[760px] h-[480px] rounded-full bg-gradient-to-tr from-cyan-500/20 via-blue-600/25 to-indigo-600/15 blur-[120px] pointer-events-none opacity-40 mix-blend-screen"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-20 -right-36 w-[540px] sm:w-[740px] h-[460px] rounded-full bg-gradient-to-tl from-violet-600/20 via-indigo-600/20 to-blue-600/15 blur-[130px] pointer-events-none opacity-35 mix-blend-screen"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[400px] rounded-full bg-blue-600/15 blur-[120px] pointer-events-none opacity-40"
+        />
+      </div>
 
-      {/* 2. Scoped Interactive Particle Field Canvas (Contains mouse tracking inside Hero only) */}
-      <ParticleField heroRef={heroRef} />
+      {/* 2. Scoped Interactive Particle Field Canvas (Shifted subtly with depth by GSAP) */}
+      <div ref={particleWrapRef} className="absolute inset-0 pointer-events-none will-change-transform">
+        <ParticleField heroRef={heroRef} />
+      </div>
 
       {/* 3. Seamless Bottom Gradient Dissolve into zinc-950 (Smooth zero-seam transition to Security Pillars) */}
       <div
@@ -65,61 +184,84 @@ export function Hero({ destinationHref }: HeroProps) {
         className="absolute inset-x-0 bottom-0 h-48 sm:h-72 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent pointer-events-none z-[5]"
       />
 
-      {/* 3. Hero Content Composition with Subtle Soft Parallax */}
+      {/* 4. Subtle Cyber Scroll Indicator (Fades out smoothly on scroll via GSAP ScrollTrigger) */}
+      <div
+        ref={scrollIndicatorRef}
+        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none will-change-transform"
+      >
+        <span className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-zinc-500">
+          Scroll to explore
+        </span>
+        <div className="w-4 h-7 rounded-full border border-zinc-700/60 flex items-start justify-center p-1 bg-zinc-950/50 backdrop-blur-sm">
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            className="w-1 h-1.5 rounded-full bg-blue-400"
+          />
+        </div>
+      </div>
+
+      {/* 5. Hero Content Composition with Subtle Soft Parallax */}
       <motion.div
         style={{ x: parallaxX, y: parallaxY }}
         className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center"
       >
-        {/* Step 3: Oversized Display Typography */}
-        <motion.h1
-          variants={fadeUpVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0.1}
-          className="text-5xl sm:text-7xl md:text-8xl lg:text-[6.8rem] xl:text-[7.8rem] font-medium tracking-[-0.035em] text-white leading-[0.98] mb-7 max-w-5xl"
-        >
-          <span className="bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
-            Zero-Proxy Attendance.
-          </span>
-        </motion.h1>
-
-        {/* Step 4: Supporting Copy */}
-        <motion.p
-          variants={fadeUpVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0.2}
-          className="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-9"
-        >
-          Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.
-        </motion.p>
-
-        {/* Step 5: Primary CTA + Subtle Secondary Action */}
-        <motion.div
-          variants={fadeUpVariants}
-          initial="hidden"
-          animate="visible"
-          custom={0.3}
-          className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6"
-        >
-          <MagneticButton
-            href={destinationHref}
-            variant="primary"
-            maxOffset={7}
-            className="px-7 py-3.5 text-sm font-semibold tracking-wide shadow-[0_0_28px_rgba(37,99,235,0.4)]"
-            ariaLabel="Launch Command Center"
+        {/* Step 3: Oversized Display Typography with GSAP Scroll Scrub */}
+        <div ref={headlineRef} className="w-full flex justify-center will-change-transform">
+          <motion.h1
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="visible"
+            custom={0.1}
+            className="text-5xl sm:text-7xl md:text-8xl lg:text-[6.8rem] xl:text-[7.8rem] font-medium tracking-[-0.035em] text-white leading-[0.98] mb-7 max-w-5xl"
           >
-            <span>Launch Command Center</span>
-          </MagneticButton>
+            <span className="bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
+              Zero-Proxy Attendance.
+            </span>
+          </motion.h1>
+        </div>
 
-          <a
-            href="#security"
-            className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 group py-2"
+        {/* Step 4: Supporting Copy with GSAP Scroll Scrub */}
+        <div ref={copyRef} className="w-full flex justify-center will-change-transform">
+          <motion.p
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="visible"
+            custom={0.2}
+            className="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-9"
           >
-            <span>Explore Security Pillars</span>
-            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-1 transition-all duration-200" />
-          </a>
-        </motion.div>
+            Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.
+          </motion.p>
+        </div>
+
+        {/* Step 5: Primary CTA + Subtle Secondary Action with GSAP Scroll Scrub */}
+        <div ref={ctaRef} className="will-change-transform">
+          <motion.div
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="visible"
+            custom={0.3}
+            className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6"
+          >
+            <MagneticButton
+              href={destinationHref}
+              variant="primary"
+              maxOffset={7}
+              className="px-7 py-3.5 text-sm font-semibold tracking-wide shadow-[0_0_28px_rgba(37,99,235,0.4)]"
+              ariaLabel="Launch Command Center"
+            >
+              <span>Launch Command Center</span>
+            </MagneticButton>
+
+            <a
+              href="#security"
+              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 group py-2"
+            >
+              <span>Explore Security Pillars</span>
+              <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-1 transition-all duration-200" />
+            </a>
+          </motion.div>
+        </div>
       </motion.div>
     </section>
   );
