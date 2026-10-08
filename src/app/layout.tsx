@@ -7,6 +7,7 @@ import { DemoTourFloatingButton } from "@/components/presentation/DemoTourFloati
 
 const inter = Inter({ subsets: ["latin"] });
 
+
 export const metadata: Metadata = {
   title: "AttendGuard — Verified Attendance & Proxy Prevention",
   description:

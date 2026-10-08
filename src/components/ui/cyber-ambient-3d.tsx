@@ -3,14 +3,37 @@
 import * as React from "react";
 
 export function CyberAmbient3D() {
+  const [scrollY, setScrollY] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let rafId: number;
+    const handleScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setScrollY(window.scrollY);
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
-      {/* 3D Perspective Plane Grid */}
+      {/* 3D Perspective Plane Grid with Scroll Parallax */}
       <div
         className="absolute inset-0 opacity-[0.14]"
         style={{
           perspective: "800px",
           perspectiveOrigin: "50% 20%",
+          transform: `translate3d(0, ${scrollY * 0.12}px, 0)`,
+          transition: "transform 0.1s ease-out",
         }}
       >
         <div
@@ -30,8 +53,20 @@ export function CyberAmbient3D() {
       </div>
 
       {/* Floating 3D Holographic Orbs & Gyro Rings */}
-      <div className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl animate-pulse-glow" />
-      <div className="absolute top-40 right-[12%] w-96 h-96 rounded-full bg-teal-500/10 blur-3xl animate-pulse-glow [animation-delay:1.5s]" />
+      <div
+        className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl animate-pulse-glow"
+        style={{
+          transform: `translate3d(0, ${-scrollY * 0.08}px, 0)`,
+          transition: "transform 0.1s ease-out",
+        }}
+      />
+      <div
+        className="absolute top-40 right-[12%] w-96 h-96 rounded-full bg-teal-500/10 blur-3xl animate-pulse-glow [animation-delay:1.5s]"
+        style={{
+          transform: `translate3d(0, ${-scrollY * 0.05}px, 0)`,
+          transition: "transform 0.1s ease-out",
+        }}
+      />
       <div className="absolute bottom-10 left-[25%] w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl animate-pulse-glow [animation-delay:3s]" />
 
       {/* Floating Geometric Wireframe Cube 1 */}
@@ -40,6 +75,8 @@ export function CyberAmbient3D() {
         style={{
           perspective: "600px",
           transformStyle: "preserve-3d",
+          transform: `translate3d(0, ${-scrollY * 0.15}px, 0)`,
+          transition: "transform 0.1s ease-out",
         }}
       >
         <div
@@ -57,6 +94,8 @@ export function CyberAmbient3D() {
         style={{
           perspective: "600px",
           transformStyle: "preserve-3d",
+          transform: `translate3d(0, ${-scrollY * 0.1}px, 0)`,
+          transition: "transform 0.1s ease-out",
         }}
       >
         <div

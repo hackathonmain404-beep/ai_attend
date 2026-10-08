@@ -20,6 +20,7 @@ import { SessionHistoryTable } from "@/components/teacher/SessionHistoryTable";
 import { TeacherDashboardSkeleton } from "@/components/teacher/TeacherDashboardSkeleton";
 import { LiveAttendanceStream, type StreamEventItem } from "@/components/teacher/LiveAttendanceStream";
 import { subscribeToAttendanceSession } from "@/lib/realtime/attendance-channel";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export default function TeacherOverviewPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useTeacherOverview();
@@ -173,49 +174,63 @@ export default function TeacherOverviewPage() {
   return (
     <div className="space-y-7">
       {/* 1. Faculty Profile Header */}
-      <TeacherProfileHeader
-        teacher={data.teacher}
-        onStartSessionClick={() => setIsModalOpen(true)}
-      />
+      <ScrollReveal animation="fade-down" duration={550}>
+        <TeacherProfileHeader
+          teacher={data.teacher}
+          onStartSessionClick={() => setIsModalOpen(true)}
+        />
+      </ScrollReveal>
 
       {/* 2. Key Metrics Row */}
-      <TeacherOverviewStats metrics={data.metrics} />
+      <ScrollReveal animation="fade-up" delay={50} duration={600}>
+        <TeacherOverviewStats metrics={data.metrics} />
+      </ScrollReveal>
 
       {/* 3. Live Active Session Monitor */}
-      <ActiveSessionQuickCard
-        activeSession={currentActiveSession}
-        onStartSessionClick={() => setIsModalOpen(true)}
-        onEndSessionClick={handleEndSession}
-      />
+      <ScrollReveal animation="fade-up" delay={80} duration={600}>
+        <ActiveSessionQuickCard
+          activeSession={currentActiveSession}
+          onStartSessionClick={() => setIsModalOpen(true)}
+          onEndSessionClick={handleEndSession}
+        />
+      </ScrollReveal>
 
       {/* 4. Real-time Live Attendance Stream (When active session is running) */}
       {currentActiveSession && (
-        <div className="space-y-4">
-          <LiveAttendanceStream
-            events={streamEvents}
-            onClear={() => setStreamEvents([])}
-          />
-        </div>
+        <ScrollReveal animation="fade-up" delay={100} duration={600}>
+          <div className="space-y-4">
+            <LiveAttendanceStream
+              events={streamEvents}
+              onClear={() => setStreamEvents([])}
+            />
+          </div>
+        </ScrollReveal>
       )}
 
       {/* 5. Live Checked-In Attendee Table (If Session Active) */}
       {currentActiveSession && (
-        <LiveAttendeeTable
-          attendees={currentActiveSession.attendees}
-          totalEnrolled={currentActiveSession.totalEnrolled}
-        />
+        <ScrollReveal animation="fade-up" delay={120} duration={600}>
+          <LiveAttendeeTable
+            attendees={currentActiveSession.attendees}
+            totalEnrolled={currentActiveSession.totalEnrolled}
+          />
+        </ScrollReveal>
       )}
 
       {/* 6. Assigned Courses Grid */}
-      <TeacherClassesGrid
-        classes={data.classes}
-        onStartSessionForClass={(classId) => {
-          handleStartSession(classId, 20);
-        }}
-      />
+      <ScrollReveal animation="fade-up" delay={100} duration={600}>
+        <TeacherClassesGrid
+          classes={data.classes}
+          onStartSessionForClass={(classId) => {
+            handleStartSession(classId, 20);
+          }}
+        />
+      </ScrollReveal>
 
       {/* 7. Historical Sessions Ledger */}
-      <SessionHistoryTable sessions={data.recentSessions} />
+      <ScrollReveal animation="fade-up" delay={140} duration={600}>
+        <SessionHistoryTable sessions={data.recentSessions} />
+      </ScrollReveal>
 
       {/* Start Session Modal */}
       <StartSessionModal

@@ -5,7 +5,7 @@ import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useStudentSummary } from "@/lib/services/student-service";
-import { StudentProfileHeader } from "@/components/student/StudentProfileHeader";
+import { StudentGreetingHeader } from "@/components/student/StudentGreetingHeader";
 import { AttendanceSummaryCard } from "@/components/student/AttendanceSummaryCard";
 import { LowAttendanceWarningBanner } from "@/components/student/LowAttendanceWarningBanner";
 import { TodayLecturesCard } from "@/components/student/TodayLecturesCard";
@@ -17,6 +17,7 @@ import type { ReVerifyChallenge } from "@/types/verification";
 
 import { StudentAchievementsCard } from "@/components/student/StudentAchievementsCard";
 import { StudentMissionsDeck } from "@/components/student/StudentMissionsDeck";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export default function StudentDashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStudentSummary();
@@ -93,44 +94,56 @@ export default function StudentDashboardPage() {
   const atRiskClasses = (data.classes || []).filter((c) => (c.percentage ?? 0) < 75);
 
   return (
-    <div className="space-y-6">
-      {/* 1. Student Identity & Hardware Device Header */}
-      <StudentProfileHeader
-        student={data.student}
-        overallPercentage={data.overallPercentage}
-        streakDays={data.streakDays}
-      />
+    <div className="space-y-3.5 sm:space-y-4">
+      {/* 1. Personalized Dynamic Greeting */}
+      <ScrollReveal animation="fade-down" duration={550}>
+        <StudentGreetingHeader student={data.student} />
+      </ScrollReveal>
 
       {/* 2. Key Metrics Row */}
-      <AttendanceSummaryCard
-        overallPercentage={data.overallPercentage}
-        totalHeld={data.totalHeld}
-        totalAttended={data.totalAttended}
-        streakDays={data.streakDays}
-        atRiskCount={atRiskClasses.length}
-      />
+      <ScrollReveal animation="fade-up" delay={50} duration={600}>
+        <AttendanceSummaryCard
+          overallPercentage={data.overallPercentage}
+          totalHeld={data.totalHeld}
+          totalAttended={data.totalAttended}
+          streakDays={data.streakDays}
+          atRiskCount={atRiskClasses.length}
+        />
+      </ScrollReveal>
 
       {/* 3. Regulatory Warning Banner (Rendered when courses are < 75%) */}
-      <LowAttendanceWarningBanner atRiskClasses={atRiskClasses} />
+      {atRiskClasses.length > 0 && (
+        <ScrollReveal animation="fade-up" delay={70}>
+          <LowAttendanceWarningBanner atRiskClasses={atRiskClasses} />
+        </ScrollReveal>
+      )}
 
       {/* 4. Game-Style Academic Achievements System */}
-      <StudentAchievementsCard
-        overallPercentage={data.overallPercentage}
-        streakDays={data.streakDays}
-        atRiskCount={atRiskClasses.length}
-        isDeviceBound={Boolean(data.student?.device?.isRegistered)}
-        totalAttended={data.totalAttended}
-        totalHeld={data.totalHeld}
-      />
+      <ScrollReveal animation="fade-up" delay={90}>
+        <StudentAchievementsCard
+          overallPercentage={data.overallPercentage}
+          streakDays={data.streakDays}
+          atRiskCount={atRiskClasses.length}
+          isDeviceBound={Boolean(data.student?.device?.isRegistered)}
+          totalAttended={data.totalAttended}
+          totalHeld={data.totalHeld}
+        />
+      </ScrollReveal>
 
       {/* 5. Feature Operations & Missions Deck */}
-      <StudentMissionsDeck />
+      <ScrollReveal animation="fade-up" delay={110}>
+        <StudentMissionsDeck />
+      </ScrollReveal>
 
       {/* 6. Today's Lectures & Active Session Scanner */}
-      <TodayLecturesCard lectures={data.todayLectures} />
+      <ScrollReveal animation="fade-up" delay={130}>
+        <TodayLecturesCard lectures={data.todayLectures} />
+      </ScrollReveal>
 
       {/* 7. Subject-Wise Course Breakdown */}
-      <SubjectAttendanceCard classes={data.classes} />
+      <ScrollReveal animation="fade-up" delay={150}>
+        <SubjectAttendanceCard classes={data.classes} />
+      </ScrollReveal>
 
       {/* 8. Surprise In-Class Re-Verification Modal */}
       <ReVerifyAlertModal

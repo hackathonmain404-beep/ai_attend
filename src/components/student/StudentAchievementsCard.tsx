@@ -3,8 +3,6 @@
 import * as React from "react";
 import { Trophy, Flame, Zap, Target, Smartphone, ShieldCheck, Lock, CheckCircle2, Award } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TiltCard } from "@/components/ui/tilt-card";
 
 interface StudentAchievementsCardProps {
   overallPercentage: number;
@@ -20,8 +18,6 @@ export function StudentAchievementsCard({
   streakDays,
   atRiskCount,
   isDeviceBound,
-  totalAttended,
-  totalHeld,
 }: StudentAchievementsCardProps) {
   const safePct = typeof overallPercentage === "number" && !isNaN(overallPercentage) ? overallPercentage : 0;
 
@@ -34,8 +30,6 @@ export function StudentAchievementsCard({
       isUnlocked: safePct >= 95,
       icon: Trophy,
       progress: `${safePct.toFixed(1)}% / 95%`,
-      badgeColor: "border-amber-500/40 text-amber-300 bg-amber-500/10",
-      glowColor: "amber" as const,
     },
     {
       id: "streak_warrior",
@@ -45,8 +39,6 @@ export function StudentAchievementsCard({
       isUnlocked: streakDays >= 5,
       icon: Flame,
       progress: `${streakDays} / 5 Days`,
-      badgeColor: "border-emerald-500/40 text-emerald-300 bg-emerald-500/10",
-      glowColor: "emerald" as const,
     },
     {
       id: "consistency_master",
@@ -56,8 +48,6 @@ export function StudentAchievementsCard({
       isUnlocked: safePct >= 80,
       icon: Zap,
       progress: `${safePct.toFixed(1)}% / 80%`,
-      badgeColor: "border-cyan-500/40 text-cyan-300 bg-cyan-500/10",
-      glowColor: "cyan" as const,
     },
     {
       id: "target_distinction",
@@ -67,8 +57,6 @@ export function StudentAchievementsCard({
       isUnlocked: overallPercentage >= 90,
       icon: Target,
       progress: `${overallPercentage.toFixed(1)}% / 90%`,
-      badgeColor: "border-purple-500/40 text-purple-300 bg-purple-500/10",
-      glowColor: "cyan" as const,
     },
     {
       id: "hardware_guardian",
@@ -78,8 +66,6 @@ export function StudentAchievementsCard({
       isUnlocked: isDeviceBound,
       icon: Smartphone,
       progress: isDeviceBound ? "Bound & Verified" : "Hardware Pending",
-      badgeColor: "border-emerald-500/40 text-emerald-300 bg-emerald-500/10",
-      glowColor: "emerald" as const,
     },
     {
       id: "zero_proxy_citadel",
@@ -89,123 +75,98 @@ export function StudentAchievementsCard({
       isUnlocked: atRiskCount === 0,
       icon: ShieldCheck,
       progress: atRiskCount === 0 ? "All Courses Safe" : `${atRiskCount} at Risk`,
-      badgeColor: "border-teal-500/40 text-teal-300 bg-teal-500/10",
-      glowColor: "teal" as const,
     },
   ];
 
   const unlockedCount = achievements.filter((a) => a.isUnlocked).length;
 
   return (
-    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-5 sm:p-6 shadow-2xl shadow-slate-950/60 relative overflow-hidden">
-      {/* Background Decorative Cyber Watermark */}
-      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none select-none">
-        <Award className="h-44 w-44 text-emerald-400" />
-      </div>
-
-      <CardHeader className="p-0 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-amber-500/20 to-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Award className="h-4 w-4" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                Academic Milestones & Achievements
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-400 mt-0.5">
-                Progression badges derived from verified attendance and security standing
-              </CardDescription>
-            </div>
+    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-md shadow-slate-950/40">
+      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 flex items-center justify-center text-teal-400 shrink-0">
+            <Award className="h-3.5 w-3.5" />
+          </div>
+          <div>
+            <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
+              Academic Milestones & Achievements
+            </CardTitle>
+            <CardDescription className="text-[11px] text-slate-400">
+              Progression badges derived from verified attendance and security standing
+            </CardDescription>
           </div>
         </div>
 
-        {/* Unlocked Badges Counter HUD */}
-        <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 font-mono text-xs">
+        {/* Unlocked Badges Counter */}
+        <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono text-[11px] shrink-0">
           <span className="text-slate-400">UNLOCKED:</span>
-          <span className="text-emerald-400 font-black text-sm">
+          <span className="text-teal-400 font-bold">
             {unlockedCount} / {achievements.length}
-          </span>
-          <span className="text-[10px] text-slate-500">
-            ({Math.round((unlockedCount / achievements.length) * 100)}%)
           </span>
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {achievements.map((item) => {
             const Icon = item.icon;
 
             return (
-              <TiltCard
+              <div
                 key={item.id}
-                glowColor={item.isUnlocked ? item.glowColor : "emerald"}
-                maxTilt={4}
-                scale={item.isUnlocked ? 1.02 : 1.0}
-                className="h-full"
+                className={`p-2.5 sm:p-3 rounded-lg border transition-all duration-200 flex flex-col justify-between ${
+                  item.isUnlocked
+                    ? "border-teal-500/25 bg-slate-950/60 hover:border-teal-500/40 hover:-translate-y-0.5 hover:shadow-md hover:shadow-teal-950/20"
+                    : "border-slate-800/50 bg-slate-950/30 opacity-60 hover:opacity-75"
+                }`}
               >
-                <div
-                  className={`h-full p-4 rounded-xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${
-                    item.isUnlocked
-                      ? "border-slate-800 bg-slate-950/70 hover:border-emerald-500/50 shadow-lg shadow-slate-950/50"
-                      : "border-slate-800/60 bg-slate-950/40 opacity-60 grayscale-[40%]"
-                  }`}
-                >
-                  {/* Unlocked Cyber Sheen Sweep */}
-                  {item.isUnlocked && (
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
-                  )}
-
-                  <div>
-                    {/* Header: Icon, Category & Lock Status */}
-                    <div className="flex items-start justify-between gap-2 mb-2.5">
-                      <div
-                        className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
-                          item.isUnlocked
-                            ? "bg-slate-900 border border-emerald-500/30 text-emerald-400 shadow-md shadow-emerald-950/40"
-                            : "bg-slate-900/60 border border-slate-800 text-slate-500"
-                        }`}
-                        style={{ transform: "translateZ(14px)" }}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-
-                      <div className="flex items-center gap-1.5" style={{ transform: "translateZ(12px)" }}>
-                        {item.isUnlocked ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
-                            <CheckCircle2 className="h-3 w-3" />
-                            UNLOCKED
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                            <Lock className="h-3 w-3" />
-                            LOCKED
-                          </span>
-                        )}
-                      </div>
+                <div>
+                  {/* Header: Icon & Lock Status */}
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div
+                      className={`h-6 w-6 rounded-md flex items-center justify-center ${
+                        item.isUnlocked
+                          ? "bg-teal-500/10 border border-teal-500/20 text-teal-400"
+                          : "bg-slate-900 border border-slate-800 text-slate-500"
+                      }`}
+                    >
+                      <Icon className="h-3 w-3" />
                     </div>
 
-                    {/* Title & Description */}
-                    <div style={{ transform: "translateZ(10px)" }}>
-                      <h4 className="text-sm font-bold text-white tracking-tight">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                        {item.description}
-                      </p>
+                    <div className="flex items-center gap-1">
+                      {item.isUnlocked ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-teal-500/10 border border-teal-500/20 text-teal-300">
+                          <CheckCircle2 className="h-2.5 w-2.5 text-teal-400" />
+                          UNLOCKED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-slate-500 border border-slate-800">
+                          <Lock className="h-2.5 w-2.5" />
+                          LOCKED
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Progress / Status Bottom Rail */}
-                  <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono" style={{ transform: "translateZ(16px)" }}>
-                    <span className="text-slate-500">{item.category}</span>
-                    <span className={item.isUnlocked ? "text-emerald-400 font-bold" : "text-slate-400"}>
-                      {item.progress}
-                    </span>
+                  {/* Title & Description */}
+                  <div>
+                    <h4 className={`text-xs font-bold tracking-tight ${item.isUnlocked ? "text-white" : "text-slate-400"}`}>
+                      {item.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-snug line-clamp-2">
+                      {item.description}
+                    </p>
                   </div>
                 </div>
-              </TiltCard>
+
+                {/* Progress / Status Bottom Rail */}
+                <div className="pt-1.5 mt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono">
+                  <span className="text-slate-500">{item.category}</span>
+                  <span className={item.isUnlocked ? "text-teal-400 font-semibold" : "text-slate-500"}>
+                    {item.progress}
+                  </span>
+                </div>
+              </div>
             );
           })}
         </div>
