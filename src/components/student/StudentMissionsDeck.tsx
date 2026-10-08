@@ -38,22 +38,6 @@ export function StudentMissionsDeck() {
       href: "/student/advisor",
       actionText: "CONSULT",
     },
-    {
-      id: "05",
-      title: "DEVICE BINDING",
-      description: "Manage 1:1 trusted hardware device verification and status.",
-      status: "VERIFIED",
-      href: "/student/device",
-      actionText: "MANAGE",
-    },
-    {
-      id: "06",
-      title: "ACADEMIC REPORTS",
-      description: "View institutional compliance records and attendance certificates.",
-      status: "READY",
-      href: "/student/history",
-      actionText: "VIEW",
-    },
   ];
 
   return (
@@ -77,7 +61,7 @@ export function StudentMissionsDeck() {
         </div>
 
         <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider self-start sm:self-auto shrink-0">
-          06 OPERATIONS READY
+          {operations.length.toString().padStart(2, "0")} OPERATIONS READY
         </span>
       </div>
 

@@ -8,7 +8,6 @@ import {
   QrCode,
   History,
   Bot,
-  Smartphone,
   ShieldCheck,
   PanelLeftClose,
   PanelLeftOpen,
@@ -53,12 +52,6 @@ export const STUDENT_NAV_ITEMS: StudentNavItem[] = [
     href: "/student/advisor",
     icon: Bot,
     description: "AI Attendance Companion",
-  },
-  {
-    name: "Device",
-    href: "/student/device",
-    icon: Smartphone,
-    description: "Hardware Biometric Binding",
   },
 ];
 
