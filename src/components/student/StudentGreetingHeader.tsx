@@ -59,20 +59,25 @@ export function StudentGreetingHeader({
   }, [getGreeting]);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5 pb-0.5 animate-fade-slide-up">
-      <div>
-        {/* Small muted text */}
-        <span className="text-[11px] font-mono font-semibold tracking-wider text-teal-400/90 uppercase block mb-0.5">
-          {greeting.period}
-        </span>
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2 pb-2 border-b border-zinc-800/60 pb-6">
+      <div className="space-y-2">
+        {/* Editorial Eyebrow */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+            ATTENDANCE COMMAND CENTER
+          </span>
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+            // {greeting.period}
+          </span>
+        </div>
 
-        {/* Large heading */}
-        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        {/* Large Editorial Headline */}
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight flex items-center gap-3">
           <span>
             {greeting.salutation}, {firstName}
           </span>
           <span
-            className="inline-block hover:rotate-12 transition-transform duration-200 cursor-default select-none"
+            className="inline-block hover:rotate-12 transition-transform duration-200 cursor-default select-none text-2xl sm:text-3xl lg:text-4xl"
             role="img"
             aria-label="wave"
           >
@@ -80,23 +85,35 @@ export function StudentGreetingHeader({
           </span>
         </h1>
 
-        {/* Supporting text */}
-        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-          Here&apos;s your attendance overview for today.
+        {/* Highly readable supporting editorial copy */}
+        <p className="text-sm sm:text-base text-zinc-400 max-w-xl leading-relaxed font-normal">
+          Monitor verified attendance, academic standing, and active campus verification sessions.
         </p>
       </div>
 
-      {/* Optional primary action */}
-      <div className="hidden sm:flex items-center gap-2 shrink-0">
+      {/* Right Column: System Status Panel & Primary Scan Action */}
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+        {/* System Status Pill */}
+        <div className="px-3.5 py-2 rounded-lg bg-zinc-900/80 border border-zinc-800 text-left font-mono">
+          <span className="text-[9px] uppercase tracking-wider text-zinc-500 block">
+            SYSTEM STATUS
+          </span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-semibold text-zinc-200 tracking-wide">
+              VERIFIED / OPERATIONAL
+            </span>
+          </div>
+        </div>
+
+        {/* Primary Action Button */}
         <Button
           asChild
-          variant="emerald"
-          size="sm"
-          className="h-8 px-3.5 text-xs font-semibold gap-1.5 shadow-sm hover:-translate-y-0.5 transition-all"
+          className="h-10 px-4 text-xs font-mono font-semibold tracking-wide bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-blue-950/40 transition-all gap-2"
         >
           <Link href="/student/scanner">
-            <Scan className="h-3.5 w-3.5" />
-            Scan QR
+            <Scan className="h-4 w-4" />
+            <span>SCAN QR →</span>
           </Link>
         </Button>
       </div>

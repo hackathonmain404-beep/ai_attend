@@ -71,7 +71,7 @@ export default function StudentLayout({
   }, [userProfile]);
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 flex relative">
+    <div className="min-h-screen bg-[#07080A] text-zinc-100 flex relative">
       {/* =========================================================
           1. VERTICAL SIDEBAR (Desktop Fixed & Mobile Slide-Out)
           ========================================================= */}
@@ -99,7 +99,7 @@ export default function StudentLayout({
         />
 
         {/* Dashboard Main Content Area */}
-        <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-5 md:p-6 pb-24 md:pb-10 space-y-5">
+        <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-5 md:p-6 pb-24 md:pb-12 space-y-6">
           {children}
         </main>
       </div>
@@ -109,7 +109,7 @@ export default function StudentLayout({
           ========================================================= */}
       <nav
         aria-label="Student Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800/90 bg-slate-950/95 backdrop-blur-lg md:hidden shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/80 bg-[#0B0D10]/95 backdrop-blur-lg md:hidden shadow-2xl"
       >
         <div className="max-w-md mx-auto grid grid-cols-5 h-16 items-center px-1">
           {STUDENT_NAV_ITEMS.map((item) => {
@@ -130,16 +130,16 @@ export default function StudentLayout({
                     className={cn(
                       "h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-200 group-active:scale-95",
                       isActive
-                        ? "bg-emerald-500 text-white shadow-emerald-950/80 ring-2 ring-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
-                        : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-950/50"
+                        ? "bg-blue-600 text-white shadow-blue-950/80 ring-2 ring-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                        : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-950/50"
                     )}
                   >
                     <Icon className="h-6 w-6" />
                   </div>
                   <span
                     className={cn(
-                      "text-[10px] font-medium mt-1 transition-colors",
-                      isActive ? "text-emerald-400 font-bold" : "text-slate-400"
+                      "text-[10px] font-mono mt-1 transition-colors uppercase tracking-tight",
+                      isActive ? "text-blue-400 font-bold" : "text-zinc-400"
                     )}
                   >
                     {item.name}
@@ -154,18 +154,18 @@ export default function StudentLayout({
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center justify-center h-full min-h-[44px] transition-colors group",
-                  isActive ? "text-emerald-400 font-semibold" : "text-slate-400 hover:text-slate-200"
+                  isActive ? "text-blue-400 font-semibold" : "text-zinc-400 hover:text-zinc-200"
                 )}
               >
                 <div
                   className={cn(
                     "p-1 rounded-xl transition-all",
-                    isActive ? "bg-emerald-500/10 text-emerald-400" : "group-hover:bg-slate-800/50"
+                    isActive ? "bg-blue-600/15 text-blue-400" : "group-hover:bg-zinc-800/50"
                   )}
                 >
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-[10px] mt-0.5">{item.name}</span>
+                <span className="text-[10px] font-mono mt-0.5 uppercase tracking-tight">{item.name}</span>
               </Link>
             );
           })}

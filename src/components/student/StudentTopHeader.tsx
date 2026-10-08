@@ -80,7 +80,7 @@ export function StudentTopHeader({
   }, [userProfile?.fullName]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md transition-all duration-300">
+    <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#07080A]/90 backdrop-blur-md transition-all duration-300">
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-5 md:px-6 h-14 flex items-center justify-between gap-3">
         {/* =========================================================
             LEFT AREA: Mobile Toggle & Page Title / Telemetry
@@ -91,7 +91,7 @@ export function StudentTopHeader({
             onClick={onOpenMobile}
             variant="ghost"
             size="sm"
-            className="md:hidden h-8 w-8 p-0 text-slate-300 hover:text-white hover:bg-slate-900 border border-slate-800 rounded-lg"
+            className="md:hidden h-8 w-8 p-0 text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg"
             aria-label="Open Navigation Menu"
           >
             <Menu className="h-4 w-4" />
@@ -100,65 +100,71 @@ export function StudentTopHeader({
           {/* Current Page Title and Subtitle */}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+              <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
                 {pageMeta.title}
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-mono font-medium px-2 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-mono font-medium px-2 py-0.2 rounded border border-blue-500/25 bg-blue-500/10 text-blue-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
                 {pageMeta.badge}
               </span>
             </div>
-            <p className="hidden xs:block text-[10px] font-mono text-slate-400 truncate">
+            <p className="hidden xs:block text-[10px] font-mono text-zinc-500 truncate">
               {pageMeta.subtitle}
             </p>
           </div>
         </div>
 
         {/* =========================================================
-            RIGHT AREA: Compact User Profile & Device Status
+            RIGHT AREA: Compact User Profile & System Status
             ========================================================= */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Global System Status indicator */}
+          <div className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span>SYSTEM: OPERATIONAL</span>
+          </div>
+
           {/* Compact User Profile Capsule */}
           <div
             className={cn(
               "flex items-center gap-2 py-0.5 px-2 rounded-lg",
-              "bg-slate-900/60 border border-slate-800/80",
-              "hover:border-slate-700 hover:bg-slate-900/80",
+              "bg-zinc-900/80 border border-zinc-800",
+              "hover:border-zinc-700 hover:bg-zinc-900",
               "transition-colors duration-150",
               "group select-none"
             )}
             title={`Logged in as ${userProfile?.fullName || "Student"}`}
           >
             {/* User Avatar */}
-            <div className="h-7 w-7 rounded-md bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0">
+            <div className="h-7 w-7 rounded-md bg-zinc-800 border border-zinc-700 text-blue-400 font-mono font-semibold text-xs flex items-center justify-center shadow-sm shrink-0">
               {userInitials}
             </div>
 
             {/* User Details Stack */}
             <div className="flex flex-col text-left font-mono min-w-0 pr-0.5">
-              <span className="text-[11px] font-semibold text-slate-200 uppercase tracking-tight truncate max-w-[110px] sm:max-w-[140px] leading-tight">
+              <span className="text-[11px] font-medium text-zinc-200 uppercase tracking-tight truncate max-w-[110px] sm:max-w-[140px] leading-tight">
                 {userProfile?.fullName || (userProfile === null ? "Loading..." : "Student")}
               </span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-teal-400 font-medium truncate">
+                <span className="text-[9px] text-zinc-400 font-medium truncate">
                   {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-emerald-300">
-                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
-                  VERIFIED DEVICE
+                <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-blue-400">
+                  <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
+                  VERIFIED
                 </span>
               </div>
             </div>
 
             {/* Vertical Divider */}
-            <div className="h-5 w-[1px] bg-slate-800 mx-0.5" />
+            <div className="h-5 w-[1px] bg-zinc-800 mx-0.5" />
 
             {/* Logout Action */}
             <LogoutButton
               variant="ghost"
               size="sm"
               showText={false}
-              className="h-6 w-6 p-0 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 transition-colors"
+              className="h-6 w-6 p-0 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-500/15 transition-colors"
               title="Sign Out"
             />
           </div>

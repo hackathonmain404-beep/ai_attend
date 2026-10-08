@@ -33,184 +33,202 @@ export function AttendanceSummaryCard({
   const safeCourseRatio = atRiskCount === 0 ? 100 : Math.max(0, 100 - (atRiskCount / 5) * 100);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-      {/* 1. Overall Attendance / Academic XP */}
-      <Card className="p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-teal-500/35 transition-all duration-200">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <Target className="h-3.5 w-3.5 text-teal-400" />
-              Attendance XP
-            </span>
-            <span className="text-[10px] font-mono text-teal-400 font-semibold px-1.5 py-0.2 rounded bg-teal-500/10 border border-teal-500/20">
-              {status.label}
-            </span>
+    <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 shadow-sm">
+      {/* Console Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4 pb-3 border-b border-zinc-800/60">
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+          <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+            ATTENDANCE TELEMETRY
+          </h2>
+        </div>
+        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+          Aggregated biometric & session compliance calculations
+        </span>
+      </div>
+
+      {/* 4-Metric Security Console Grid with Thin Separators */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-zinc-800/70">
+        {/* 1. Main Overall Attendance */}
+        <div className="py-3 sm:py-2 lg:py-0 lg:px-4 first:lg:pl-0 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                ATTENDANCE XP
+              </span>
+              <span
+                className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded border ${
+                  safeOverall >= 75
+                    ? "border-blue-500/30 text-blue-400 bg-blue-500/10"
+                    : "border-amber-500/30 text-amber-400 bg-amber-500/10"
+                }`}
+              >
+                {status.label}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl sm:text-4xl font-mono font-bold text-blue-400 tracking-tight">
+                {safeOverall.toFixed(1)}%
+              </span>
+              <span className="text-xs font-mono text-zinc-500">
+                {xpCurrent} XP
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+              Required minimum: <span className="text-zinc-200">75.0%</span>
+            </p>
           </div>
 
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className={`text-2xl sm:text-3xl font-black tracking-tight ${status.textClass}`}>
-              {safeOverall.toFixed(1)}%
-            </span>
-            <span className="text-xs font-mono text-slate-400">
-              {xpCurrent} XP
-            </span>
+          <div className="mt-3 space-y-1">
+            <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, safeOverall))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+              <span>Threshold 75%</span>
+              <span className="text-blue-400">Target 90%</span>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            {overallPercentage >= 90 ? "Distinction Tier" : "75% minimum required"}
-          </p>
         </div>
 
-        <div className="mt-2.5 pt-2 border-t border-slate-800/60">
-          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                safeOverall >= 75
-                  ? "bg-gradient-to-r from-teal-400 to-emerald-400"
-                  : safeOverall >= 65
-                  ? "bg-amber-500"
-                  : "bg-rose-500"
-              }`}
-              style={{ width: `${Math.min(100, Math.max(0, overallPercentage))}%` }}
-            />
+        {/* 2. Lectures Attended */}
+        <div className="py-3 sm:py-2 lg:py-0 lg:px-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                LECTURES ATTENDED
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded border border-zinc-800 text-zinc-400 bg-zinc-900/60">
+                {attendanceRatio.toFixed(0)}% Clear
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <span className="text-3xl sm:text-4xl font-mono font-bold text-zinc-100 tracking-tight">
+                {safeAttended}
+              </span>
+              <span className="text-xs font-mono text-zinc-500">
+                / {safeHeld} held
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+              {safeHeld - safeAttended} absences recorded
+            </p>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-            <span>75% Min</span>
-            <span className="text-teal-400">Target 90%</span>
+
+          <div className="mt-3 space-y-1">
+            <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-zinc-300 transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, attendanceRatio))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+              <span>Verified Signatures</span>
+              <span className="text-zinc-300">{safeAttended} Present</span>
+            </div>
           </div>
         </div>
-      </Card>
 
-      {/* 2. Total Lectures Attended */}
-      <Card className="p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-cyan-500/35 transition-all duration-200">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-              Lectures Attended
-            </span>
-            <span className="text-[10px] font-mono text-cyan-400 font-semibold px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-500/20">
-              {attendanceRatio.toFixed(0)}% Clear
-            </span>
+        {/* 3. Current Streak */}
+        <div className="py-3 sm:py-2 lg:py-0 lg:px-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                ATTENDANCE STREAK
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded border border-zinc-800 text-zinc-400 bg-zinc-900/60">
+                {streakDays >= 7 ? "On Track" : "Active"}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <span className="text-3xl sm:text-4xl font-mono font-bold text-zinc-100 tracking-tight">
+                {String(streakDays).padStart(2, "0")}
+              </span>
+              <span className="text-xs font-mono text-zinc-500 uppercase">
+                DAYS
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+              {streakDays >= 10 ? "Elite consistency verified" : "Consecutive validated days"}
+            </p>
           </div>
 
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              {totalAttended}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              / {totalHeld} held
-            </span>
+          <div className="mt-3 space-y-1">
+            <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-400/80 transition-all duration-500"
+                style={{ width: `${streakPct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+              <span>Milestone</span>
+              <span className="text-blue-400">Target {streakTarget}d</span>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            {totalHeld - totalAttended} absences recorded
-          </p>
         </div>
 
-        <div className="mt-2.5 pt-2 border-t border-slate-800/60">
-          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.max(0, attendanceRatio))}%` }}
-            />
+        {/* 4. Eligibility Buffer */}
+        <div className="py-3 sm:py-2 lg:py-0 lg:px-4 last:lg:pr-0 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                ELIGIBILITY BUFFER
+              </span>
+              <span
+                className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded border ${
+                  atRiskCount > 0
+                    ? "border-amber-500/30 text-amber-400 bg-amber-500/10"
+                    : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                }`}
+              >
+                {atRiskCount > 0 ? "At Risk" : "Safe"}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <span
+                className={`text-3xl sm:text-4xl font-mono font-bold tracking-tight ${
+                  atRiskCount > 0 ? "text-amber-400" : "text-emerald-400"
+                }`}
+              >
+                {atRiskCount > 0 ? String(atRiskCount).padStart(2, "0") : "00"}
+              </span>
+              <span className="text-xs font-mono text-zinc-500 uppercase">
+                {atRiskCount > 0 ? `course${atRiskCount === 1 ? "" : "s"} < 75%` : "Deficit Courses"}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+              {atRiskCount > 0 ? "Mandatory recovery required" : "100% exam eligibility cleared"}
+            </p>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-            <span>Progress</span>
-            <span className="text-cyan-400">{safeAttended} Attended</span>
+
+          <div className="mt-3 space-y-1">
+            <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  atRiskCount > 0 ? "bg-amber-400" : "bg-emerald-400"
+                }`}
+                style={{ width: `${safeCourseRatio}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+              <span>Compliance State</span>
+              <span className={atRiskCount > 0 ? "text-amber-400" : "text-emerald-400"}>
+                {atRiskCount > 0 ? "Warning Alert" : "Good Standing"}
+              </span>
+            </div>
           </div>
         </div>
-      </Card>
-
-      {/* 3. Current Streak & Consistency */}
-      <Card className="p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-amber-500/35 transition-all duration-200">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-              Attendance Streak
-            </span>
-            <span className="text-[10px] font-mono text-amber-400 font-semibold px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
-              {streakDays >= 7 ? "On Track" : "Active"}
-            </span>
-          </div>
-
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl sm:text-3xl font-black text-amber-300 tracking-tight">
-              {streakDays}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              Days
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            {streakDays >= 10 ? "Elite consistency" : "Daily attendance active"}
-          </p>
-        </div>
-
-        <div className="mt-2.5 pt-2 border-t border-slate-800/60">
-          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-500"
-              style={{ width: `${streakPct}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-            <span>Milestone</span>
-            <span className="text-amber-400">Target {streakTarget}d</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* 4. At-Risk Subjects & Exam Buffer */}
-      <Card className="p-3 sm:p-3.5 border-slate-800 bg-slate-900/80 backdrop-blur-md flex flex-col justify-between shadow-md shadow-slate-950/40 hover:border-slate-700 transition-all duration-200">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <ShieldCheck className={`h-3.5 w-3.5 ${atRiskCount > 0 ? "text-amber-400" : "text-teal-400"}`} />
-              Eligibility Buffer
-            </span>
-            <span
-              className={`text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded ${
-                atRiskCount > 0
-                  ? "text-amber-400 bg-amber-500/10 border border-amber-500/20"
-                  : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
-              }`}
-            >
-              {atRiskCount > 0 ? "At Risk" : "Safe"}
-            </span>
-          </div>
-
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className={`text-2xl sm:text-3xl font-black tracking-tight ${atRiskCount > 0 ? "text-amber-400" : "text-teal-400"}`}>
-              {atRiskCount > 0 ? atRiskCount : "Safe"}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              {atRiskCount > 0 ? `course${atRiskCount === 1 ? "" : "s"} < 75%` : "100% Cleared"}
-            </span>
-          </div>
-          <p className={`text-[11px] mt-0.5 ${atRiskCount > 0 ? "text-amber-300" : "text-slate-400"}`}>
-            {atRiskCount > 0 ? "Recovery required" : "Full exam eligibility"}
-          </p>
-        </div>
-
-        <div className="mt-2.5 pt-2 border-t border-slate-800/60">
-          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                atRiskCount > 0
-                  ? "bg-gradient-to-r from-amber-500 to-orange-400"
-                  : "bg-gradient-to-r from-teal-400 to-emerald-400"
-              }`}
-              style={{ width: `${safeCourseRatio}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-            <span>Standing</span>
-            <span className={atRiskCount > 0 ? "text-amber-400 font-semibold" : "text-emerald-400 font-semibold"}>
-              {atRiskCount > 0 ? "Warning" : "Good Standing"}
-            </span>
-          </div>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -12,109 +12,109 @@ interface TodayLecturesCardProps {
 
 export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
   return (
-    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-md shadow-slate-950/40">
-      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 text-teal-400 flex items-center justify-center shrink-0">
-            <Clock className="h-3.5 w-3.5" />
+    <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 shadow-sm space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              LIVE ACADEMIC SESSIONS
+            </h2>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
-                Today&apos;s Lectures
-              </CardTitle>
-              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                Live Timetable
-              </span>
-            </div>
-            <CardDescription className="text-[11px] text-slate-400 mt-0.5">
-              Classroom sessions & attendance check-in availability
-            </CardDescription>
-          </div>
+          <p className="text-[11px] font-mono text-zinc-500 mt-0.5">
+            Classroom verification sessions & real-time attendance check-in.
+          </p>
         </div>
 
         <Button
           asChild
           variant="outline"
           size="sm"
-          className="h-7 px-2.5 border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 shrink-0"
+          className="border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 hover:border-blue-500/40 text-zinc-300 hover:text-white font-mono text-xs h-8 px-3 gap-2 shrink-0 self-start sm:self-auto transition-all"
         >
           <Link href="/student/advisor">
-            <Bot className="h-3 w-3 text-teal-400" />
-            <span className="hidden sm:inline">Ask AI Advisor</span>
+            <Bot className="h-3.5 w-3.5 text-blue-400" />
+            <span>ASK AI ADVISOR →</span>
           </Link>
         </Button>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-0 space-y-2">
-        {(!lectures || lectures.length === 0) ? (
-          <div className="text-center py-5 text-slate-400 space-y-1">
-            <Calendar className="h-6 w-6 mx-auto text-slate-600" />
+      <div className="space-y-2.5">
+        {!lectures || lectures.length === 0 ? (
+          <div className="text-center py-6 text-zinc-500 space-y-1 font-mono">
+            <Calendar className="h-6 w-6 mx-auto text-zinc-700" />
             <p className="text-xs">No active lectures scheduled for today.</p>
           </div>
         ) : (
-          (lectures || []).map((lecture) => {
+          lectures.map((lecture) => {
             const isActive = lecture.status === "active";
             const isCompleted = lecture.status === "completed";
 
             return (
               <div
                 key={lecture.classId}
-                className={`p-2.5 sm:p-3 rounded-lg border transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 ${
+                className={`p-3.5 sm:p-4 rounded-lg border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 ${
                   isActive
-                    ? "border-teal-500/40 bg-gradient-to-r from-teal-950/30 to-slate-900/90 shadow-md shadow-teal-950/20"
-                    : "border-slate-800/60 bg-slate-950/30 text-slate-400"
+                    ? "border-blue-500/40 bg-zinc-900/80 shadow-lg shadow-blue-950/20"
+                    : "border-zinc-800/60 bg-zinc-950/40 text-zinc-400"
                 }`}
               >
-                <div className="space-y-1">
-                  {/* Code + Course Name */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                <div className="space-y-1.5">
+                  {/* Top Line: Course Code + Title */}
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-900 text-blue-400 border border-zinc-800">
                       {lecture.code}
                     </span>
-                    <h4 className={`text-xs sm:text-sm font-bold ${isActive ? "text-white" : "text-slate-300"}`}>
+                    <h4 className={`text-sm sm:text-base font-semibold tracking-tight ${isActive ? "text-white" : "text-zinc-300"}`}>
                       {lecture.className}
                     </h4>
-                    {isActive && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.2 rounded-full bg-teal-500/15 border border-teal-500/30 text-[9px] font-semibold text-teal-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping" />
-                        <span>Active Session</span>
-                      </span>
-                    )}
-                    {isCompleted && (
-                      <Badge variant="outline" className="text-[9px] text-slate-400 border-slate-700 py-0">
-                        Completed
-                      </Badge>
-                    )}
                   </div>
 
                   {/* Time + Location */}
-                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3 w-3 text-slate-400" />
+                      <Clock className="h-3.5 w-3.5 text-zinc-500" />
                       <span>{lecture.time}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
-                      <MapPin className="h-3 w-3 text-teal-400" />
+                    <div className="flex items-center gap-1.5 text-zinc-400">
+                      <MapPin className="h-3.5 w-3.5 text-blue-400" />
                       <span>{lecture.room}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Primary Action Button for active lecture */}
-                {isActive && (
-                  <Button asChild variant="emerald" size="sm" className="h-7 px-3 gap-1.5 shrink-0 font-semibold text-xs shadow-sm hover:-translate-y-0.5 transition-all">
-                    <Link href={`/student/scanner${lecture.sessionId ? `?session=${lecture.sessionId}` : ""}`}>
-                      <QrCode className="h-3 w-3" />
-                      Scan Attendance
-                    </Link>
-                  </Button>
-                )}
+                {/* Right: State & Action */}
+                <div className="flex items-center gap-3 shrink-0 self-end md:self-auto">
+                  {isActive && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono font-semibold text-blue-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                      <span>ACTIVE SESSION</span>
+                    </span>
+                  )}
+                  {isCompleted && (
+                    <span className="text-[10px] font-mono text-zinc-500 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/60">
+                      COMPLETED
+                    </span>
+                  )}
+
+                  {isActive && (
+                    <Button
+                      asChild
+                      className="h-8.5 px-3.5 gap-2 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold rounded-lg shadow-sm hover:shadow-blue-950/40 transition-all"
+                    >
+                      <Link href={`/student/scanner${lecture.sessionId ? `?session=${lecture.sessionId}` : ""}`}>
+                        <QrCode className="h-3.5 w-3.5" />
+                        <span>SCAN ATTENDANCE →</span>
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

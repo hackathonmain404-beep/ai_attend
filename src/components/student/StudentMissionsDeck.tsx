@@ -80,87 +80,76 @@ export function StudentMissionsDeck() {
   ];
 
   return (
-    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-md shadow-slate-950/40">
-      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 text-teal-400 flex items-center justify-center shrink-0">
-            <Sparkles className="h-3.5 w-3.5" />
+    <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10] p-4 sm:p-5 shadow-sm space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <h2 className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              COMMAND CENTER OPERATIONS
+            </h2>
           </div>
-          <div>
-            <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
-              Portal Operations & Feature Missions
-            </CardTitle>
-            <CardDescription className="text-[11px] text-slate-400">
-              Execute core academic actions with verified telemetry
-            </CardDescription>
-          </div>
+          <p className="text-[11px] font-mono text-zinc-500 mt-0.5">
+            Verified academic actions and system controls.
+          </p>
         </div>
 
-        <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400 shrink-0">
-          6 Missions
+        <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/60 self-start sm:self-auto shrink-0">
+          06 Operations
         </span>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {missions.map((mission) => {
-            const Icon = mission.icon;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {missions.map((mission) => {
+          const Icon = mission.icon;
 
-            return (
-              <div
-                key={mission.id}
-                className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/60 hover:border-teal-500/40 hover:-translate-y-0.5 hover:shadow-md hover:shadow-teal-950/20 transition-all duration-200 flex flex-col justify-between group"
-              >
+          return (
+            <Link
+              key={mission.id}
+              href={mission.href}
+              className="group block focus:outline-none"
+            >
+              <div className="h-full p-4 rounded-xl border border-zinc-800/80 bg-zinc-950/60 hover:bg-zinc-900/70 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-950/20 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
                 <div>
-                  {/* Header: MISSION # & Status */}
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="font-mono text-[10px] font-bold text-slate-400 group-hover:text-teal-300 transition-colors">
-                      MISSION #{mission.id}
+                  {/* Top: 01 Numbering & Technical Icon */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-mono font-medium text-zinc-500 group-hover:text-blue-400 transition-colors">
+                      {mission.id}
                     </span>
-                    <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border ${mission.statusColor}`}>
-                      {mission.status}
-                    </span>
-                  </div>
-
-                  {/* Icon + Title */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="h-6 w-6 rounded-md bg-slate-900 border border-slate-800 text-teal-400 flex items-center justify-center shrink-0 group-hover:border-teal-500/30 transition-colors">
-                      <Icon className="h-3 w-3" />
+                    <div className="h-7 w-7 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-blue-500/30 group-hover:text-blue-400 transition-colors">
+                      <Icon className="h-3.5 w-3.5" />
                     </div>
-                    <h4 className="text-xs font-bold text-white tracking-tight group-hover:text-teal-300 transition-colors">
-                      {mission.title}
-                    </h4>
                   </div>
 
-                  {/* Short description */}
-                  <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+                  {/* Title */}
+                  <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight mb-1.5 group-hover:text-zinc-100 transition-colors">
+                    {mission.title}
+                  </h3>
+
+                  {/* Short Description */}
+                  <p className="text-xs text-zinc-400 leading-relaxed font-normal">
                     {mission.description}
                   </p>
                 </div>
 
-                {/* Divider: Telemetry ready + Action */}
-                <div className="pt-2 mt-2 border-t border-slate-800/60 flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-slate-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400/80" />
-                    Telemetry ready
+                {/* Footer: STATUS & Action CTA */}
+                <div className="pt-3 mt-3 border-t border-zinc-800/70 flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                    STATUS: {mission.status}
                   </span>
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="h-6 px-2 text-[11px] border-slate-800 bg-slate-900 text-slate-300 group-hover:border-teal-500/40 group-hover:text-teal-300 group-hover:bg-teal-950/20 transition-all font-mono font-semibold gap-1"
-                  >
-                    <Link href={mission.href}>
-                      {mission.actionText}
-                      <ArrowRight className="h-2.5 w-2.5 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </Button>
+
+                  <span className="text-xs font-mono font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 transition-colors">
+                    <span>{mission.actionText}</span>
+                    <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
