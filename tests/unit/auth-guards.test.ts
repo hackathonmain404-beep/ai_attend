@@ -88,4 +88,78 @@ describe('Authentication & RBAC Guards (src/lib/auth/guards.ts)', () => {
     expect(context.profile.role).toBe('teacher');
     expect(context.profile.fullName).toBe('Prof. Turing');
   });
+
+  it('should auto-provision missing profile for authenticated user with valid UUID', async () => {
+    const validUuid = '12345678-1234-1234-1234-123456789abc';
+    const mockUser = {
+      id: validUuid,
+      email: 'hackathon-main@university.edu',
+      user_metadata: {
+        full_name: 'Hackathon Main',
+        role: 'student',
+      },
+    };
+
+    const mockAdminClient = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+            upsert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: {
+                    id: validUuid,
+                    email: 'hackathon-main@university.edu',
+                    full_name: 'Hackathon Main',
+                    role: 'student',
+                    identifier: 'STU-1234',
+                    created_at: '2026-10-08T00:00:00Z',
+                    updated_at: '2026-10-08T00:00:00Z',
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'registered_devices') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          };
+        }
+        if (table === 'class_enrollments') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ count: 0 }),
+            upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          };
+        }
+        if (table === 'classes') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue({ data: [{ id: 'cls-1' }] }),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const adminModule = await import('@/lib/supabase/admin');
+    vi.spyOn(adminModule, 'createAdminClient').mockReturnValue(mockAdminClient as any);
+
+    const mockSupabase = createMockSupabase(mockUser, null);
+
+    const context = await requireStudent(mockSupabase);
+
+    expect(context.user.id).toBe(validUuid);
+    expect(context.profile.role).toBe('student');
+    expect(context.profile.fullName).toBe('Hackathon Main');
+    expect(context.profile.identifier).toBe('STU-1234');
+  });
 });

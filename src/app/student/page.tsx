@@ -68,7 +68,13 @@ export default function StudentDashboardPage() {
         </p>
         <div className="flex items-center justify-center gap-3">
           <Button
-            onClick={() => refetch()}
+            onClick={async () => {
+              try {
+                const { resolveCurrentUserProfile } = await import("@/lib/auth/auth-client");
+                await resolveCurrentUserProfile();
+              } catch {}
+              refetch();
+            }}
             variant="outline"
             className="border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-white font-mono text-xs gap-2"
             disabled={isFetching}
