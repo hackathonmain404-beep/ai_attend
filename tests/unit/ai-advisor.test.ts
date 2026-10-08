@@ -99,9 +99,9 @@ describe('AI Attendance Advisor Engine & API (docs/AI.md & docs/API.md)', () => 
 
         expect(result.engine).toBe('deterministic_fallback');
         expect(result.reply).toContain('CS301');
-        expect(result.contextSnapshot.classCode).toBe('CS301');
-        expect(result.contextSnapshot.currentPercentage).toBe(85.0);
-        expect(result.contextSnapshot.canMiss).toBe(2);
+        expect(result.contextSnapshot?.classCode).toBe('CS301');
+        expect(result.contextSnapshot?.currentPercentage).toBe(85.0);
+        expect(result.contextSnapshot?.canMiss).toBe(2);
       } finally {
         (config.ai as any).apiKey = originalKey;
       }
@@ -118,7 +118,7 @@ describe('AI Attendance Advisor Engine & API (docs/AI.md & docs/API.md)', () => 
 
         expect(result.engine).toBe('deterministic_fallback');
         expect(result.reply).toContain('MATH202');
-        expect(result.contextSnapshot.classesNeeded).toBe(3);
+        expect(result.contextSnapshot?.classesNeeded).toBe(3);
       } finally {
         (config.ai as any).apiKey = originalKey;
         vi.unstubAllGlobals();
@@ -151,7 +151,7 @@ describe('AI Attendance Advisor Engine & API (docs/AI.md & docs/API.md)', () => 
 
         expect(result.engine).toBe('llm');
         expect(result.reply).toContain('68.2%');
-        expect(result.contextSnapshot.classCode).toBe('MATH202');
+        expect(result.contextSnapshot?.classCode).toBe('MATH202');
       } finally {
         (config.ai as any).apiKey = originalKey;
         vi.unstubAllGlobals();

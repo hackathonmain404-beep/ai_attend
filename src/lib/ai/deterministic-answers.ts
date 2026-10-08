@@ -261,7 +261,7 @@ export function generateDeterministicAnswer(
             : '';
         return {
           answer: `Your highest-risk course is ${top.courseName} at ${top.currentPercentage.toFixed(1)}% (${top.attended}/${top.totalHeld} classes, risk: ${top.risk}).${recoveryText}`,
-          referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+          referencedSubjects: [],
         };
       }
     }
@@ -278,7 +278,7 @@ export function generateDeterministicAnswer(
         const top = criticalCourses[0];
         return {
           answer: `You currently have ${criticalCourses.length} course(s) in critical standing below the 75% requirement. Your highest-risk course is ${top.courseName} at ${top.currentPercentage.toFixed(1)}% (attended ${top.attended}/${top.totalHeld}), which requires attending the next ${top.classesNeededForThreshold} consecutive class(es) to reach 75%.`,
-          referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+          referencedSubjects: [],
         };
       }
       const atRiskCourses = facts.courses.filter((c) => c.risk === 'AT_RISK');
@@ -286,7 +286,7 @@ export function generateDeterministicAnswer(
         const top = atRiskCourses[0];
         return {
           answer: `You have ${atRiskCourses.length} course(s) in at-risk standing. While above 75%, ${top.courseName} is at ${top.currentPercentage.toFixed(1)}% and has 0 safe absences remaining.`,
-          referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+          referencedSubjects: [],
         };
       }
     }
@@ -307,7 +307,7 @@ export function generateDeterministicAnswer(
         .join(', ');
       return {
         answer: `You currently have ${criticalCourses.length} course(s) in critical standing below ${minReq.toFixed(1)}%: ${names}.`,
-        referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+        referencedSubjects: [],
       };
     }
 
@@ -318,7 +318,7 @@ export function generateDeterministicAnswer(
         .join(', ');
       return {
         answer: `You have ${safeCourses.length} course(s) in safe standing: ${names}.`,
-        referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+        referencedSubjects: [],
       };
     }
 
@@ -332,14 +332,14 @@ export function generateDeterministicAnswer(
       );
       return {
         answer: `Here is your course breakdown ranked by risk:\n${lines.join('\n')}`,
-        referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+        referencedSubjects: [],
       };
     }
 
     if (facts.highestRiskCourse) {
       return {
         answer: `Your highest-risk course is ${facts.highestRiskCourse.courseName} at ${facts.highestRiskCourse.currentPercentage.toFixed(1)}% (${facts.highestRiskCourse.risk}). Overall attendance is ${facts.overallPercentage.toFixed(1)}%.`,
-        referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+        referencedSubjects: [],
       };
     }
   }
@@ -350,7 +350,7 @@ export function generateDeterministicAnswer(
       const top = facts.highestRiskCourse;
       return {
         answer: `To improve your attendance standing, prioritize ${top.courseName} immediately. You are currently at ${top.currentPercentage.toFixed(1)}% (${top.attended}/${top.totalHeld}) and need to attend the next ${top.classesNeededForThreshold} consecutive class(es) without absence to restore your standing to ${minReq.toFixed(1)}%. Avoid skipping any other classes until your margin recovers.`,
-        referencedSubjects: mentionedCourse ? [mentionedCourse.courseName] : [],
+        referencedSubjects: [],
       };
     }
     return {

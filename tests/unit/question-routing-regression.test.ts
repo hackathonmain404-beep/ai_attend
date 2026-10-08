@@ -65,7 +65,7 @@ describe('Question-to-Response Routing Regression Test Suite', () => {
   });
 
   describe('2. Pipeline A (answerAttendanceQuestion — AI & Deterministic Architecture)', () => {
-    const fastOpts = { apiKey: '', timeoutMs: 500 };
+    const fastOpts = { geminiOptions: { apiKey: '', timeoutMs: 500 } };
 
     it('handles greetings without triggering attendance calculations, metrics, or course cards', async () => {
       const resHi = await answerAttendanceQuestion(QUERY_HI, jordanContext, fastOpts);
