@@ -2,15 +2,7 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
-import {
-  Menu,
-  ShieldCheck,
-  Activity,
-  CheckCircle2,
-  Lock,
-  Sparkles,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Menu, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { cn } from "@/lib/utils";
@@ -118,19 +110,6 @@ export function StudentTopHeader({
             <p className="hidden xs:block text-[11px] font-mono text-slate-400 truncate">
               {pageMeta.subtitle}
             </p>
-          </div>
-
-          {/* Live Ping Telemetry Pill (Desktop) */}
-          <div className="hidden xl:flex items-center gap-2 font-mono text-[10px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 shadow-sm ml-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <span>LIVE PING: 14ms</span>
-          </div>
-
-          {/* Security Status Pill (Large Desktop) */}
-          <div className="hidden 2xl:flex items-center gap-1.5 font-mono text-[10px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 shadow-sm">
-            <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="text-slate-300">SECURITY:</span>
-            <span className="text-cyan-300 font-bold">SHA-256 LOCKED</span>
           </div>
         </div>
 
