@@ -8,9 +8,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Bot, Sparkles, ShieldCheck, HelpCircle, Activity, BookOpen, Layers } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Bot, Sparkles, ShieldCheck } from 'lucide-react';
 import { AdvisorChatWindow } from '@/components/student/AdvisorChatWindow';
 import type { DemoScenarioId } from '@/lib/analytics/demo-scenarios';
 import { getDemoScenario } from '@/lib/analytics/demo-scenarios';
@@ -24,21 +22,21 @@ const SCENARIOS: { id: DemoScenarioId; name: string; tag: string; badgeColor: st
     id: 'healthy',
     name: 'Alex',
     tag: 'Healthy (90.3%)',
-    badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800',
+    badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     description: 'All courses >= 88%. Ample safe misses in all subjects.',
   },
   {
     id: 'at-risk',
     name: 'Maya',
     tag: 'At-Risk (80.0%)',
-    badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800',
+    badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     description: 'Mathematics slipping to 74.0%. Immediate recovery needed.',
   },
   {
     id: 'critical',
     name: 'Jordan',
     tag: 'Critical (81.1%)',
-    badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800',
+    badgeColor: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
     description: 'C Programming at 68.0%. Requires 7 consecutive classes.',
   },
 ];
@@ -53,142 +51,98 @@ export default function StudentAdvisorPage(): React.JSX.Element {
   const { profile, context } = getDemoScenario(activeScenarioId);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500/30">
-      {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-            <Link href="/student">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Student Dashboard
-            </Link>
-          </Button>
-          <div className="h-4 w-[1px] bg-slate-800" />
+    <div className="space-y-10 sm:space-y-12">
+      {/* 1. Command Center Page Hero */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 sm:pb-8 border-b border-zinc-800/60">
+        <div className="space-y-3 max-w-2xl">
+          {/* Eyebrow */}
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-              <Bot className="h-3.5 w-3.5" />
-            </div>
-            <span className="text-xs font-mono font-bold text-white tracking-wide">
-              AI ADVISOR // COMPANION HUD
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
+              AI INTELLIGENCE
+            </span>
+            <span className="text-zinc-600 font-mono text-xs">/</span>
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+              ACADEMIC ADVISOR
             </span>
           </div>
+
+          {/* Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white leading-tight">
+            Conversational Academic Advisor
+          </h1>
+
+          {/* Supporting Copy */}
+          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
+            Grounded mathematical assistance for course attendance, absence planning, and debarment prevention.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Tab Navigation */}
-          <div className="hidden sm:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-mono">
-            <button
-              type="button"
-              onClick={() => setActiveTab('simulator')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                activeTab === 'simulator'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              SCENARIO SIMULATOR
-            </button>
+        {/* Right Controls: Back Link & Mode Tabs */}
+        <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+          <Link
+            href="/student"
+            className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors group"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" />
+            <span>BACK TO COMMAND CENTER</span>
+          </Link>
+
+          {/* Mode Switcher */}
+          <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[#0B0D10] border border-zinc-800 text-xs font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('live')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-all ${
                 activeTab === 'live'
-                  ? 'bg-teal-600 text-white shadow-md shadow-teal-950/60'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-sm shadow-blue-950/40'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               LIVE MISSION CHAT
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('simulator')}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-all ${
+                activeTab === 'simulator'
+                  ? 'bg-blue-600/15 border border-blue-500/40 text-blue-400 font-semibold shadow-sm shadow-blue-950/40'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              SCENARIO SIMULATOR
+            </button>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 shadow-sm text-xs font-mono">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-300 font-bold">SYSTEM ONLINE ✓</span>
+          <div className="px-3 py-1 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs font-mono text-zinc-400 flex items-center gap-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+            <span>STRICT 75% REGULATORY STANDARD</span>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
-        {/* Mobile View Toggle */}
-        <div className="flex sm:hidden items-center justify-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('simulator')}
-            className={`flex-1 py-1.5 rounded-lg font-medium text-center transition-all ${
-              activeTab === 'simulator'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Scenario Simulator
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('live')}
-            className={`flex-1 py-1.5 rounded-lg font-medium text-center transition-all ${
-              activeTab === 'live'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Live Student Chat
-          </button>
-        </div>
-
+      {/* 2. Main Body Content */}
+      <section className="space-y-6">
         {activeTab === 'live' ? (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-              <div>
-                <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                  Conversational Academic Advisor
-                </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Grounded mathematical assistance for course attendance, absence planning, and debarment prevention.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <ShieldCheck className="h-4 w-4 text-teal-400" />
-                <span>Strict 75% Regulatory Standard</span>
-              </div>
-            </div>
-
-            <AdvisorChatWindow studentName={liveSummary?.student?.fullName} />
-          </div>
+          <AdvisorChatWindow studentName={liveSummary?.student?.fullName} />
         ) : (
           <div className="space-y-8">
-            {/* Page Header */}
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  AttendGuard Student Intelligence & Analytics
-                </span>
-              </div>
-              <h1 className="mt-1 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                Attendance Advisor & Risk Analytics
-              </h1>
-              <p className="mt-2 text-sm text-slate-400">
-                Deterministic verified class calculations, recovery projections, and AI-powered attendance guidance.
-              </p>
-            </div>
-
             {/* Hackathon Demo Persona Switcher */}
             <section
               aria-labelledby="demo-persona-heading"
-              className="rounded-2xl border border-blue-900/40 bg-gradient-to-r from-blue-950/20 via-indigo-950/20 to-slate-900/40 p-5 shadow-sm"
+              className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 space-y-4 transition-all duration-300 hover:border-blue-500/30"
             >
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-blue-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                      Hackathon Live Demo
+                    <span className="rounded bg-blue-600/20 border border-blue-500/30 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-blue-400">
+                      Live Simulation
                     </span>
-                    <h2 id="demo-persona-heading" className="text-sm font-bold text-white">
+                    <h2 id="demo-persona-heading" className="text-sm font-semibold text-white tracking-tight">
                       Select Student Persona to Inspect
                     </h2>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className="mt-1 text-xs font-mono text-zinc-400">
                     Switch between real attendance scenarios to evaluate risk classification, safe misses, and advisor guidance.
                   </p>
                 </div>
@@ -202,19 +156,15 @@ export default function StudentAdvisorPage(): React.JSX.Element {
                         key={scenario.id}
                         type="button"
                         onClick={() => setActiveScenarioId(scenario.id)}
-                        className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-mono transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20'
-                            : 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
+                            ? 'border-blue-500/50 bg-blue-600/15 text-blue-300 font-semibold shadow-sm shadow-blue-950/40'
+                            : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                       >
                         <span>{scenario.name}</span>
                         <span
-                          className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${
-                            isSelected
-                              ? 'border-white/30 bg-white/20 text-white'
-                              : scenario.badgeColor
-                          }`}
+                          className={`rounded px-1.5 py-0.2 text-[10px] font-mono border ${scenario.badgeColor}`}
                         >
                           {scenario.tag}
                         </span>
@@ -224,8 +174,8 @@ export default function StudentAdvisorPage(): React.JSX.Element {
                 </div>
               </div>
 
-              <div className="mt-3 border-t border-blue-900/30 pt-2.5 text-xs text-slate-400">
-                <span className="font-semibold text-slate-200">Active Profile:</span> {profile.studentName} — {profile.description}
+              <div className="border-t border-zinc-800/60 pt-3 text-xs font-mono text-zinc-400">
+                <span className="text-zinc-200 font-medium">Active Profile:</span> {profile.studentName} — {profile.description}
               </div>
             </section>
 
@@ -259,12 +209,7 @@ export default function StudentAdvisorPage(): React.JSX.Element {
             </section>
           </div>
         )}
-      </main>
-
-      {/* Bottom Academic Disclaimer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-3 text-center text-xs text-slate-500 font-mono">
-        AttendGuard AI Advisor answers are derived authoritatively from server-side attendance ledgers.
-      </footer>
+      </section>
     </div>
   );
 }
