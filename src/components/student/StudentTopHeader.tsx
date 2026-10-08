@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -17,7 +16,6 @@ export function StudentTopHeader({
   onOpenMobile,
   userProfile,
 }: StudentTopHeaderProps) {
-  const pathname = usePathname();
 
   // Derived user initials (e.g. "Abhijit Raika" -> "AR")
   const userInitials = React.useMemo(() => {
@@ -63,45 +61,6 @@ export function StudentTopHeader({
             </span>
           </div>
         </div>
-
-        {/* =========================================================
-            CENTER AREA: Minimal Landing-Page Style Navigation Links
-            ========================================================= */}
-        <nav className="hidden lg:flex items-center gap-6 font-mono text-[11px] tracking-wider uppercase text-zinc-400">
-          <Link
-            href="/student"
-            className={cn(
-              "transition-colors hover:text-white",
-              pathname === "/student" ? "text-white font-semibold" : "text-zinc-400"
-            )}
-          >
-            OVERVIEW
-          </Link>
-          <a
-            href="#courses"
-            className="transition-colors hover:text-white text-zinc-400"
-          >
-            COURSES
-          </a>
-          <Link
-            href="/student/device"
-            className={cn(
-              "transition-colors hover:text-white",
-              pathname.startsWith("/student/device") ? "text-white font-semibold" : "text-zinc-400"
-            )}
-          >
-            VERIFICATION
-          </Link>
-          <Link
-            href="/student/history"
-            className={cn(
-              "transition-colors hover:text-white",
-              pathname.startsWith("/student/history") ? "text-white font-semibold" : "text-zinc-400"
-            )}
-          >
-            REPORTS
-          </Link>
-        </nav>
 
         {/* =========================================================
             RIGHT AREA: Compact User Profile & System Status
