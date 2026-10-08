@@ -36,17 +36,11 @@ const COMPANY_LINKS: FooterLink[] = [
 
 export function Footer() {
   return (
-    <footer className="relative w-full bg-zinc-950 border-t border-zinc-900/90 pt-20 pb-12 overflow-hidden text-zinc-400">
-      {/* Restrained Ambient Radial Blue Glow Near Brand Area */}
+    <footer className="relative w-full bg-transparent border-t border-white/[0.08] pt-24 pb-12 overflow-hidden text-zinc-400 z-10">
+      {/* Restrained Ambient Radial Blue/Violet Glow Near Brand Area */}
       <div
         aria-hidden="true"
-        className="absolute top-0 left-6 sm:left-12 w-[420px] sm:w-[560px] h-[260px] bg-[radial-gradient(ellipse_at_center,_rgba(37,99,235,0.06),_transparent_72%)] pointer-events-none select-none blur-3xl"
-      />
-
-      {/* Almost-Invisible Subtle Grid Texture */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(to_right,#27272a06_1px,transparent_1px),linear-gradient(to_bottom,#27272a06_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"
+        className="absolute top-0 left-6 sm:left-12 w-[480px] sm:w-[640px] h-[300px] bg-[radial-gradient(ellipse_at_center,_rgba(99,102,241,0.1)_0%,_rgba(37,99,235,0.08)_40%,_transparent_72%)] pointer-events-none select-none blur-3xl"
       />
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 sm:px-8">

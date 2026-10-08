@@ -2,124 +2,155 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { KeyRound, ScanLine, Fingerprint, Database, Check } from "lucide-react";
+import { KeyRound, ScanLine, Fingerprint, Database, Check, ArrowRight } from "lucide-react";
 import { fadeUpVariants } from "@/lib/motion";
 
-interface Step {
+interface FlowNode {
   step: string;
   name: string;
+  telemetry: string;
   headline: string;
   detail: string;
   icon: React.ComponentType<{ className?: string }>;
+  latency: string;
 }
 
-const FLOW_STEPS: Step[] = [
+const ARCHITECTURE_NODES: FlowNode[] = [
   {
     step: "01",
-    name: "Generate",
+    name: "GENERATE",
+    telemetry: "CHALLENGE GENERATED",
     headline: "Cryptographic challenge created",
-    detail: "Faculty session initializes rotating HMAC tokens signed by ephemeral private keys.",
+    detail: "Faculty terminal initializes ephemeral rotating HMAC-SHA256 tokens signed by enclave keys.",
     icon: KeyRound,
+    latency: "12ms",
   },
   {
     step: "02",
-    name: "Verify",
+    name: "VERIFY",
+    telemetry: "TOKEN VALIDATED",
     headline: "QR + device + perimeter validated",
-    detail: "Optical camera scan performs cryptographic hash checking and timestamp tolerance verification.",
+    detail: "Optical scan performs sub-second cryptographic integrity and spatial geofence cross-check.",
     icon: ScanLine,
+    latency: "85ms",
   },
   {
     step: "03",
-    name: "Bind",
+    name: "BIND",
+    telemetry: "DEVICE VERIFIED",
     headline: "Associated with trusted device",
-    detail: "Student account matches verified 1:1 hardware seed. Unregistered devices are blocked (403).",
+    detail: "Student identity is matched against verified 1:1 hardware enclave seed. Unbound hardware rejected.",
     icon: Fingerprint,
+    latency: "140ms",
   },
   {
     step: "04",
-    name: "Record",
+    name: "RECORD",
+    telemetry: "ATTENDANCE COMMITTED",
     headline: "Validated attendance stored",
-    detail: "Finalized check-in commits to non-repudiable audit ledger, recalculating real-time 75% margin.",
+    detail: "Atomic entry commits to immutable ledger, recomputing academic 75% margin threshold.",
     icon: Database,
+    latency: "210ms",
   },
 ];
 
 export function ArchitectureFlow() {
   return (
-    <section id="architecture" className="relative py-28 px-6 max-w-6xl mx-auto scroll-mt-20">
+    <section id="architecture" className="relative py-32 px-6 max-w-6xl mx-auto scroll-mt-24 z-10">
       {/* Section Header */}
       <motion.div
         variants={fadeUpVariants}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-40px" }}
-        className="max-w-2xl mb-20 text-left"
+        viewport={{ once: true, margin: "-50px" }}
+        className="max-w-3xl mb-20 text-left"
       >
-        <p className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold mb-3">
-          VERIFICATION LIFECYCLE
+        <p className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-4">
+          SYSTEM ARCHITECTURE // INFRASTRUCTURE PIPELINE
         </p>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
-          Generate → Verify → Bind → Record
+        <h2 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-5 leading-[1.08]">
+          GENERATE → VERIFY → BIND → RECORD
         </h2>
-        <p className="text-zinc-400 text-base leading-relaxed font-normal">
-          Every submission traverses an end-to-end zero-trust validation pipeline before entering the institutional audit ledger.
+        <p className="text-zinc-400 text-base sm:text-lg leading-relaxed font-normal">
+          An end-to-end zero-trust validation pipeline built like mission-critical security infrastructure.
         </p>
       </motion.div>
 
-      {/* Clean Visual Architecture Diagram */}
-      <div className="relative">
-        {/* Horizontal Desktop Animated Connecting Line */}
-        <div className="hidden lg:block absolute top-[28px] left-[6%] right-[6%] h-[1px] bg-zinc-800 pointer-events-none" />
+      {/* Futuristic Infrastructure Diagram Container */}
+      <div className="relative rounded-3xl bg-[#050811]/70 border border-white/[0.08] p-6 sm:p-10 backdrop-blur-2xl overflow-hidden">
+        {/* Animated Connecting Data Bus Line (Desktop) */}
+        <div className="hidden lg:block absolute top-[90px] left-[10%] right-[10%] h-px bg-white/[0.08] pointer-events-none" />
         <motion.div
           initial={{ scaleX: 0 }}
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-          className="hidden lg:block absolute top-[28px] left-[6%] right-[6%] h-[1px] origin-left bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 pointer-events-none opacity-60"
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          className="hidden lg:block absolute top-[90px] left-[10%] right-[10%] h-px origin-left bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 pointer-events-none opacity-80"
         />
 
-        {/* 4-Step Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6 relative z-10">
-          {FLOW_STEPS.map((step, idx) => {
-            const Icon = step.icon;
+        {/* 4 Connected Nodes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6 relative z-10">
+          {ARCHITECTURE_NODES.map((node, idx) => {
+            const Icon = node.icon;
             return (
               <motion.div
-                key={step.step}
+                key={node.step}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.15 + idx * 0.12 }}
+                transition={{ duration: 0.6, delay: 0.15 + idx * 0.1 }}
                 className="flex flex-col text-left group"
               >
-                {/* Node Icon Circle */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-14 w-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-blue-400 shadow-md group-hover:border-blue-500/40 group-hover:bg-blue-950/20 transition-all duration-300">
-                    <Icon className="h-5 w-5" />
+                {/* Node Header & Icon Port */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="relative">
+                    <div className="h-14 w-14 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center text-blue-400 shadow-md group-hover:border-blue-500/50 group-hover:text-cyan-300 transition-all duration-300">
+                      <Icon className="h-6 w-6 stroke-[1.75]" />
+                    </div>
+                    {/* Node Port Pin */}
+                    <span className="hidden lg:block absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-blue-500/30 border border-blue-400" />
                   </div>
-                  <div className="lg:hidden flex-1 h-[1px] bg-zinc-850" />
+                  <span className="text-[10px] font-mono text-zinc-500 px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.06]">
+                    Δ {node.latency}
+                  </span>
                 </div>
 
-                {/* Stage Label */}
-                <div className="flex items-center gap-2 mb-1.5">
+                {/* Stage Tag */}
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] font-mono font-semibold text-blue-400">
-                    STEP {step.step}
+                    STAGE {node.step}
                   </span>
                   <span className="text-zinc-600">•</span>
-                  <span className="text-xs font-mono font-medium text-zinc-400 uppercase tracking-wider">
-                    {step.name}
+                  <span className="text-xs font-mono font-medium text-white tracking-wider">
+                    {node.name}
                   </span>
+                </div>
+
+                {/* System Telemetry Label */}
+                <div className="inline-flex items-center gap-1.5 mb-3 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9.5px] font-mono text-blue-300 font-medium w-fit">
+                  <span className="h-1 w-1 rounded-full bg-blue-400" />
+                  <span>{node.telemetry}</span>
                 </div>
 
                 {/* Headline & Detail */}
-                <h3 className="text-base font-semibold text-white tracking-tight mb-2 group-hover:text-zinc-100 transition-colors">
-                  {step.headline}
+                <h3 className="text-base font-medium text-white tracking-tight mb-2 group-hover:text-cyan-200 transition-colors">
+                  {node.headline}
                 </h3>
                 <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                  {step.detail}
+                  {node.detail}
                 </p>
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Bottom Signal Summary Status */}
+        <div className="mt-10 pt-6 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-zinc-300">END-TO-END VERIFICATION LATENCY: &lt; 250MS</span>
+          </div>
+          <span className="text-zinc-500">NON-REPUDIABLE CRYPTOGRAPHIC LEDGER</span>
         </div>
       </div>
     </section>

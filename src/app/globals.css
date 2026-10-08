@@ -312,4 +312,42 @@ html {
   animation-play-state: paused;
 }
 
+/* Stitch-Inspired Atmospheric Light Waves */
+@keyframes aurora-wave-left {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(-4deg);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(50px, -40px, 0) scale(1.12) rotate(3deg);
+    opacity: 0.58;
+  }
+}
+
+@keyframes aurora-wave-right {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(4deg);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(-45px, -50px, 0) scale(1.14) rotate(-2deg);
+    opacity: 0.54;
+  }
+}
+
+.animate-aurora-left {
+  animation: aurora-wave-left 18s ease-in-out infinite;
+}
+
+.animate-aurora-right {
+  animation: aurora-wave-right 22s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora-left,
+  .animate-aurora-right {
+    animation: none !important;
+  }
+}
+
 

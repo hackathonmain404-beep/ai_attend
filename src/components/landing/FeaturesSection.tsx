@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ShieldAlert, Calculator, Sparkles, FileSpreadsheet, Lock } from "lucide-react";
+import { ShieldAlert, Calculator, Sparkles, FileSpreadsheet } from "lucide-react";
 import { fadeUpVariants } from "@/lib/motion";
 
 interface Feature {
@@ -41,52 +41,52 @@ const FEATURES: Feature[] = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="relative py-28 px-6 max-w-6xl mx-auto scroll-mt-20">
+    <section id="features" className="relative py-32 px-6 max-w-6xl mx-auto scroll-mt-24 z-10">
       {/* Section Header */}
       <motion.div
         variants={fadeUpVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-40px" }}
-        className="max-w-2xl mb-16 text-left"
+        className="max-w-3xl mb-20 text-left"
       >
-        <p className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold mb-3">
+        <p className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-4">
           CAMPUS PLATFORM CAPABILITIES
         </p>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
+        <h2 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-5 leading-[1.08]">
           Engineered for Academic Integrity.
         </h2>
-        <p className="text-zinc-400 text-base leading-relaxed font-normal">
+        <p className="text-zinc-400 text-base sm:text-lg leading-relaxed font-normal">
           Built to scale effortlessly across lecture halls, laboratory sections, and multi-department university faculties.
         </p>
       </motion.div>
 
       {/* Grid of 4 Minimalist Capabilities */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {FEATURES.map((item, idx) => {
           const Icon = item.icon;
           return (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.08 }}
-              className="p-6 sm:p-7 rounded-2xl bg-zinc-950/70 border border-zinc-850 hover:border-zinc-750 transition-colors group text-left"
+              className="p-7 sm:p-8 rounded-3xl bg-[#050811]/75 border border-white/[0.08] hover:border-white/20 transition-all duration-300 group text-left backdrop-blur-xl"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 transition-colors">
-                  <Icon className="h-4 w-4" />
+              <div className="flex items-center justify-between mb-5">
+                <div className="h-10 w-10 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 group-hover:text-cyan-300 transition-colors">
+                  <Icon className="h-5 w-5 stroke-[1.75]" />
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 border border-zinc-850 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 border border-white/[0.08] bg-white/[0.02] px-2.5 py-0.5 rounded-full">
                   {item.tagline}
                 </span>
               </div>
 
-              <h3 className="text-lg font-semibold text-white tracking-tight mb-2 group-hover:text-zinc-100 transition-colors">
+              <h3 className="text-xl font-medium text-white tracking-tight mb-2.5 group-hover:text-cyan-200 transition-colors">
                 {item.title}
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+              <p className="text-sm text-zinc-400 leading-relaxed font-normal">
                 {item.description}
               </p>
             </motion.div>

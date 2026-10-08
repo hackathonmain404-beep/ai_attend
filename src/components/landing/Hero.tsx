@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { MagneticButton } from "@/components/ui/MagneticButton";
+import { AttendanceSecurityCore } from "@/components/landing/AttendanceSecurityCore";
 import { fadeUpVariants } from "@/lib/motion";
 
 interface HeroProps {
@@ -12,23 +13,17 @@ interface HeroProps {
 
 export function Hero({ destinationHref }: HeroProps) {
   return (
-    <section className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center pt-28 pb-20 px-6 overflow-hidden">
-      {/* Very Subtle Ambient Radial Electric Blue Glow (Extremely Restrained) */}
-      <div
-        aria-hidden="true"
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] sm:w-[750px] h-[360px] sm:h-[480px] bg-[radial-gradient(ellipse_at_center,_rgba(37,99,235,0.09),_transparent_72%)] pointer-events-none select-none blur-3xl"
-      />
-
-      <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center my-auto">
-        {/* Enormous Geometric Sans Headline */}
+    <section className="relative min-h-screen flex flex-col items-center justify-start pt-32 sm:pt-36 lg:pt-40 pb-24 px-6 overflow-hidden">
+      <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
+        {/* Oversized Stitch-Inspired Geometric Sans Headline */}
         <motion.h1
           variants={fadeUpVariants}
           initial="hidden"
           animate="visible"
           custom={0}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-white leading-[1.06] mb-6"
+          className="text-5xl sm:text-7xl md:text-8xl lg:text-[6.8rem] xl:text-[7.8rem] font-medium tracking-[-0.035em] text-white leading-[0.98] mb-7 max-w-5xl"
         >
-          <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
             Zero-Proxy Attendance.
           </span>
         </motion.h1>
@@ -39,18 +34,18 @@ export function Hero({ destinationHref }: HeroProps) {
           initial="hidden"
           animate="visible"
           custom={0.1}
-          className="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-10"
+          className="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-9"
         >
           Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.
         </motion.p>
 
-        {/* Single Primary CTA + Subtle Secondary Action */}
+        {/* Primary CTA + Subtle Secondary Action */}
         <motion.div
           variants={fadeUpVariants}
           initial="hidden"
           animate="visible"
           custom={0.2}
-          className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6"
+          className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6 mb-16"
         >
           <MagneticButton
             href={destinationHref}
@@ -64,11 +59,22 @@ export function Hero({ destinationHref }: HeroProps) {
 
           <a
             href="#security"
-            className="text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 group py-2"
+            className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 group py-2"
           >
             <span>Explore Security Pillars</span>
-            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-1 transition-all duration-200" />
+            <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-1 transition-all duration-200" />
           </a>
+        </motion.div>
+
+        {/* Lower Composition: Attendance Security Core Visual */}
+        <motion.div
+          variants={fadeUpVariants}
+          initial="hidden"
+          animate="visible"
+          custom={0.35}
+          className="w-full pt-2"
+        >
+          <AttendanceSecurityCore />
         </motion.div>
       </div>
     </section>

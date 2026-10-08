@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { Navbar } from "@/components/landing/Navbar";
+import { AtmosphericBackground } from "@/components/landing/AtmosphericBackground";
 import { Hero } from "@/components/landing/Hero";
 import { SecurityPillars } from "@/components/landing/SecurityPillars";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
@@ -130,11 +131,14 @@ export default function HomePage() {
     : "/login";
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden">
+    <main className="relative min-h-screen bg-[#02040a] text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden">
+      {/* Stitch-Inspired Atmospheric Background & Interactive Dot Matrix */}
+      <AtmosphericBackground />
+
       {/* 1. Minimalist Transparent/Dark Navigation */}
       <Navbar currentUser={currentUser} />
 
-      {/* 2. Single-Focus Immersive Hero with Enormous Typography & Interactive Security Token */}
+      {/* 2. Single-Focus Immersive Hero with Enormous Typography & Attendance Security Core */}
       <Hero destinationHref={destinationHref} />
 
       {/* 3. Four Security Pillars with Progressive Disclosure */}
