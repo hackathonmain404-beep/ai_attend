@@ -80,11 +80,11 @@ export function StudentMissionsDeck() {
   ];
 
   return (
-    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-xl shadow-slate-950/50">
-      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-3">
+    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-md shadow-slate-950/40">
+      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 text-teal-400 flex items-center justify-center">
-            <Sparkles className="h-3 w-3" />
+          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 text-teal-400 flex items-center justify-center shrink-0">
+            <Sparkles className="h-3.5 w-3.5" />
           </div>
           <div>
             <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
@@ -96,20 +96,20 @@ export function StudentMissionsDeck() {
           </div>
         </div>
 
-        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
+        <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400 shrink-0">
           6 Missions
         </span>
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {missions.map((mission) => {
             const Icon = mission.icon;
 
             return (
               <div
                 key={mission.id}
-                className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/60 hover:border-teal-500/35 hover:bg-slate-900/60 transition-all duration-200 flex flex-col justify-between group"
+                className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/60 hover:border-teal-500/40 hover:-translate-y-0.5 hover:shadow-md hover:shadow-teal-950/20 transition-all duration-200 flex flex-col justify-between group"
               >
                 <div>
                   {/* Header: MISSION # & Status */}

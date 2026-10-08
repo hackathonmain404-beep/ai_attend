@@ -84,7 +84,7 @@ export default function StudentDashboardPage() {
   const atRiskClasses = (data.classes || []).filter((c) => (c.percentage ?? 0) < 75);
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3.5 sm:space-y-4">
       {/* 1. Personalized Dynamic Greeting */}
       <ScrollReveal animation="fade-down" duration={550}>
         <StudentGreetingHeader student={data.student} />

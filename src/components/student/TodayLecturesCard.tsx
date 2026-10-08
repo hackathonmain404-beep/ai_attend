@@ -12,27 +12,32 @@ interface TodayLecturesCardProps {
 
 export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
   return (
-    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-xl shadow-slate-950/50">
-      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
-              Today&apos;s Lectures
-            </CardTitle>
-            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/25">
-              Live Timetable
-            </span>
+    <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 shadow-md shadow-slate-950/40">
+      <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-md bg-teal-500/10 border border-teal-500/25 text-teal-400 flex items-center justify-center shrink-0">
+            <Clock className="h-3.5 w-3.5" />
           </div>
-          <CardDescription className="text-[11px] text-slate-400 mt-0.5">
-            Classroom sessions & attendance check-in availability
-          </CardDescription>
+          <div>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm sm:text-base font-bold text-white tracking-tight">
+                Today&apos;s Lectures
+              </CardTitle>
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                Live Timetable
+              </span>
+            </div>
+            <CardDescription className="text-[11px] text-slate-400 mt-0.5">
+              Classroom sessions & attendance check-in availability
+            </CardDescription>
+          </div>
         </div>
 
         <Button
           asChild
           variant="outline"
           size="sm"
-          className="h-7 px-2.5 border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5"
+          className="h-7 px-2.5 border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 shrink-0"
         >
           <Link href="/student/advisor">
             <Bot className="h-3 w-3 text-teal-400" />
@@ -57,8 +62,8 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
                 key={lecture.classId}
                 className={`p-2.5 sm:p-3 rounded-lg border transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 ${
                   isActive
-                    ? "border-teal-500/50 bg-gradient-to-r from-teal-950/40 to-slate-900/90 shadow-md shadow-teal-950/20"
-                    : "border-slate-800/60 bg-slate-950/30 hover:border-slate-700/60 text-slate-400"
+                    ? "border-teal-500/40 bg-gradient-to-r from-teal-950/30 to-slate-900/90 shadow-md shadow-teal-950/20"
+                    : "border-slate-800/60 bg-slate-950/30 text-slate-400"
                 }`}
               >
                 <div className="space-y-1">
@@ -71,13 +76,13 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
                       {lecture.className}
                     </h4>
                     {isActive && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-[10px] font-semibold text-teal-400">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.2 rounded-full bg-teal-500/15 border border-teal-500/30 text-[9px] font-semibold text-teal-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping" />
                         <span>Active Session</span>
                       </span>
                     )}
                     {isCompleted && (
-                      <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-700 py-0">
+                      <Badge variant="outline" className="text-[9px] text-slate-400 border-slate-700 py-0">
                         Completed
                       </Badge>
                     )}
@@ -96,9 +101,9 @@ export function TodayLecturesCard({ lectures }: TodayLecturesCardProps) {
                   </div>
                 </div>
 
-                {/* Action */}
+                {/* Primary Action Button for active lecture */}
                 {isActive && (
-                  <Button asChild variant="emerald" size="sm" className="h-7 px-3 gap-1.5 shrink-0 font-semibold text-xs shadow-sm">
+                  <Button asChild variant="emerald" size="sm" className="h-7 px-3 gap-1.5 shrink-0 font-semibold text-xs shadow-sm hover:-translate-y-0.5 transition-all">
                     <Link href={`/student/scanner${lecture.sessionId ? `?session=${lecture.sessionId}` : ""}`}>
                       <QrCode className="h-3 w-3" />
                       Scan Attendance
