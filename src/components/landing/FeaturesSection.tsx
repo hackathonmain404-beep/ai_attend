@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
 import { ShieldAlert, Calculator, Sparkles, FileSpreadsheet } from "lucide-react";
-import { fadeUpVariants } from "@/lib/motion";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 
 interface Feature {
   title: string;
@@ -40,16 +39,47 @@ const FEATURES: Feature[] = [
 ];
 
 export function FeaturesSection() {
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const cardRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      cardRefs.current.forEach((card, idx) => {
+        if (!card) return;
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 30, filter: "blur(4px)" },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.7,
+            delay: idx * 0.1,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 85%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="features" className="relative py-32 px-6 max-w-6xl mx-auto scroll-mt-24 z-10">
+    <section id="features" ref={sectionRef} className="relative py-32 px-6 max-w-6xl mx-auto scroll-mt-24 z-10">
       {/* Section Header */}
-      <motion.div
-        variants={fadeUpVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-40px" }}
-        className="max-w-3xl mb-20 text-left"
-      >
+      <div className="max-w-3xl mb-20 text-left">
         <p className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-4">
           CAMPUS PLATFORM CAPABILITIES
         </p>
@@ -59,20 +89,19 @@ export function FeaturesSection() {
         <p className="text-zinc-400 text-base sm:text-lg leading-relaxed font-normal">
           Built to scale effortlessly across lecture halls, laboratory sections, and multi-department university faculties.
         </p>
-      </motion.div>
+      </div>
 
       {/* Grid of 4 Minimalist Capabilities */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {FEATURES.map((item, idx) => {
           const Icon = item.icon;
           return (
-            <motion.div
+            <div
               key={item.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.08 }}
-              className="p-7 sm:p-8 rounded-3xl bg-[#050811]/75 border border-white/[0.08] hover:border-white/20 transition-all duration-300 group text-left backdrop-blur-xl"
+              ref={(el) => {
+                cardRefs.current[idx] = el;
+              }}
+              className="p-7 sm:p-8 rounded-3xl bg-[#050811]/75 border border-white/[0.08] hover:border-white/20 transition-all duration-300 group text-left backdrop-blur-xl will-change-transform"
             >
               <div className="flex items-center justify-between mb-5">
                 <div className="h-10 w-10 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 group-hover:text-cyan-300 transition-colors">
@@ -89,7 +118,7 @@ export function FeaturesSection() {
               <p className="text-sm text-zinc-400 leading-relaxed font-normal">
                 {item.description}
               </p>
-            </motion.div>
+            </div>
           );
         })}
       </div>

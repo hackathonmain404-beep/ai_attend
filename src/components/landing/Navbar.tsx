@@ -2,17 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Menu, X, ArrowUpRight } from "lucide-react";
-import { MagneticButton } from "@/components/ui/MagneticButton";
+import { Shield, Menu, X } from "lucide-react";
+import { gsap } from "@/lib/gsap";
 
 interface NavbarProps {
   currentUser?: any;
+  isLoaded?: boolean;
 }
 
-export function Navbar({ currentUser }: NavbarProps) {
+export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
   const [isScrolled, setIsScrolled] = React.useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState<boolean>(false);
+  const headerRef = React.useRef<HTMLElement>(null);
+  const ctaBtnRef = React.useRef<HTMLAnchorElement>(null);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +25,38 @@ export function Navbar({ currentUser }: NavbarProps) {
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // GSAP Navbar Entrance Animation when loader completes
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !headerRef.current) return;
+
+    if (!isLoaded) {
+      gsap.set(headerRef.current, { opacity: 0, y: -20 });
+      return;
+    }
+
+    gsap.fromTo(
+      headerRef.current,
+      { opacity: 0, y: -20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", delay: 0.05 }
+    );
+  }, [isLoaded]);
+
+  // Micro-interaction: CTA button magnetic pull & scale
+  const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    gsap.to(e.currentTarget, { scale: 1.03, duration: 0.25, ease: "power2.out" });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) * 0.15;
+    const y = (e.clientY - rect.top - rect.height / 2) * 0.15;
+    gsap.to(e.currentTarget, { x, y, duration: 0.2, ease: "power2.out" });
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    gsap.to(e.currentTarget, { scale: 1, x: 0, y: 0, duration: 0.35, ease: "power2.out" });
+  };
 
   const navLinks = [
     { label: "Security", href: "#security" },
@@ -39,14 +73,15 @@ export function Navbar({ currentUser }: NavbarProps) {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        ref={headerRef}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 will-change-transform ${
           isScrolled
-            ? "bg-[#02040a]/75 backdrop-blur-xl border-b border-white/[0.08] py-3.5 shadow-lg shadow-black/40"
+            ? "bg-[#02040a]/85 backdrop-blur-xl border-b border-white/[0.08] py-3.5 shadow-lg shadow-black/40"
             : "bg-transparent border-b border-transparent py-5"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          {/* Brand Logo - Stitch Style Minimalist Outline */}
+          {/* Brand Logo */}
           <Link
             href="/"
             className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg"
@@ -70,7 +105,7 @@ export function Navbar({ currentUser }: NavbarProps) {
               <a
                 key={link.label}
                 href={link.href}
-                className="hover:text-white transition-colors duration-200 focus:outline-none focus-visible:text-white text-xs tracking-wide font-medium"
+                className="hover:text-white transition-colors duration-200 focus:outline-none focus-visible:text-white text-xs tracking-wide font-medium py-1"
               >
                 {link.label}
               </a>
@@ -79,13 +114,16 @@ export function Navbar({ currentUser }: NavbarProps) {
 
           {/* Desktop Action CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <MagneticButton
+            <a
+              ref={ctaBtnRef}
               href={destinationHref}
-              variant="primary"
-              className="px-4 py-2 text-xs font-semibold tracking-wide shadow-[0_0_24px_rgba(37,99,235,0.35)]"
+              onMouseEnter={handleMouseEnter}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold tracking-wide shadow-[0_0_24px_rgba(37,99,235,0.35)] transition-colors inline-flex items-center justify-center will-change-transform"
             >
               <span>Launch Command Center</span>
-            </MagneticButton>
+            </a>
           </div>
 
           {/* Mobile Hamburger Trigger */}
@@ -100,42 +138,31 @@ export function Navbar({ currentUser }: NavbarProps) {
         </div>
       </header>
 
-      {/* Mobile Animated Drawer Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-0 top-[65px] z-30 md:hidden bg-[#02040a]/95 backdrop-blur-2xl border-b border-white/10 px-6 py-6 shadow-2xl flex flex-col gap-5"
-          >
-            <nav className="flex flex-col gap-3 text-sm font-medium text-zinc-300">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="py-2 px-3 rounded-lg hover:bg-white/[0.05] hover:text-white transition-colors flex items-center justify-between"
-                >
-                  <span>{link.label}</span>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-zinc-500" />
-                </a>
-              ))}
-            </nav>
-
-            <div className="pt-2 border-t border-white/10">
-              <Link
-                href={destinationHref}
+      {/* Mobile Drawer Menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-30 bg-[#02040a]/95 backdrop-blur-2xl md:hidden pt-24 px-6 flex flex-col justify-between pb-8">
+          <div className="flex flex-col gap-6">
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs tracking-wide text-center flex items-center justify-center shadow-lg shadow-blue-950/50"
+                className="text-lg font-medium text-zinc-200 hover:text-white transition-colors"
               >
-                Launch Command Center
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <a
+            href={destinationHref}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="w-full py-3.5 rounded-full bg-blue-600 text-white text-center text-sm font-semibold tracking-wide shadow-lg shadow-blue-600/30"
+          >
+            Launch Command Center
+          </a>
+        </div>
+      )}
     </>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { QrCode, Smartphone, MapPin, ShieldCheck, Cpu, Key, Radio, Check } from "lucide-react";
-import { fadeUpVariants } from "@/lib/motion";
+import { Key, Cpu, MapPin, ShieldCheck, ArrowRight } from "lucide-react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { SecurityToken, SecurityMode } from "@/components/landing/SecurityToken";
 
 interface PillarItem {
   id: string;
@@ -13,7 +13,8 @@ interface PillarItem {
   benefit: string;
   protocol: string;
   technicalSpecs: string[];
-  visualType: "crypto" | "device" | "perimeter" | "validation";
+  mode: SecurityMode;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const PILLARS_DATA: PillarItem[] = [
@@ -25,260 +26,217 @@ const PILLARS_DATA: PillarItem[] = [
     benefit: "Every attendance session uses a continuously changing cryptographic QR challenge.",
     protocol: "HMAC-SHA256 Ephemeral Tokens",
     technicalSpecs: ["SHA-256 HASH CHAIN", "15S EXPIRATION CYCLE", "REPLAY PROTECTION"],
-    visualType: "crypto",
+    mode: "crypto",
+    icon: Key,
   },
   {
     id: "pillar-02",
     number: "02",
     titleTop: "DEVICE",
     titleBottom: "BINDING",
-    benefit: "Attendance attempts are associated with trusted device characteristics to reduce proxy attendance.",
+    benefit: "Attendance attempts are associated with trusted device characteristics to eliminate proxy submissions.",
     protocol: "1:1 Hardware Integrity Signature",
-    technicalSpecs: ["WEBGL CANVAS SIGNAL", "CPU ENCLAVE SEED", "DEVICE TRUST STATE 1:1"],
-    visualType: "device",
+    technicalSpecs: ["WEBGL CANVAS SIGNAL", "CPU ENCLAVE SEED", "DEVICE TRUST 1:1"],
+    mode: "device",
+    icon: Cpu,
   },
   {
     id: "pillar-03",
     number: "03",
     titleTop: "PERIMETER",
     titleBottom: "VERIFICATION",
-    benefit: "Location and environmental signals help ensure attendance happens within the intended campus boundary.",
-    protocol: "Spatial Proximity Bounds",
-    technicalSpecs: ["LECTURE HALL GEOFENCE", "TEMPORAL CLOCK DRIFT", "SPOOFING SHIELD"],
-    visualType: "perimeter",
+    benefit: "Multi-layered geo-spatial validation verifies physical student presence within university lecture boundaries.",
+    protocol: "Dynamic Geofence Radius Verification",
+    technicalSpecs: ["GNSS CARRIER LOCK", "BLE BEACON PROXIMITY", "SATELLITE CONFIDENCE 99.4%"],
+    mode: "perimeter",
+    icon: MapPin,
   },
   {
     id: "pillar-04",
     number: "04",
     titleTop: "REAL-TIME",
     titleBottom: "VALIDATION",
-    benefit: "Each submission is validated immediately before attendance is recorded.",
-    protocol: "Atomic Ledger Commitment",
-    technicalSpecs: ["SUB-300MS FINALITY", "RFC-4180 AUDIT LEDGER", "75% BUFFER RECOMPUTE"],
-    visualType: "validation",
+    benefit: "Zero-latency academic ledger records validated check-ins with deterministic margin tracking.",
+    protocol: "Atomic Verification & Policy Ledger",
+    technicalSpecs: ["NON-REPUDIABLE LEDGER", "75% BUFFER CALCULATION", "240MS AUDIT LATENCY"],
+    mode: "validation",
+    icon: ShieldCheck,
   },
 ];
 
-function PillarVisual({ type, isHovered }: { type: PillarItem["visualType"]; isHovered: boolean }) {
-  if (type === "crypto") {
-    return (
-      <div className="relative w-full h-36 rounded-2xl bg-black/40 border border-white/[0.08] p-4 flex flex-col justify-between overflow-hidden">
-        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-          <span className="flex items-center gap-1.5 text-blue-400">
-            <Key className="h-3 w-3" />
-            TOKEN SEED
-          </span>
-          <span className="text-zinc-500">ROTATING</span>
-        </div>
-        <div className="space-y-1.5 font-mono text-xs">
-          <p className="text-zinc-300 truncate">
-            0x84f9b2d8...{isHovered ? "e31248ca" : "••••••••"}
-          </p>
-          <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"
-              animate={{ width: ["10%", "90%", "20%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-          <span>HMAC-SHA256</span>
-          <span className="text-emerald-400 font-semibold">VALID</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "device") {
-    return (
-      <div className="relative w-full h-36 rounded-2xl bg-black/40 border border-white/[0.08] p-4 flex flex-col justify-between overflow-hidden">
-        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-          <span className="flex items-center gap-1.5 text-indigo-400">
-            <Cpu className="h-3 w-3" />
-            HARDWARE SEED
-          </span>
-          <span className="text-blue-400 font-semibold">1:1 LOCK</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono">
-          <div className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-            <span className="text-zinc-500 block text-[9px]">CANVAS</span>
-            <span className="text-zinc-200">#4f81-a9</span>
-          </div>
-          <div className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-            <span className="text-zinc-500 block text-[9px]">WEBGL</span>
-            <span className="text-emerald-400">AUTHENTIC</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-          <span>DEVICE ENROLLMENT</span>
-          <span className="text-emerald-400 font-semibold">MATCHED</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "perimeter") {
-    return (
-      <div className="relative w-full h-36 rounded-2xl bg-black/40 border border-white/[0.08] p-4 flex flex-col justify-between overflow-hidden">
-        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-          <span className="flex items-center gap-1.5 text-cyan-400">
-            <Radio className="h-3 w-3" />
-            SPATIAL RADAR
-          </span>
-          <span className="text-zinc-500">&lt; 2.4m DELTA</span>
-        </div>
-        <div className="flex items-center justify-center relative py-1">
-          <div className="w-16 h-16 rounded-full border border-cyan-500/30 flex items-center justify-center relative">
-            <div className="w-10 h-10 rounded-full border border-blue-500/40 flex items-center justify-center">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-            </div>
-            {/* Radar Sweep Line */}
-            <motion.div
-              className="absolute inset-0 rounded-full border-t border-cyan-400/80"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-          <span>CAMPUS BOUNDS</span>
-          <span className="text-cyan-400 font-semibold">INSIDE HALL</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-36 rounded-2xl bg-black/40 border border-white/[0.08] p-4 flex flex-col justify-between overflow-hidden">
-      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-        <span className="flex items-center gap-1.5 text-emerald-400">
-          <ShieldCheck className="h-3 w-3" />
-          ATOMIC RECORD
-        </span>
-        <span className="text-emerald-400 font-semibold">240MS</span>
-      </div>
-      <div className="space-y-1.5 font-mono text-xs">
-        <div className="flex items-center justify-between text-[11px] text-zinc-300">
-          <span>NON-REPUDIABLE</span>
-          <span className="text-zinc-400 font-mono">RFC-4180</span>
-        </div>
-        <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 flex items-center justify-between">
-          <span>75% MARGIN BUFFER</span>
-          <span className="font-bold">+1 SESSION SAFE</span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-        <span>LEDGER STATE</span>
-        <span className="text-emerald-400 font-semibold">COMMITTED</span>
-      </div>
-    </div>
-  );
-}
-
 export function SecurityPillars() {
-  const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const pinContainerRef = React.useRef<HTMLDivElement>(null);
+  const tokenVisualRef = React.useRef<HTMLDivElement>(null);
+  const progressTextRef = React.useRef<HTMLSpanElement>(null);
+
+  const [activeIdx, setActiveIdx] = React.useState<number>(0);
+
+  // GSAP Pinned ScrollTrigger for the 4 Pillars
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      const isDesktop = window.innerWidth >= 1024;
+
+      if (isDesktop && sectionRef.current && pinContainerRef.current) {
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "+=2200",
+          pin: pinContainerRef.current,
+          scrub: 1,
+          onUpdate: (self) => {
+            const p = self.progress;
+            const newIndex = Math.min(Math.floor(p * 4), 3);
+            setActiveIdx(newIndex);
+          },
+        });
+      }
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Animate the progress counter and morph visualization whenever activeIdx changes
+  React.useEffect(() => {
+    if (progressTextRef.current) {
+      gsap.fromTo(
+        progressTextRef.current,
+        { opacity: 0, y: -4 },
+        { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }
+      );
+    }
+
+    if (tokenVisualRef.current) {
+      gsap.fromTo(
+        tokenVisualRef.current,
+        { scale: 0.96, opacity: 0.8, filter: "blur(4px)" },
+        { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.45, ease: "power2.out" }
+      );
+    }
+  }, [activeIdx]);
+
+  const activePillar = PILLARS_DATA[activeIdx];
 
   return (
-    <section id="security" className="relative py-32 px-6 max-w-6xl mx-auto scroll-mt-24 z-10">
-      {/* Editorial Section Header */}
-      <motion.div
-        variants={fadeUpVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-60px" }}
-        className="max-w-3xl mb-20 text-left"
-      >
-        <p className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-4">
-          SECURITY PILLARS // ZERO-TRUST DEFENSE
-        </p>
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-5 leading-[1.08]">
-          Four Layers. One Trusted Presence.
-        </h2>
-        <p className="text-zinc-400 text-base sm:text-lg leading-relaxed font-normal">
-          An architectural security perimeter designed to make proxy attendance cryptographically infeasible.
-        </p>
-      </motion.div>
+    <section
+      id="security"
+      ref={sectionRef}
+      className="relative min-h-screen bg-zinc-950 py-24 sm:py-32 px-6 scroll-mt-24 z-10"
+    >
+      {/* Background Ambient Glow */}
+      <div
+        aria-hidden="true"
+        className="absolute top-1/3 left-1/4 w-[500px] h-[400px] rounded-full bg-blue-600/10 blur-[130px] pointer-events-none"
+      />
 
-      {/* Editorial 4-Pillar Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-        {PILLARS_DATA.map((pillar, idx) => {
-          const isHovered = hoveredIdx === idx;
-          const isDimmed = hoveredIdx !== null && !isHovered;
+      <div ref={pinContainerRef} className="max-w-6xl mx-auto w-full">
+        {/* Section Header */}
+        <div className="max-w-3xl mb-14 sm:mb-16 text-left">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold">
+              SECURITY PILLARS // ZERO-TRUST DEFENSE
+            </span>
+            <span className="text-zinc-600 font-mono text-xs">|</span>
+            <span className="text-xs font-mono text-zinc-400">
+              STAGE <span ref={progressTextRef} className="text-cyan-400 font-bold">{activePillar.number} / 04</span>
+            </span>
+          </div>
 
-          return (
-            <motion.div
-              key={pillar.id}
-              onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className={`group relative rounded-3xl p-7 sm:p-8 border transition-all duration-300 cursor-pointer select-none overflow-hidden ${
-                isHovered
-                  ? "bg-[#070b14]/90 border-blue-500/40 shadow-2xl shadow-blue-950/30"
-                  : isDimmed
-                  ? "bg-[#04070e]/50 border-white/[0.05] opacity-50"
-                  : "bg-[#050811]/70 border-white/[0.08] hover:border-white/20"
-              }`}
-            >
-              {/* Subtle Atmospheric Light Behind Active Card */}
-              {isHovered && (
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-4 leading-[1.08]">
+            Four Layers. One Trusted Presence.
+          </h2>
+          <p className="text-zinc-400 text-base sm:text-lg leading-relaxed font-normal">
+            An architectural security perimeter designed to make proxy attendance cryptographically infeasible.
+          </p>
+        </div>
+
+        {/* Pinned Split Presentation Chassis */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* Left Column: 4 Pillar Navigation Cards */}
+          <div className="lg:col-span-6 flex flex-col gap-4">
+            {PILLARS_DATA.map((pillar, idx) => {
+              const isCurrent = activeIdx === idx;
+              const isPast = activeIdx > idx;
+              const Icon = pillar.icon;
+
+              return (
                 <div
-                  aria-hidden="true"
-                  className="absolute -top-16 -right-16 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"
-                />
-              )}
+                  key={pillar.id}
+                  onClick={() => setActiveIdx(idx)}
+                  className={`group relative rounded-2xl p-5 sm:p-6 border transition-all duration-300 cursor-pointer select-none overflow-hidden ${
+                    isCurrent
+                      ? "bg-[#070b14]/90 border-blue-500/50 shadow-2xl shadow-blue-950/40 opacity-100 scale-100 translate-x-0"
+                      : isPast
+                      ? "bg-[#04070e]/40 border-white/[0.04] opacity-35 hover:opacity-70 -translate-x-1"
+                      : "bg-[#050811]/60 border-white/[0.06] opacity-50 hover:opacity-80"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div
+                        className={`h-7 w-7 rounded-lg border flex items-center justify-center transition-colors ${
+                          isCurrent
+                            ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
+                            : "bg-white/[0.02] border-white/10 text-zinc-500"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-zinc-500">
+                        {pillar.number}
+                      </span>
+                      <h3 className={`font-medium tracking-tight text-base sm:text-lg ${isCurrent ? "text-white" : "text-zinc-400"}`}>
+                        {pillar.titleTop} {pillar.titleBottom}
+                      </h3>
+                    </div>
 
-              {/* Top Row: Oversized Number */}
-              <div className="flex items-center justify-between mb-8">
-                <span className="text-4xl sm:text-5xl font-light font-mono tracking-tight text-zinc-600 group-hover:text-blue-400 transition-colors duration-200">
-                  {pillar.number}
-                </span>
-                <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase px-2 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.02]">
-                  LAYER {pillar.number}
-                </span>
-              </div>
-
-              {/* Oversized Editorial Title */}
-              <div className="mb-4">
-                <h3 className="text-2xl sm:text-3xl font-medium tracking-tight text-white leading-tight group-hover:text-white transition-colors">
-                  <span className="block">{pillar.titleTop}</span>
-                  <span className="block text-zinc-300 group-hover:text-white transition-colors">{pillar.titleBottom}</span>
-                </h3>
-              </div>
-
-              {/* Benefit Copy */}
-              <p className="text-sm text-zinc-400 leading-relaxed font-normal mb-6">
-                {pillar.benefit}
-              </p>
-
-              {/* Animated Visual Diagram Beside / Below */}
-              <div className="mb-5">
-                <PillarVisual type={pillar.visualType} isHovered={isHovered} />
-              </div>
-
-              {/* Progressive Disclosure: Technical Specs on Hover / Tap */}
-              <div className="pt-4 border-t border-white/[0.08]">
-                <p className="text-[10.5px] font-mono text-blue-400 font-semibold uppercase tracking-wider mb-2">
-                  {pillar.protocol}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {pillar.technicalSpecs.map((spec) => (
-                    <span
-                      key={spec}
-                      className="text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-zinc-300"
-                    >
-                      {spec}
+                    <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline-block">
+                      {pillar.protocol}
                     </span>
-                  ))}
+                  </div>
+
+                  {isCurrent && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.08] text-left">
+                      <p className="text-zinc-300 text-xs sm:text-sm leading-relaxed mb-3">
+                        {pillar.benefit}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {pillar.technicalSpecs.map((spec) => (
+                          <span
+                            key={spec}
+                            className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[9px] font-mono text-blue-300"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
+              );
+            })}
+          </div>
+
+          {/* Right Column: Center Morphing Security Visualization */}
+          <div className="lg:col-span-6 flex flex-col items-center justify-center">
+            <div ref={tokenVisualRef} className="w-full will-change-transform">
+              <SecurityToken mode={activePillar.mode} />
+            </div>
+
+            {/* Stage Indicator Pill underneath */}
+            <div className="mt-5 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[10px] font-mono text-zinc-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>ACTIVE PERIMETER LAYER: <span className="text-white font-semibold">{activePillar.titleTop}</span></span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

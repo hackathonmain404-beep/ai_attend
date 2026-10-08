@@ -11,11 +11,14 @@ import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { ArchitectureFlow } from "@/components/landing/ArchitectureFlow";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
+import { PageLoader } from "@/components/landing/PageLoader";
+import { ScrollProgressBar } from "@/components/landing/ScrollProgressBar";
 import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal";
 
 export default function HomePage() {
   const [currentUser, setCurrentUser] = React.useState<any>(null);
   const [isTourOpen, setIsTourOpen] = React.useState<boolean>(false);
+  const [isPageLoaded, setIsPageLoaded] = React.useState<boolean>(false);
 
   // Handle incoming OAuth redirect codes (e.g. Google login) and session profile
   React.useEffect(() => {
@@ -130,26 +133,34 @@ export default function HomePage() {
     : "/login";
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden">
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden relative">
+      {/* Initial Cybersecurity System Loading Sequence */}
+      {!isPageLoaded && (
+        <PageLoader onComplete={() => setIsPageLoaded(true)} />
+      )}
+
+      {/* Subtle Right-Edge Scroll Progress Indicator */}
+      <ScrollProgressBar />
+
       {/* 1. Minimalist Transparent/Dark Navigation */}
-      <Navbar currentUser={currentUser} />
+      <Navbar currentUser={currentUser} isLoaded={isPageLoaded} />
 
-      {/* 2. Self-Contained Stitch-Inspired Hero Section */}
-      <Hero destinationHref={destinationHref} />
+      {/* 2. Self-Contained Stitch-Inspired Hero Section with GSAP ScrollTrigger */}
+      <Hero destinationHref={destinationHref} isLoaded={isPageLoaded} />
 
-      {/* 3. Four Security Pillars with Progressive Disclosure */}
+      {/* 3. Pinned GSAP Scroll Experience: Four Security Pillars */}
       <SecurityPillars />
 
       {/* 4. Campus Platform Capabilities */}
       <FeaturesSection />
 
-      {/* 5. Clean Architectural Flow: Generate → Verify → Bind → Record */}
+      {/* 5. Scroll-Driven Architecture Story: Generate → Verify → Bind → Record */}
       <ArchitectureFlow />
 
-      {/* 6. Spacious Final CTA Section */}
+      {/* 6. Spacious Final CTA Section with Blur-to-Sharp Headline */}
       <FinalCTA destinationHref={destinationHref} />
 
-      {/* 7. Subdued Minimal Footer */}
+      {/* 7. Staggered Subdued Minimal Footer */}
       <Footer />
 
       {/* Interactive Hackathon Demo Tour Modal (Triggered via Shift+D) */}
