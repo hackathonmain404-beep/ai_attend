@@ -28,10 +28,16 @@ import { Badge } from "@/components/ui/badge";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { CyberAmbient3D, HolographicHeroShield } from "@/components/ui/cyber-ambient-3d";
 import { DemoTourGuideModal } from "@/components/presentation/DemoTourGuideModal";
+import { ScrollReveal, ScrollStagger } from "@/components/ui/ScrollReveal";
+import { ScrollHUD } from "@/components/ui/ScrollHUD";
+import { ScrollTicker } from "@/components/ui/ScrollTicker";
+import { ScrollDefenseProtocolFlow } from "@/components/presentation/ScrollDefenseProtocolFlow";
+import { ScrollParallax } from "@/components/ui/ScrollParallax";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { MOCK_USERS } from "@/mocks/auth";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
+
 
 export default function HomePage() {
   const [isTourOpen, setIsTourOpen] = React.useState<boolean>(false);
@@ -173,12 +179,12 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative max-w-6xl mx-auto px-6 pt-8 pb-12 flex-1 flex flex-col justify-center overflow-hidden">
+      <section id="hero" className="relative max-w-6xl mx-auto px-6 pt-8 pb-10 flex-1 flex flex-col justify-center overflow-hidden scroll-mt-20">
         {/* 3D Perspective Cyber Mesh Background */}
         <CyberAmbient3D />
 
-        <div className="relative z-10 text-center max-w-3xl mx-auto mb-10 space-y-4">
-          {/* Interactive 3D Holographic Shield */}
+        <ScrollReveal animation="fade-up" duration={700} className="relative z-10 text-center max-w-3xl mx-auto mb-8 space-y-4">
+          {/* Interactive 3D Holographic Shield with subtle parallax */}
           <HolographicHeroShield />
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold tracking-wider shadow-lg shadow-emerald-950/40">
@@ -224,14 +230,22 @@ export default function HomePage() {
               </a>
             </Button>
           </div>
+        </ScrollReveal>
+
+        {/* Continuous Dynamic Scroll Ticker Marquee */}
+        <div className="relative z-10 w-full mb-10">
+          <ScrollReveal animation="fade-up" delay={150}>
+            <ScrollTicker />
+          </ScrollReveal>
         </div>
 
         {/* Command Center Showcase: Student Command Center & Teacher Control Center */}
-        <div className="relative z-10 max-w-5xl mx-auto w-full mb-12">
+        <div id="personas" className="relative z-10 max-w-5xl mx-auto w-full mb-12 scroll-mt-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Student Command Center Card */}
-            <TiltCard glowColor="emerald" maxTilt={6} scale={1.02} className="h-full">
-              <Card className="h-full border-emerald-500/30 bg-slate-900/85 hover:border-emerald-500/60 transition-all duration-300 shadow-xl shadow-emerald-950/30 flex flex-col justify-between">
+            <ScrollReveal animation="fade-right" duration={650}>
+              <TiltCard glowColor="emerald" maxTilt={6} scale={1.02} className="h-full">
+                <Card className="h-full border-emerald-500/30 bg-slate-900/85 hover:border-emerald-500/60 transition-all duration-300 shadow-xl shadow-emerald-950/30 flex flex-col justify-between">
                 <CardHeader className="p-6 pb-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3.5">
@@ -306,8 +320,10 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </TiltCard>
+          </ScrollReveal>
 
-            {/* Teacher Control Center Card */}
+          {/* Teacher Control Center Card */}
+          <ScrollReveal animation="fade-left" duration={650}>
             <TiltCard glowColor="teal" maxTilt={6} scale={1.02} className="h-full">
               <Card className="h-full border-teal-500/30 bg-slate-900/85 hover:border-teal-500/60 transition-all duration-300 shadow-xl shadow-teal-950/30 flex flex-col justify-between">
                 <CardHeader className="p-6 pb-4">
@@ -384,142 +400,154 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </TiltCard>
-          </div>
+          </ScrollReveal>
         </div>
+      </div>
 
         {/* The 4 Anti-Proxy Defense Pillars with Number Badges */}
-        <div id="pillars" className="relative z-10 max-w-5xl mx-auto w-full mb-12 scroll-mt-24">
-          <div className="text-center mb-6 space-y-1">
+        <div id="pillars" className="relative z-10 max-w-5xl mx-auto w-full mb-16 scroll-mt-24">
+          <ScrollReveal animation="fade-up" className="text-center mb-8 space-y-1">
             <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-400">
               4 Cryptographic Pillars Against Attendance Fraud
             </h2>
             <p className="text-xs text-slate-400 max-w-xl mx-auto">
               Multi-layered zero-trust defense perimeter preventing screenshots, shared logins, and ditching.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Pillar 1 */}
-            <TiltCard glowColor="emerald" maxTilt={8} scale={1.03} className="h-full">
-              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-emerald-500/40 transition-colors shadow-lg shadow-slate-950/40">
-                <div>
-                  <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-md shadow-emerald-950/40">
-                      <QrCode className="h-5 w-5" />
+            <ScrollReveal animation="fade-up" delay={0}>
+              <TiltCard glowColor="emerald" maxTilt={8} scale={1.03} className="h-full">
+                <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-emerald-500/40 transition-colors shadow-lg shadow-slate-950/40">
+                  <div>
+                    <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
+                      <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-md shadow-emerald-950/40">
+                        <QrCode className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        01
+                      </span>
                     </div>
-                    <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                      01
-                    </span>
+                    <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                      Dynamic HMAC QR
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                      Tokens rotate every 15–20s with SVG circular countdown. Photo sharing across messaging apps expires before scanning.
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
-                    Dynamic HMAC QR
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
-                    Tokens rotate every 15–20s with SVG circular countdown. Photo sharing across messaging apps expires before scanning.
-                  </p>
+                  <button
+                    onClick={() => openTourAtStep(2)}
+                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                    style={{ transform: "translateZ(18px)" }}
+                  >
+                    Explore Mechanism <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openTourAtStep(2)}
-                  className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
-                  style={{ transform: "translateZ(18px)" }}
-                >
-                  Explore Mechanism <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </TiltCard>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Pillar 2 */}
-            <TiltCard glowColor="amber" maxTilt={8} scale={1.03} className="h-full">
-              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-amber-500/40 transition-colors shadow-lg shadow-slate-950/40">
-                <div>
-                  <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-md shadow-amber-950/40">
-                      <Smartphone className="h-5 w-5" />
+            <ScrollReveal animation="fade-up" delay={80}>
+              <TiltCard glowColor="amber" maxTilt={8} scale={1.03} className="h-full">
+                <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-amber-500/40 transition-colors shadow-lg shadow-slate-950/40">
+                  <div>
+                    <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
+                      <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-md shadow-amber-950/40">
+                        <Smartphone className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        02
+                      </span>
                     </div>
-                    <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      02
-                    </span>
+                    <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                      Hardware Fingerprint
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                      Student accounts bind 1:1 to a SHA-256 device fingerprint (WebGL/Canvas/Audio). Logging in on a friend's phone triggers 403 Forbidden.
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
-                    Hardware Fingerprint
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
-                    Student accounts bind 1:1 to a SHA-256 device fingerprint (WebGL/Canvas/Audio). Logging in on a friend's phone triggers 403 Forbidden.
-                  </p>
+                  <button
+                    onClick={() => openTourAtStep(3)}
+                    className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                    style={{ transform: "translateZ(18px)" }}
+                  >
+                    Explore Mechanism <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openTourAtStep(3)}
-                  className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
-                  style={{ transform: "translateZ(18px)" }}
-                >
-                  Explore Mechanism <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </TiltCard>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Pillar 3 */}
-            <TiltCard glowColor="rose" maxTilt={8} scale={1.03} className="h-full">
-              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-rose-500/40 transition-colors shadow-lg shadow-slate-950/40">
-                <div>
-                  <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
-                    <div className="h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center shadow-md shadow-rose-950/40">
-                      <Activity className="h-5 w-5" />
+            <ScrollReveal animation="fade-up" delay={160}>
+              <TiltCard glowColor="rose" maxTilt={8} scale={1.03} className="h-full">
+                <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-rose-500/40 transition-colors shadow-lg shadow-slate-950/40">
+                  <div>
+                    <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
+                      <div className="h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center shadow-md shadow-rose-950/40">
+                        <Activity className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                        03
+                      </span>
                     </div>
-                    <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                      03
-                    </span>
+                    <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                      Random Re-Verify
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                      Mid-lecture 60-second surprise prompts challenge students to re-confirm physical presence, defeating "scan & ditch" fraud.
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
-                    Random Re-Verify
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
-                    Mid-lecture 60-second surprise prompts challenge students to re-confirm physical presence, defeating "scan & ditch" fraud.
-                  </p>
+                  <button
+                    onClick={() => openTourAtStep(5)}
+                    className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                    style={{ transform: "translateZ(18px)" }}
+                  >
+                    Explore Mechanism <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openTourAtStep(5)}
-                  className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
-                  style={{ transform: "translateZ(18px)" }}
-                >
-                  Explore Mechanism <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </TiltCard>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Pillar 4 */}
-            <TiltCard glowColor="teal" maxTilt={8} scale={1.03} className="h-full">
-              <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-teal-500/40 transition-colors shadow-lg shadow-slate-950/40">
-                <div>
-                  <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
-                    <div className="h-10 w-10 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center shadow-md shadow-teal-950/40">
-                      <Cpu className="h-5 w-5" />
+            <ScrollReveal animation="fade-up" delay={240}>
+              <TiltCard glowColor="teal" maxTilt={8} scale={1.03} className="h-full">
+                <div className="h-full p-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md flex flex-col justify-between hover:border-teal-500/40 transition-colors shadow-lg shadow-slate-950/40">
+                  <div>
+                    <div className="flex items-center justify-between mb-3" style={{ transform: "translateZ(20px)" }}>
+                      <div className="h-10 w-10 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center shadow-md shadow-teal-950/40">
+                        <Cpu className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">
+                        04
+                      </span>
                     </div>
-                    <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">
-                      04
-                    </span>
+                    <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
+                      Grounded AI Advisor
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
+                      Zero hallucination policy calculator providing mathematically deterministic 75% margin formulas before generating recommendations.
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1.5" style={{ transform: "translateZ(14px)" }}>
-                    Grounded AI Advisor
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3" style={{ transform: "translateZ(8px)" }}>
-                    Zero hallucination policy calculator providing mathematically deterministic 75% margin formulas before generating recommendations.
-                  </p>
+                  <button
+                    onClick={() => openTourAtStep(6)}
+                    className="text-[11px] font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
+                    style={{ transform: "translateZ(18px)" }}
+                  >
+                    Explore Mechanism <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openTourAtStep(6)}
-                  className="text-[11px] font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 self-start transition-transform duration-200 hover:translate-x-1"
-                  style={{ transform: "translateZ(18px)" }}
-                >
-                  Explore Mechanism <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </TiltCard>
+              </TiltCard>
+            </ScrollReveal>
           </div>
         </div>
 
+        {/* 5-Stage Interactive Verification Lifecycle Pipeline Flow */}
+        <ScrollDefenseProtocolFlow />
+
         {/* Quick Navigation Teleport Hub / Portal Sitemap */}
         <div id="features" className="relative z-10 max-w-5xl mx-auto w-full p-6 sm:p-7 rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-md shadow-xl scroll-mt-24">
-          <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <ScrollReveal animation="fade-up" className="flex items-center justify-between mb-5 flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
                 <Layers className="h-4 w-4" />
@@ -536,120 +564,136 @@ export default function HomePage() {
             <span className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
               8 Modules Connected
             </span>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <Link
-              href="/student"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 text-emerald-400" />
-                  <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">Student Overview</span>
+            <ScrollReveal animation="fade-up" delay={0}>
+              <Link
+                href="/student"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-emerald-400" />
+                    <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">Student Overview</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">View attendance and academic progress</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">View attendance and academic progress</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/student/scanner"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Scan className="h-4 w-4 text-emerald-400" />
-                  <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">Viewfinder Scanner</span>
+            <ScrollReveal animation="fade-up" delay={45}>
+              <Link
+                href="/student/scanner"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <Scan className="h-4 w-4 text-emerald-400" />
+                    <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">Viewfinder Scanner</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Scan attendance QR with zero delay</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Scan attendance QR with zero delay</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/student/history"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <History className="h-4 w-4 text-teal-400" />
-                  <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Attendance Ledger</span>
+            <ScrollReveal animation="fade-up" delay={90}>
+              <Link
+                href="/student/history"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 text-teal-400" />
+                    <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Attendance Ledger</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Track timestamped attendance records</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Track timestamped attendance records</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/student/advisor"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-teal-400" />
-                  <span className="font-bold text-white group-hover:text-teal-300 transition-colors">AI Policy Advisor</span>
+            <ScrollReveal animation="fade-up" delay={135}>
+              <Link
+                href="/student/advisor"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-teal-400" />
+                    <span className="font-bold text-white group-hover:text-teal-300 transition-colors">AI Policy Advisor</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Get attendance-related guidance</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Get attendance-related guidance</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/student/device"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-amber-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-amber-400" />
-                  <span className="font-bold text-white group-hover:text-amber-300 transition-colors">Device Binding</span>
+            <ScrollReveal animation="fade-up" delay={180}>
+              <Link
+                href="/student/device"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-amber-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-amber-400" />
+                    <span className="font-bold text-white group-hover:text-amber-300 transition-colors">Device Binding</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-amber-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-amber-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Manage 1:1 hardware security lock</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Manage 1:1 hardware security lock</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/teacher"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Presentation className="h-4 w-4 text-teal-400" />
-                  <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Teacher Console</span>
+            <ScrollReveal animation="fade-up" delay={225}>
+              <Link
+                href="/teacher"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <Presentation className="h-4 w-4 text-teal-400" />
+                    <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Teacher Console</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Manage active sessions & student rosters</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Manage active sessions & student rosters</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/teacher/sessions"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <QrCode className="h-4 w-4 text-teal-400" />
-                  <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Projector Display</span>
+            <ScrollReveal animation="fade-up" delay={270}>
+              <Link
+                href="/teacher/sessions"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-teal-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4 text-teal-400" />
+                    <span className="font-bold text-white group-hover:text-teal-300 transition-colors">Projector Display</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-teal-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Broadcast dynamic rotating HMAC QR</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Broadcast dynamic rotating HMAC QR</p>
+              </Link>
+            </ScrollReveal>
 
-            <Link
-              href="/teacher/reports"
-              className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-                  <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">RFC-4180 Reports</span>
+            <ScrollReveal animation="fade-up" delay={315}>
+              <Link
+                href="/teacher/reports"
+                className="h-full p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/80 text-slate-300 flex flex-col justify-between hover-lift-3d group shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                    <span className="font-bold text-white group-hover:text-emerald-300 transition-colors">RFC-4180 Reports</span>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
                 </div>
-                <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-emerald-400 transition-all duration-300" />
-              </div>
-              <p className="text-[11px] text-slate-400">Export audit-ready CSV attendance data</p>
-            </Link>
+                <p className="text-[11px] text-slate-400">Export audit-ready CSV attendance data</p>
+              </Link>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -673,6 +717,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Interactive Scroll HUD Navigation Pill & Circular Gauge */}
+      <ScrollHUD />
 
       {/* Tour Modal */}
       <DemoTourGuideModal

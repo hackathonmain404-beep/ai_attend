@@ -265,20 +265,27 @@
   text-transform: uppercase;
 }
 
-/* Custom subtle scrollbar */
+/* Smooth scrolling for page and anchor jumps */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Futuristic Neon Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(7, 11, 18, 0.9);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.7);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.65), rgba(20, 184, 166, 0.45));
   border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(71, 85, 105, 0.9);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.95), rgba(6, 182, 212, 0.85));
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
 }
 
 /* Subtle fade and upward entrance animation */
@@ -296,4 +303,16 @@
 .animate-fade-slide-up {
   animation: fade-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Scroll-linked progress line glow */
+.scroll-progress-line {
+  background: linear-gradient(90deg, #10b981 0%, #14b8a6 45%, #06b6d4 100%);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.6), 0 0 32px rgba(6, 182, 212, 0.4);
+}
+
+/* Pause marquee animation on hover */
+.pause-on-hover:hover {
+  animation-play-state: paused;
+}
+
 

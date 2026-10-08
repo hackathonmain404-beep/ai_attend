@@ -132,6 +132,18 @@ const config: Config = {
           "0%, 100%": { opacity: "0.85", filter: "drop-shadow(0 0 15px rgba(16,185,129,0.3))" },
           "50%": { opacity: "1", filter: "drop-shadow(0 0 30px rgba(16,185,129,0.7))" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        floatSlow: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(24px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -146,6 +158,9 @@ const config: Config = {
         "grid-flow": "grid-flow 8s linear infinite",
         "laser-sweep": "laser-sweep 2.8s ease-in-out infinite",
         "hologram-pulse": "hologram-pulse 3s ease-in-out infinite",
+        marquee: "marquee 32s linear infinite",
+        "float-slow": "floatSlow 4s ease-in-out infinite",
+        "fade-in-up": "fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       },
     },
   },
