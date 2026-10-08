@@ -224,22 +224,6 @@ export default function HomePage() {
               </a>
             </Button>
           </div>
-
-          {/* HUD Telemetry Status Strip */}
-          <div className="pt-2 flex items-center justify-center gap-3 sm:gap-6 text-[10px] sm:text-xs font-mono text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <strong className="text-emerald-300">SYS.STATUS:</strong> 100% ONLINE
-            </span>
-            <span className="text-slate-700">|</span>
-            <span className="flex items-center gap-1.5">
-              <strong className="text-cyan-300">SECURITY:</strong> SHA-256 HARDWARE LOCKED
-            </span>
-            <span className="text-slate-700 hidden sm:inline">|</span>
-            <span className="hidden sm:flex items-center gap-1.5">
-              <strong className="text-teal-300">PROXY COUNT:</strong> 0 DETECTED
-            </span>
-          </div>
         </div>
 
         {/* Command Center Showcase: Student Command Center & Teacher Control Center */}
