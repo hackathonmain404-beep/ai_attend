@@ -280,3 +280,20 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(71, 85, 105, 0.9);
 }
+
+/* Subtle fade and upward entrance animation */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

@@ -5,7 +5,7 @@ import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useStudentSummary } from "@/lib/services/student-service";
-import { StudentProfileHeader } from "@/components/student/StudentProfileHeader";
+import { StudentGreetingHeader } from "@/components/student/StudentGreetingHeader";
 import { AttendanceSummaryCard } from "@/components/student/AttendanceSummaryCard";
 import { LowAttendanceWarningBanner } from "@/components/student/LowAttendanceWarningBanner";
 import { TodayLecturesCard } from "@/components/student/TodayLecturesCard";
@@ -84,12 +84,8 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {/* 1. Student Identity & Hardware Device Header */}
-      <StudentProfileHeader
-        student={data.student}
-        overallPercentage={data.overallPercentage}
-        streakDays={data.streakDays}
-      />
+      {/* 1. Personalized Dynamic Greeting */}
+      <StudentGreetingHeader student={data.student} />
 
       {/* 2. Key Metrics Row */}
       <AttendanceSummaryCard
