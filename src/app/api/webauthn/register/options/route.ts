@@ -19,6 +19,7 @@ export const POST = withErrorHandler(async (_request: NextRequest) => {
     email: user.email || profile.email,
     fullName: profile.fullName || user.email || 'Student',
     client: supabase,
+    request: _request,
   });
 
   return apiSuccess(result, 200);

@@ -118,6 +118,18 @@ export default function StudentSecurityPage() {
       setRegistrationState("prompt");
       let registrationResponse;
       try {
+        // Fallback guard: Ensure rp.id matches current hostname if server returned localhost on remote host
+        const currentHost = typeof window !== "undefined" ? window.location.hostname : null;
+        if (currentHost && optRes.options?.rp?.id) {
+          if (
+            currentHost !== "localhost" &&
+            currentHost !== "127.0.0.1" &&
+            (optRes.options.rp.id === "localhost" || optRes.options.rp.id === "127.0.0.1")
+          ) {
+            optRes.options.rp.id = currentHost;
+          }
+        }
+
         registrationResponse = await startRegistration({
           optionsJSON: optRes.options,
         });

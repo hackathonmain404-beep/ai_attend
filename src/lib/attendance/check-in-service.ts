@@ -43,6 +43,7 @@ export interface CheckInParams {
   } | null;
   webauthnChallengeId?: string | null;
   webauthnResponse?: any | null;
+  request?: Request | { headers?: any };
 }
 
 export interface CheckInResult {
@@ -71,6 +72,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     location,
     webauthnChallengeId,
     webauthnResponse,
+    request,
   } = params;
 
   if (!challengeToken || typeof challengeToken !== 'string') {
@@ -386,6 +388,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       response: webauthnResponse,
       ipAddress,
       adminClient: adminDb,
+      request,
     });
   } else if (webauthnChallengeId && webauthnResponse) {
     // If student provided an assertion even without prior enrolled check, verify cryptographically
@@ -397,6 +400,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       response: webauthnResponse,
       ipAddress,
       adminClient: adminDb,
+      request,
     });
   }
 

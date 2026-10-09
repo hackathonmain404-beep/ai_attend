@@ -172,6 +172,18 @@ export function StudentScanner() {
           setVerificationState("authenticating");
 
           try {
+            // Fallback guard: Ensure rpId matches current hostname if server returned localhost on remote host
+            const currentHost = typeof window !== "undefined" ? window.location.hostname : null;
+            if (currentHost && optRes.options?.rpId) {
+              if (
+                currentHost !== "localhost" &&
+                currentHost !== "127.0.0.1" &&
+                (optRes.options.rpId === "localhost" || optRes.options.rpId === "127.0.0.1")
+              ) {
+                optRes.options.rpId = currentHost;
+              }
+            }
+
             webauthnResponse = await startAuthentication({
               optionsJSON: optRes.options,
             });

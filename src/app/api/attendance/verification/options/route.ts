@@ -89,6 +89,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     sessionId,
     tokenFingerprint,
     client: supabase,
+    request,
   });
 
   const classData: any = session.classes;

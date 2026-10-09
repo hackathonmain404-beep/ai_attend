@@ -46,6 +46,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     webauthnChallengeId,
     webauthnResponse,
     client: supabase,
+    request,
   });
 
   return apiSuccess(result, 201);

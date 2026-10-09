@@ -45,6 +45,91 @@ export interface WebAuthnAuthenticationOptionsResult {
 }
 
 /**
+ * Dynamically resolves Relying Party ID and Origin from incoming request or environment.
+ * If running on a remote/deployed host (e.g. Vercel domain), binds to the active hostname
+ * rather than defaulting to 'localhost'.
+ */
+export function resolveWebAuthnConfig(custom?: {
+  rpID?: string;
+  origin?: string;
+  request?: Request | { headers?: any };
+}) {
+  let host: string | null = null;
+  let originHeader: string | null = null;
+  let protocol = 'https';
+
+  if (custom?.request) {
+    const req = custom.request;
+    if ('headers' in req && req.headers) {
+      if (typeof (req.headers as any).get === 'function') {
+        host = (req.headers as any).get('x-forwarded-host') || (req.headers as any).get('host');
+        originHeader = (req.headers as any).get('origin');
+        protocol = (req.headers as any).get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
+      } else if (typeof req.headers === 'object') {
+        host = (req.headers as any)['x-forwarded-host'] || (req.headers as any)['host'];
+        originHeader = (req.headers as any)['origin'];
+        protocol = (req.headers as any)['x-forwarded-proto'] || (host?.includes('localhost') ? 'http' : 'https');
+      }
+    }
+  }
+
+  // Extract hostname without port
+  const hostname = host ? host.split(':')[0] : null;
+
+  // 1. Resolve rpID
+  let rpID = custom?.rpID;
+  if (!rpID) {
+    if (hostname && (hostname.endsWith('.vercel.app') || hostname.endsWith('.pages.dev') || hostname.endsWith('.netlify.app'))) {
+      rpID = hostname;
+    } else if (process.env.WEBAUTHN_RP_ID && process.env.WEBAUTHN_RP_ID !== 'localhost') {
+      rpID = process.env.WEBAUTHN_RP_ID;
+    } else if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      rpID = hostname;
+    } else {
+      rpID = process.env.WEBAUTHN_RP_ID || config.webauthn.rpID || 'localhost';
+    }
+  }
+
+  // 2. Resolve primary origin
+  let primaryOrigin = custom?.origin || originHeader;
+  if (!primaryOrigin) {
+    if (host && !host.includes('localhost')) {
+      primaryOrigin = `${protocol}://${host}`;
+    } else if (process.env.WEBAUTHN_ORIGIN && !process.env.WEBAUTHN_ORIGIN.includes('localhost')) {
+      primaryOrigin = process.env.WEBAUTHN_ORIGIN;
+    } else if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+      primaryOrigin = process.env.NEXT_PUBLIC_APP_URL;
+    } else if (process.env.VERCEL_URL) {
+      primaryOrigin = `https://${process.env.VERCEL_URL}`;
+    } else {
+      primaryOrigin = config.webauthn.origin || 'http://localhost:3000';
+    }
+  }
+
+  const allowedOrigins = Array.from(
+    new Set(
+      [
+        primaryOrigin,
+        originHeader,
+        host ? `${protocol}://${host}` : null,
+        hostname ? `${protocol}://${hostname}` : null,
+        process.env.WEBAUTHN_ORIGIN,
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+        config.webauthn.origin,
+      ].filter(Boolean) as string[]
+    )
+  );
+
+  return {
+    rpName: config.webauthn.rpName || 'AttendGuard',
+    rpID,
+    origin: primaryOrigin,
+    allowedOrigins,
+  };
+}
+
+/**
  * 1. Generates fresh WebAuthn registration options for an authenticated student.
  */
 export async function generateWebAuthnRegistrationOptions(params: {
@@ -54,6 +139,9 @@ export async function generateWebAuthnRegistrationOptions(params: {
   fullName?: string;
   client?: SupabaseClient;
   adminClient?: SupabaseClient;
+  rpID?: string;
+  origin?: string;
+  request?: Request | { headers?: any };
 }): Promise<WebAuthnRegistrationOptionsResult> {
   const userId = params.userId || params.studentId;
   if (!userId) {
@@ -62,6 +150,12 @@ export async function generateWebAuthnRegistrationOptions(params: {
   const email = params.email || `student-${userId}@attendguard.local`;
   const fullName = params.fullName || 'AttendGuard Student';
   const adminDb = params.adminClient || createAdminClient();
+
+  const webauthnCfg = resolveWebAuthnConfig({
+    rpID: params.rpID,
+    origin: params.origin,
+    request: params.request,
+  });
 
   // 1. Fetch any existing credentials to exclude them (prevents re-registering same device)
   const { data: existingCreds } = await adminDb
@@ -77,8 +171,8 @@ export async function generateWebAuthnRegistrationOptions(params: {
 
   // 2. Generate registration options
   const options = await generateRegistrationOptions({
-    rpName: config.webauthn.rpName,
-    rpID: config.webauthn.rpID,
+    rpName: webauthnCfg.rpName,
+    rpID: webauthnCfg.rpID,
     userID: new TextEncoder().encode(userId),
     userName: email,
     userDisplayName: fullName || email,
@@ -128,6 +222,9 @@ export async function verifyWebAuthnRegistration(params: {
   ipAddress?: string | null;
   client?: SupabaseClient;
   adminClient?: SupabaseClient;
+  rpID?: string;
+  origin?: string;
+  request?: Request | { headers?: any };
 }): Promise<{ verified: boolean; credentialId: string }> {
   const userId = params.userId || params.studentId;
   if (!userId) {
@@ -135,6 +232,12 @@ export async function verifyWebAuthnRegistration(params: {
   }
   const { challengeId, response, ipAddress } = params;
   const adminDb = params.adminClient || createAdminClient();
+
+  const webauthnCfg = resolveWebAuthnConfig({
+    rpID: params.rpID,
+    origin: params.origin,
+    request: params.request,
+  });
 
   if (!challengeId || typeof challengeId !== 'string') {
     throw new ValidationError('A valid challengeId is required.');
@@ -213,8 +316,8 @@ export async function verifyWebAuthnRegistration(params: {
     verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: consumedChallenge.challenge,
-      expectedOrigin: config.webauthn.origin,
-      expectedRPID: config.webauthn.rpID,
+      expectedOrigin: webauthnCfg.allowedOrigins.length === 1 ? webauthnCfg.allowedOrigins[0] : webauthnCfg.allowedOrigins,
+      expectedRPID: webauthnCfg.rpID,
       requireUserVerification: true,
     });
   } catch (err: any) {
@@ -344,6 +447,8 @@ export async function generateWebAuthnAuthenticationOptions(params: {
   tokenFingerprint: string;
   client?: SupabaseClient;
   adminClient?: SupabaseClient;
+  rpID?: string;
+  request?: Request | { headers?: any };
 }): Promise<WebAuthnAuthenticationOptionsResult> {
   const userId = params.userId || params.studentId;
   if (!userId) {
@@ -351,6 +456,11 @@ export async function generateWebAuthnAuthenticationOptions(params: {
   }
   const { sessionId, tokenFingerprint } = params;
   const adminDb = params.adminClient || createAdminClient();
+
+  const webauthnCfg = resolveWebAuthnConfig({
+    rpID: params.rpID,
+    request: params.request,
+  });
 
   // 1. Fetch active registered credentials for this student
   const { data: credentials, error: credError } = await adminDb
@@ -368,7 +478,7 @@ export async function generateWebAuthnAuthenticationOptions(params: {
 
   // 2. Generate authentication challenge options
   const options = await generateAuthenticationOptions({
-    rpID: config.webauthn.rpID,
+    rpID: webauthnCfg.rpID,
     userVerification: 'required',
     allowCredentials: credentials.map((c: any) => ({
       id: c.credential_id,
@@ -416,6 +526,9 @@ export async function verifyWebAuthnAuthentication(params: {
   response: AuthenticationResponseJSON;
   ipAddress?: string | null;
   adminClient?: SupabaseClient;
+  rpID?: string;
+  origin?: string;
+  request?: Request | { headers?: any };
 }): Promise<{ verified: boolean; credentialId: string }> {
   const studentId = params.studentId || params.userId;
   if (!studentId) {
@@ -423,6 +536,12 @@ export async function verifyWebAuthnAuthentication(params: {
   }
   const { sessionId, tokenFingerprint, challengeId, response, ipAddress } = params;
   const adminDb = params.adminClient || createAdminClient();
+
+  const webauthnCfg = resolveWebAuthnConfig({
+    rpID: params.rpID,
+    origin: params.origin,
+    request: params.request,
+  });
 
   if (!challengeId || typeof challengeId !== 'string') {
     throw new ValidationError('A webauthnChallengeId reference is required.');
@@ -546,8 +665,8 @@ export async function verifyWebAuthnAuthentication(params: {
     verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: challengeRecord.challenge,
-      expectedOrigin: config.webauthn.origin,
-      expectedRPID: config.webauthn.rpID,
+      expectedOrigin: webauthnCfg.allowedOrigins.length === 1 ? webauthnCfg.allowedOrigins[0] : webauthnCfg.allowedOrigins,
+      expectedRPID: webauthnCfg.rpID,
       credential: {
         id: credential.credential_id,
         publicKey: publicKeyBytes,

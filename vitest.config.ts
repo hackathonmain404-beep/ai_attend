@@ -16,6 +16,11 @@ export default defineConfig({
       SUPABASE_SERVICE_ROLE_KEY: 'test_service_role_key_mock_value',
       QR_HMAC_SECRET: 'test_qr_hmac_secret_32_characters_minimum_entropy',
     },
+    server: {
+      deps: {
+        inline: [/@simplewebauthn/],
+      },
+    },
   },
   resolve: {
     alias: {

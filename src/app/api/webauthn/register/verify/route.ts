@@ -40,6 +40,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     response,
     ipAddress,
     client: supabase,
+    request,
   });
 
   return apiSuccess(result, 201);
