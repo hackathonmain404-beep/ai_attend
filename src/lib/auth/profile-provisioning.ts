@@ -15,6 +15,7 @@
 import { User } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Profile, UserRole } from '@/types/database';
+import { DatabaseError, AppError } from '@/lib/errors';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -58,11 +59,12 @@ export async function ensureUserProfile(
       .eq('id', userId)
       .maybeSingle();
 
-    if (fetchError) {
+    if (fetchError && fetchError.code !== 'PGRST116') {
       console.error(
         `[Profile Lookup Error] [User: ${userId}] Database query failed:`,
         fetchError.message
       );
+      throw new DatabaseError(`Database query failed during profile lookup: ${fetchError.message}`);
     } else if (existingProfile) {
       return {
         profile: {
@@ -78,7 +80,9 @@ export async function ensureUserProfile(
       };
     }
   } catch (err: any) {
+    if (err instanceof AppError) throw err;
     console.error(`[Profile Lookup Exception] [User: ${userId}]:`, err?.message || err);
+    throw new DatabaseError(`Database lookup error: ${err?.message || err}`);
   }
 
   // 2. Profile is missing: Provision authentic profile
@@ -86,9 +90,10 @@ export async function ensureUserProfile(
 
   const metadata = user.user_metadata || {};
   
-  // Resolve authentic role
+  // Strict Security (Problem B): New self-registered accounts always receive 'student' role.
+  // Privileged 'teacher' accounts can only be provisioned via explicit server options from authorized admins.
   let role: UserRole = 'student';
-  if (options?.explicitRole === 'teacher' || metadata.role === 'teacher') {
+  if (options?.explicitRole === 'teacher') {
     role = 'teacher';
   }
 
@@ -175,7 +180,7 @@ export async function ensureUserProfile(
       `[Profile Provisioning Failure] [User: ${userId}]: Insert error:`,
       insertError?.message || 'Unknown database rejection'
     );
-    throw new Error(
+    throw new DatabaseError(
       `Failed to provision institutional profile: ${insertError?.message || 'Database error'}`
     );
   }

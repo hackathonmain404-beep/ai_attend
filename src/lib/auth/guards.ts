@@ -6,7 +6,7 @@
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserProfile } from '@/lib/auth/profile-provisioning';
-import { UnauthorizedError, ForbiddenError } from '@/lib/errors';
+import { UnauthorizedError, ForbiddenError, DatabaseError, AppError } from '@/lib/errors';
 import { Profile, UserRole } from '@/types/database';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,6 +19,7 @@ export interface AuthContext {
 /**
  * Asserts that the incoming request has a cryptographically verified Supabase Auth session.
  * Throws UnauthorizedError (HTTP 401) if session is missing, invalid, or expired.
+ * Throws DatabaseError (HTTP 500) if a database outage or query rejection occurs.
  */
 export async function requireAuth(client?: SupabaseClient): Promise<AuthContext> {
   const supabase = client || (await createServerSupabaseClient());
@@ -34,24 +35,39 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
 
   // Fetch verified profile from database (respects RLS)
   let profile: any = null;
+  let queryError: any = null;
   const profileQuery = supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id);
 
   if (typeof (profileQuery as any)?.maybeSingle === 'function') {
-    const { data } = await (profileQuery as any).maybeSingle();
-    profile = data;
+    const res = await (profileQuery as any).maybeSingle();
+    profile = res?.data;
+    queryError = res?.error;
   } else if (typeof (profileQuery as any)?.single === 'function') {
     try {
-      const { data } = await (profileQuery as any).single();
-      profile = data;
-    } catch {
+      const res = await (profileQuery as any).single();
+      profile = res?.data;
+      queryError = res?.error;
+    } catch (err: any) {
+      queryError = err;
       profile = null;
     }
   }
 
-  // If profile is missing from public.profiles, attempt authoritative provisioning
+  // Fail-fast on real database errors (do NOT mask DB outages as missing profiles)
+  const isNoRowsError =
+    queryError?.code === 'PGRST116' ||
+    queryError?.message === 'Profile not found' ||
+    (typeof queryError?.message === 'string' && queryError.message.includes('JSON object requested, multiple (or no) rows returned'));
+
+  if (queryError && !isNoRowsError) {
+    console.error(`[requireAuth] Database lookup error for user ${user.id}:`, queryError.message || queryError);
+    throw new DatabaseError(`Database error while retrieving profile: ${queryError.message || 'Lookup failed'}`);
+  }
+
+  // If profile is genuinely missing from public.profiles, attempt authoritative provisioning
   if (!profile && UUID_REGEX.test(user.id)) {
     try {
       const resolution = await ensureUserProfile(user);
@@ -69,6 +85,10 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
         `[requireAuth] Profile provisioning failed for user ${user.id}:`,
         provisionErr?.message || provisionErr
       );
+      if (provisionErr instanceof AppError) {
+        throw provisionErr;
+      }
+      throw new DatabaseError(`Database error during profile provisioning: ${provisionErr?.message || 'Provisioning failed'}`);
     }
   }
 

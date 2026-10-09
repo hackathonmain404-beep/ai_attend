@@ -14,11 +14,9 @@ DECLARE
   v_prefix TEXT;
   v_clean_uuid TEXT;
 BEGIN
-  -- 1. Extract role from user metadata with fail-safe default to 'student'
-  v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'student');
-  IF v_role NOT IN ('student', 'teacher') THEN
-    v_role := 'student';
-  END IF;
+  -- 1. Secure default role assignment: All self-registered users receive 'student' by default.
+  -- Privileged 'teacher' accounts must be provisioned via controlled administrative workflows.
+  v_role := 'student';
 
   -- 2. Extract full name from provider metadata or institutional email prefix
   v_full_name := COALESCE(

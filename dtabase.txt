@@ -1,0 +1,476 @@
+================================================================================
+ATTENDGUARD - COMPLETE DATABASE ARCHITECTURE SPECIFICATION
+================================================================================
+Platform: Supabase PostgreSQL
+Database Engine: PostgreSQL 15+ (with pgcrypto, uuid-ossp extensions)
+Architecture Type: Relational Schema with Row-Level Security (RLS) & Triggers
+Last Updated: October 2026
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. Architectural Overview & Design Philosophy
+2. Entity-Relationship (ER) Structure & Visual Diagram
+3. Complete Table Schemas (Columns, Data Types, Constraints, Defaults)
+   3.1. profiles
+   3.2. classes
+   3.3. class_enrollments
+   3.4. attendance_sessions
+   3.5. registered_devices
+   3.6. attendance_records
+   3.7. attendance_verifications
+   3.8. audit_logs
+4. Database Triggers & Stored Functions
+   4.1. handle_new_user() (Automated Profile Provisioning)
+   4.2. auth_is_teacher() (RBAC Authorization Helper)
+5. Anti-Fraud & Data Integrity Constraints
+   5.1. Session Anti-Duplicate Invariant
+   5.2. Single Active Hardware Device Policy
+   5.3. Deterministic Institutional Identifier Generation
+6. Row Level Security (RLS) Policy Matrix
+7. Performance Indexes & Query Optimization
+8. Data Flow Lifecycle (Check-in, Re-verification, Device Reset)
+9. Seed Data & Reference Records
+
+================================================================================
+1. ARCHITECTURAL OVERVIEW & DESIGN PHILOSOPHY
+================================================================================
+AttendGuard uses a tamper-resistant, multi-layered relational database designed
+for institutional class attendance tracking. The core security pillars are:
+
+1. 1:1 Auth Synchronization:
+   Every identity in Supabase's `auth.users` is automatically linked to a public
+   `profiles` record via foreign keys and PostgreSQL triggers.
+
+2. Hardware Perimeter Enforcement:
+   Attendance is strictly bound to registered student devices via browser/hardware
+   fingerprints stored in `registered_devices`. Only ONE active device is permitted
+   per student account at any given time.
+
+3. Strict Anti-Duplicate Invariant:
+   `attendance_records` enforces a composite unique constraint on `(session_id, student_id)`.
+   Concurrent scan attempts or network retries are rejected deterministically by PostgreSQL.
+
+4. Row Level Security (RLS):
+   Data isolation is guaranteed at the database engine level. Students cannot view
+   other students' records or devices; teachers can only access classes and attendance
+   sessions they own.
+
+================================================================================
+2. ENTITY-RELATIONSHIP (ER) STRUCTURE & VISUAL DIAGRAM
+================================================================================
+
+ [ auth.users ] (Supabase Auth System Table)
+       |
+       | 1:1 (ON DELETE CASCADE)
+       v
+  [ profiles ] <--------------------------------------+
+       |                                              |
+       | 1:N (Teacher manages)                        | 1:N (Student receives)
+       v                                              |
+   [ classes ]                                        |
+       |                                              |
+       +-----------------------+                      |
+       | 1:N                   | 1:N                  |
+       v                       v                      |
+ [ attendance_sessions ]  [ class_enrollments ] ------>+ (Student links)
+       |
+       +-----------------------+
+       | 1:N                   | 1:N
+       v                       v
+ [ attendance_records ]   [ attendance_verifications ]
+       ^
+       | N:1 (Device authorized)
+       |
+ [ registered_devices ] <--- (1:1 Active per Student bound to profiles)
+
+
+RELATIONSHIP SUMMARY:
+- profiles (Teacher)       1 ---> N  classes
+- classes                  1 ---> N  class_enrollments (links to Student profiles)
+- classes                  1 ---> N  attendance_sessions
+- attendance_sessions      1 ---> N  attendance_records
+- attendance_sessions      1 ---> N  attendance_verifications
+- profiles (Student)       1 ---> 1  registered_devices (active)
+- registered_devices       1 ---> N  attendance_records
+- profiles (Actor)         1 ---> N  audit_logs
+
+================================================================================
+3. COMPLETE TABLE SCHEMAS
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1. profiles
+--------------------------------------------------------------------------------
+Stores authentic application user details linked to Supabase Auth credentials.
+
+Columns:
+- id           : UUID (PRIMARY KEY)
+                 REFERENCES auth.users(id) ON DELETE CASCADE
+                 Description: Supabase Auth UUID matching authenticated session.
+- email        : TEXT (NOT NULL, UNIQUE)
+                 Description: Academic/institutional email address.
+- full_name    : TEXT (NOT NULL)
+                 Description: Full legal or academic display name.
+- role         : TEXT (NOT NULL)
+                 CHECK (role IN ('student', 'teacher'))
+                 Description: Role-based access control persona.
+- identifier   : TEXT (NOT NULL, UNIQUE)
+                 Description: Institutional identifier (e.g., STU-2026-001 or FAC-2026-001).
+- created_at   : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+- updated_at   : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: profiles_pkey (id)
+- UNIQUE: profiles_email_key (email)
+- UNIQUE: profiles_identifier_key (identifier)
+
+--------------------------------------------------------------------------------
+3.2. classes
+--------------------------------------------------------------------------------
+Academic courses created and maintained by faculty/teachers.
+
+Columns:
+- id           : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- code         : TEXT (NOT NULL)
+                 Description: Course catalogue code (e.g., CS301, MATH202).
+- name         : TEXT (NOT NULL)
+                 Description: Official course title (e.g., "Distributed Systems").
+- teacher_id   : UUID (NOT NULL)
+                 REFERENCES profiles(id) ON DELETE CASCADE
+                 Description: Faculty member owning and delivering the course.
+- schedule     : TEXT (NOT NULL)
+                 Description: Timetable timing (e.g., "Mon/Wed 10:00 - 11:30").
+- semester     : TEXT (NOT NULL)
+                 Description: Academic term (e.g., "Fall 2026").
+- created_at   : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: classes_pkey (id)
+- FK: classes_teacher_id_fkey -> profiles(id)
+- INDEX: idx_classes_teacher_id (teacher_id)
+
+--------------------------------------------------------------------------------
+3.3. class_enrollments
+--------------------------------------------------------------------------------
+Junction mapping establishing student participation in academic courses.
+
+Columns:
+- id           : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- class_id     : UUID (NOT NULL)
+                 REFERENCES classes(id) ON DELETE CASCADE
+- student_id   : UUID (NOT NULL)
+                 REFERENCES profiles(id) ON DELETE CASCADE
+- enrolled_at  : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: class_enrollments_pkey (id)
+- FK: class_enrollments_class_id_fkey -> classes(id)
+- FK: class_enrollments_student_id_fkey -> profiles(id)
+- UNIQUE CONSTRAINT: unique_class_student_enrollment (class_id, student_id)
+- INDEX: idx_class_enrollments_student_id (student_id)
+- INDEX: idx_class_enrollments_class_id (class_id)
+
+--------------------------------------------------------------------------------
+3.4. attendance_sessions
+--------------------------------------------------------------------------------
+Live or past attendance events initiated by teachers in real time.
+
+Columns:
+- id                       : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- class_id                 : UUID (NOT NULL)
+                             REFERENCES classes(id) ON DELETE CASCADE
+- teacher_id               : UUID (NOT NULL)
+                             REFERENCES profiles(id) ON DELETE CASCADE
+- status                   : TEXT (NOT NULL, DEFAULT 'active')
+                             CHECK (status IN ('active', 're_verifying', 'ended'))
+                             Description:
+                             - 'active': QR code rotating, check-ins accepted.
+                             - 're_verifying': Mid-class random biometric/presence check.
+                             - 'ended': Session closed; no further scans accepted.
+- qr_rotation_interval_sec : INTEGER (NOT NULL, DEFAULT 20)
+                             Description: Dynamic QR rotation window in seconds.
+- active_token_hash        : TEXT (NULLABLE)
+                             Description: SHA-256 HMAC of active TOTP challenge token.
+- token_expires_at         : TIMESTAMPTZ (NULLABLE)
+                             Description: Expiration time of active rotating token.
+- started_at               : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+- ended_at                 : TIMESTAMPTZ (NULLABLE)
+
+Indexes & Keys:
+- PK: attendance_sessions_pkey (id)
+- FK: attendance_sessions_class_id_fkey -> classes(id)
+- FK: attendance_sessions_teacher_id_fkey -> profiles(id)
+- INDEX: idx_attendance_sessions_class_status (class_id, status)
+- INDEX: idx_attendance_sessions_teacher_status (teacher_id, status)
+
+--------------------------------------------------------------------------------
+3.5. registered_devices
+--------------------------------------------------------------------------------
+Hardware and browser perimeter bindings. Prevents proxy attendance and credential sharing.
+
+Columns:
+- id                 : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- student_id         : UUID (NOT NULL)
+                       REFERENCES profiles(id) ON DELETE CASCADE
+- device_fingerprint : TEXT (NOT NULL)
+                       Description: Cryptographic hash of client device attributes.
+- device_name        : TEXT (NOT NULL)
+                       Description: Friendly label (e.g., "MacBook Pro - Chrome").
+- user_agent         : TEXT (NULLABLE)
+                       Description: Raw client HTTP user-agent header.
+- is_active          : BOOLEAN (NOT NULL, DEFAULT true)
+                       Description: Inactive devices cannot mark attendance.
+- registered_at      : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+- last_used_at       : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: registered_devices_pkey (id)
+- FK: registered_devices_student_id_fkey -> profiles(id)
+- PARTIAL UNIQUE INDEX: idx_single_active_device_per_student
+  ON registered_devices (student_id) WHERE is_active = true
+  (Guarantees at most ONE active device per student).
+- INDEX: idx_registered_devices_fingerprint (device_fingerprint)
+- INDEX: idx_registered_devices_student_active (student_id, is_active)
+
+--------------------------------------------------------------------------------
+3.6. attendance_records
+--------------------------------------------------------------------------------
+Authoritative attendance ledger. Stores verified check-ins and attendance statuses.
+
+Columns:
+- id             : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- session_id     : UUID (NOT NULL)
+                   REFERENCES attendance_sessions(id) ON DELETE CASCADE
+- student_id     : UUID (NOT NULL)
+                   REFERENCES profiles(id) ON DELETE CASCADE
+- device_id      : UUID (NOT NULL)
+                   REFERENCES registered_devices(id)
+- status         : TEXT (NOT NULL, DEFAULT 'present')
+                   CHECK (status IN ('present', 'absent', 're_verify_failed'))
+- check_in_time  : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+- re_verified    : BOOLEAN (NOT NULL, DEFAULT false)
+                   Description: Set to true when student successfully completes re-verification.
+- re_verified_at : TIMESTAMPTZ (NULLABLE)
+- created_at     : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: attendance_records_pkey (id)
+- FK: attendance_records_session_id_fkey -> attendance_sessions(id)
+- FK: attendance_records_student_id_fkey -> profiles(id)
+- FK: attendance_records_device_id_fkey -> registered_devices(id)
+- CRITICAL UNIQUE CONSTRAINT: unique_session_student_attendance (session_id, student_id)
+  (Prevents a student from marking attendance more than once in the same session).
+- INDEX: idx_attendance_records_session_id (session_id)
+- INDEX: idx_attendance_records_student_id (student_id)
+- INDEX: idx_attendance_records_student_session (student_id, session_id)
+
+--------------------------------------------------------------------------------
+3.7. attendance_verifications
+--------------------------------------------------------------------------------
+Forensic telemetry and verification audit trail recording all check-in attempts.
+
+Columns:
+- id                : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- session_id        : UUID (NOT NULL)
+                      REFERENCES attendance_sessions(id) ON DELETE CASCADE
+- student_id        : UUID (NOT NULL)
+                      REFERENCES profiles(id) ON DELETE CASCADE
+- verification_type : TEXT (NOT NULL)
+                      CHECK (verification_type IN ('initial_qr', 're_verify_challenge'))
+- status            : TEXT (NOT NULL)
+                      CHECK (status IN ('success', 'expired', 'invalid', 'duplicate', 'device_mismatch'))
+- token_used        : TEXT (NULLABLE)
+                      Description: Challenge token hash/prefix for debugging.
+- ip_address        : TEXT (NULLABLE)
+- user_agent        : TEXT (NULLABLE)
+- created_at        : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: attendance_verifications_pkey (id)
+- FK: attendance_verifications_session_id_fkey -> attendance_sessions(id)
+- FK: attendance_verifications_student_id_fkey -> profiles(id)
+- INDEX: idx_attendance_verifications_session_id (session_id)
+- INDEX: idx_attendance_verifications_student_id (student_id)
+
+--------------------------------------------------------------------------------
+3.8. audit_logs
+--------------------------------------------------------------------------------
+Immutable, tamper-evident security audit log for high-privilege actions.
+
+Columns:
+- id          : UUID (PRIMARY KEY, DEFAULT gen_random_uuid())
+- actor_id    : UUID (NULLABLE)
+                REFERENCES profiles(id) ON DELETE SET NULL
+- action      : TEXT (NOT NULL)
+                Examples: 'DEVICE_RESET', 'DEVICE_BIND', 'SESSION_START', 'SESSION_END'
+- entity_type : TEXT (NOT NULL)
+                Examples: 'registered_devices', 'attendance_sessions', 'profiles'
+- entity_id   : UUID (NULLABLE)
+- details     : JSONB (NOT NULL, DEFAULT '{}'::jsonb)
+- ip_address  : TEXT (NULLABLE)
+- created_at  : TIMESTAMPTZ (NOT NULL, DEFAULT NOW())
+
+Indexes & Keys:
+- PK: audit_logs_pkey (id)
+- FK: audit_logs_actor_id_fkey -> profiles(id)
+- INDEX: idx_audit_logs_actor_id (actor_id)
+- INDEX: idx_audit_logs_created_at (created_at DESC)
+
+================================================================================
+4. DATABASE TRIGGERS & STORED FUNCTIONS
+================================================================================
+
+4.1. handle_new_user() (Migration 004)
+--------------------------------------------------------------------------------
+Trigger Function executed automatically whenever a new row is inserted into `auth.users`.
+- Function: public.handle_new_user() RETURNS TRIGGER
+- Security: SECURITY DEFINER (executes with elevated database privileges)
+- Logic:
+  1. Reads `NEW.raw_user_meta_data->>'role'`, defaulting securely to 'student'.
+  2. Resolves `full_name` from provider metadata or email username.
+  3. Formats institutional identifier as `STU-` or `FAC-` followed by the first 8 hex
+     characters of the user's UUID.
+  4. Resolves any identifier or email collisions before upserting into `public.profiles`.
+  5. If the new user is a student, automatically enrolls them into active demo courses.
+
+Trigger Definition:
+  CREATE OR REPLACE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+4.2. auth_is_teacher() (Migration 002)
+--------------------------------------------------------------------------------
+Stored Helper Function utilized by Row Level Security policies.
+- Function: public.auth_is_teacher() RETURNS BOOLEAN
+- Logic:
+  Returns TRUE if `EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher')`.
+
+================================================================================
+5. ANTI-FRAUD & DATA INTEGRITY CONSTRAINTS
+================================================================================
+
+1. Duplicate Scan Prevention:
+   CONSTRAINT unique_session_student_attendance UNIQUE (session_id, student_id)
+   - Guarantee: Even if two devices submit identical tokens simultaneously, PostgreSQL
+     serializes the write and rejects the second attempt with error code 23505 (unique violation).
+
+2. Single Hardware Device Policy:
+   CREATE UNIQUE INDEX idx_single_active_device_per_student
+   ON registered_devices (student_id) WHERE is_active = true;
+   - Guarantee: A student cannot bind multiple phones or laptops concurrently.
+   - De-registration: Requires a faculty device reset or verified hardware unbinding.
+
+3. Role Isolation:
+   CHECK (role IN ('student', 'teacher'))
+   - Guarantee: Invalid role strings cannot be entered into the system.
+
+================================================================================
+6. ROW LEVEL SECURITY (RLS) POLICY MATRIX
+================================================================================
+
+All 8 application tables enforce `ROW LEVEL SECURITY`:
+
++--------------------------+--------+---------------------+-------------------------------------------------------------+
+| Table                    | Action | Target Role         | Security Condition (USING / WITH CHECK)                     |
++--------------------------+--------+---------------------+-------------------------------------------------------------+
+| profiles                 | SELECT | authenticated       | auth.uid() = id OR (auth_is_teacher() AND enrolled student) |
+| profiles                 | UPDATE | authenticated       | auth.uid() = id                                             |
+| classes                  | SELECT | authenticated       | teacher_id = auth.uid() OR enrolled student                 |
+| classes                  | INSERT | authenticated       | teacher_id = auth.uid() AND auth_is_teacher()               |
+| classes                  | UPDATE | authenticated       | teacher_id = auth.uid() AND auth_is_teacher()               |
+| class_enrollments        | SELECT | authenticated       | student_id = auth.uid() OR class.teacher_id = auth.uid()    |
+| attendance_sessions      | SELECT | authenticated       | teacher_id = auth.uid() OR (enrolled AND status != 'ended') |
+| attendance_sessions      | INSERT | authenticated       | teacher_id = auth.uid() AND auth_is_teacher()               |
+| attendance_sessions      | UPDATE | authenticated       | teacher_id = auth.uid() AND auth_is_teacher()               |
+| registered_devices       | SELECT | authenticated       | student_id = auth.uid() OR teacher in student's class       |
+| registered_devices       | INSERT | authenticated       | student_id = auth.uid()                                     |
+| registered_devices       | UPDATE | authenticated       | student_id = auth.uid() OR auth_is_teacher() (reset)        |
+| attendance_records       | SELECT | authenticated       | student_id = auth.uid() OR teacher owning session's class   |
+| attendance_records       | INSERT | service_role / API  | Blocked for public client; written via backend Route Handler |
+| attendance_verifications | SELECT | authenticated       | student_id = auth.uid() OR teacher owning session's class   |
+| audit_logs               | SELECT | authenticated       | actor_id = auth.uid() OR auth_is_teacher()                  |
++--------------------------+--------+---------------------+-------------------------------------------------------------+
+
+================================================================================
+7. PERFORMANCE INDEXES & QUERY OPTIMIZATION (Migration 003)
+================================================================================
+
+The following indexes maintain sub-millisecond query performance under load:
+
+1. Lookups on Foreign Keys:
+   - idx_classes_teacher_id                    -> classes(teacher_id)
+   - idx_class_enrollments_student_id          -> class_enrollments(student_id)
+   - idx_class_enrollments_class_id            -> class_enrollments(class_id)
+
+2. Session Queries:
+   - idx_attendance_sessions_class_status      -> attendance_sessions(class_id, status)
+   - idx_attendance_sessions_teacher_status    -> attendance_sessions(teacher_id, status)
+
+3. Attendance Aggregations & Headcounts:
+   - idx_attendance_records_session_id         -> attendance_records(session_id)
+   - idx_attendance_records_student_id         -> attendance_records(student_id)
+   - idx_attendance_records_student_session    -> attendance_records(student_id, session_id)
+
+4. Hardware Device Verification:
+   - idx_registered_devices_fingerprint        -> registered_devices(device_fingerprint)
+   - idx_registered_devices_student_active     -> registered_devices(student_id, is_active)
+
+5. Auditing & Forensics:
+   - idx_attendance_verifications_session_id   -> attendance_verifications(session_id)
+   - idx_attendance_verifications_student_id   -> attendance_verifications(student_id)
+   - idx_audit_logs_actor_id                   -> audit_logs(actor_id)
+   - idx_audit_logs_created_at                 -> audit_logs(created_at DESC)
+
+================================================================================
+8. DATA FLOW LIFECYCLE
+================================================================================
+
+1. Student Check-In Flow:
+   Student Scans QR Code
+   -> Client gathers TOTP token + device fingerprint + geolocation
+   -> Client sends POST /api/attendance/check-in
+   -> Backend verifies token against attendance_sessions.active_token_hash
+   -> Backend verifies device against registered_devices WHERE is_active = true
+   -> Backend inserts attendance_verifications (status: 'success')
+   -> Backend inserts attendance_records (status: 'present')
+   -> Realtime Supabase broadcast notifies Teacher Console of +1 headcount
+
+2. In-Class Re-Verification Flow:
+   Teacher clicks "Trigger Presence Challenge" (60-second window)
+   -> attendance_sessions status updated to 're_verifying'
+   -> Realtime event pushed to enrolled students
+   -> Student confirms biometric / challenge prompt within 60s
+   -> Backend updates attendance_records: re_verified = true, re_verified_at = NOW()
+   -> If time expires without response, status = 're_verify_failed'
+
+3. Device Reset Flow:
+   Student changes phone / loses device
+   -> Teacher Console receives unbind request
+   -> Teacher authorizes reset: registered_devices.is_active set to false
+   -> Entry recorded in audit_logs (action: 'DEVICE_RESET')
+   -> Student is permitted to bind new hardware on next login
+
+================================================================================
+9. SEED DATA & REFERENCE RECORDS (supabase/seed.sql)
+================================================================================
+
+Deterministic IDs for testing and local development:
+
+Teachers:
+- UUID: 00000000-0000-0000-0000-000000000001
+  Name: Prof. Alan Turing
+  Email: prof.turing@university.edu
+  Role: teacher
+  Identifier: FAC-2026-001
+
+Students:
+- UUID: 00000000-0000-0000-0000-000000000002 | Jane Doe      | jane.doe@university.edu    | STU-2026-001
+- UUID: 00000000-0000-0000-0000-000000000003 | John Smith     | john.smith@university.edu  | STU-2026-002
+- UUID: 00000000-0000-0000-0000-000000000004 | Alice Johnson  | alice.j@university.edu     | STU-2026-003
+- UUID: 00000000-0000-0000-0000-000000000005 | Bob Brown      | bob.brown@university.edu   | STU-2026-004
+
+Classes:
+- UUID: 11111111-1111-1111-1111-111111111111 | CS301   | Distributed Systems | Teacher: Prof. Alan Turing
+- UUID: 22222222-2222-2222-2222-222222222222 | MATH202 | Linear Algebra      | Teacher: Prof. Alan Turing
+================================================================================

@@ -52,3 +52,7 @@ ai_attend/
 # OS / OneDrive duplicate conflict files
 * - Copy*
 *- Copy*
+
+# Supabase temp
+.temp/
+supabase/.temp/

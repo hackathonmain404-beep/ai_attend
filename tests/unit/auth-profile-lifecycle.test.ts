@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ensureUserProfile } from '@/lib/auth/profile-provisioning';
 import { requireAuth, requireStudent, requireTeacher } from '@/lib/auth/guards';
-import { UnauthorizedError, ForbiddenError } from '@/lib/errors';
+import { UnauthorizedError, ForbiddenError, DatabaseError } from '@/lib/errors';
 import {
   saveCurrentUserProfile,
   getCurrentUserProfile,
@@ -12,7 +12,7 @@ import * as adminSupabase from '@/lib/supabase/admin';
 import * as serverSupabase from '@/lib/supabase/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => {
+describe('Auth & Profile Lifecycle Comprehensive Suite (Phase 1)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     clearCurrentUserProfile();
@@ -25,7 +25,6 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
       email: 'alex.rivers@university.edu',
       user_metadata: {
         full_name: 'Alex Rivers',
-        role: 'student',
       },
     };
 
@@ -70,6 +69,56 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
     expect(result.profile.identifier).toBe('STU-A1B2C3D4');
   });
 
+  // 1b. Role escalation attempt during first-time OAuth
+  it('1b. First-time OAuth user: ignores client user_metadata.role and enforces secure student default', async () => {
+    const maliciousUser = {
+      id: 'b2c3d4e5-f6a7-4b5c-9d0e-1f2a3b4c5d6e',
+      email: 'hacker@university.edu',
+      user_metadata: {
+        full_name: 'Mallory Malicious',
+        role: 'teacher', // Attacker attempts to self-assign teacher role
+      },
+    };
+
+    const mockAdmin = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            upsert: vi.fn().mockImplementation((payload) => {
+              // Verify that the payload passed to PostgreSQL has role = 'student'
+              expect(payload.role).toBe('student');
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: {
+                      id: maliciousUser.id,
+                      email: maliciousUser.email,
+                      full_name: 'Mallory Malicious',
+                      role: 'student',
+                      identifier: 'STU-B2C3D4E5',
+                      created_at: '2026-10-08T12:00:00Z',
+                      updated_at: '2026-10-08T12:00:00Z',
+                    },
+                    error: null,
+                  }),
+                }),
+              };
+            }),
+          };
+        }
+        return {};
+      }),
+    };
+
+    vi.spyOn(adminSupabase, 'createAdminClient').mockReturnValue(mockAdmin as any);
+
+    const result = await ensureUserProfile(maliciousUser as any);
+    expect(result.profile.role).toBe('student');
+  });
+
   // 2. Existing user
   it('2. Existing user: retrieves existing profile directly from database without re-inserting', async () => {
     const authUser = {
@@ -104,12 +153,11 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
     expect(result.isFirstLogin).toBe(false);
     expect(result.profile.fullName).toBe('Jane Doe');
     expect(result.profile.identifier).toBe('STU-2026-001');
-    // Ensure upsert was NOT called for an existing user
     expect(mockAdmin.from().upsert).not.toHaveBeenCalled();
   });
 
   // 3. Profile already exists
-  it('3. Profile already exists: idempotent resolution succeeds safely without data loss', async () => {
+  it('3. Profile already exists: idempotent resolution succeeds safely without modifying existing teacher accounts', async () => {
     const authUser = {
       id: '00000000-0000-0000-0000-000000000001',
       email: 'prof.turing@university.edu',
@@ -139,8 +187,8 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
     expect(result.profile.fullName).toBe('Prof. Alan Turing');
   });
 
-  // 4. Profile missing / unprovisionable database error
-  it('4. Profile missing: throws clear error when database rejected provisioning', async () => {
+  // 4. Profile insertion failure
+  it('4. Profile insertion failure: throws typed DatabaseError when database rejects provisioning', async () => {
     const authUser = {
       id: '99999999-9999-9999-9999-999999999999',
       email: 'failed.user@university.edu',
@@ -164,28 +212,12 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
 
     vi.spyOn(adminSupabase, 'createAdminClient').mockReturnValue(mockAdmin as any);
 
-    await expect(ensureUserProfile(authUser as any)).rejects.toThrow(
-      'Failed to provision institutional profile: relation public.profiles is read only'
-    );
+    await expect(ensureUserProfile(authUser as any)).rejects.toThrow(DatabaseError);
   });
 
-  // 5. Unauthorized profile access
-  it('5. Unauthorized access: requireAuth rejects unauthenticated requests with 401', async () => {
-    const mockSupabase = {
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: null },
-          error: { message: 'Invalid JWT signature' },
-        }),
-      },
-    };
-
-    await expect(requireAuth(mockSupabase as any)).rejects.toThrow(UnauthorizedError);
-  });
-
-  // 6. RLS rejection
-  it('6. RLS rejection: client cannot query or access another user’s profile', async () => {
-    const studentUser = { id: 'stu-uuid-1', email: 'stu@univ.edu' };
+  // 5. Database lookup failure
+  it('5. Database lookup failure: requireAuth reports DatabaseError (HTTP 500), NOT 401 Missing Profile', async () => {
+    const studentUser = { id: '00000000-0000-0000-0000-000000000099', email: 'stu@univ.edu' };
     const mockSupabase = {
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -198,21 +230,113 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
         eq: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({
           data: null,
-          error: { message: 'permission denied for table profiles (RLS violated)' },
+          error: { code: '57P01', message: 'Connection terminated by database administrator' },
         }),
       }),
     };
 
-    // If client RLS denies access and admin cannot find profile
-    vi.spyOn(adminSupabase, 'createAdminClient').mockImplementation(() => {
-      throw new Error('Service role disabled in browser client context');
-    });
+    await expect(requireAuth(mockSupabase as any)).rejects.toThrow(DatabaseError);
+  });
+
+  // 6. Existing auth user without profile
+  it('6. Existing auth user without profile: requireAuth idempotently self-heals into valid profile', async () => {
+    const validUuid = '12345678-1234-1234-1234-123456789abc';
+    const authUser = {
+      id: validUuid,
+      email: 'orphaned@university.edu',
+      user_metadata: { full_name: 'Orphaned Student' },
+    };
+
+    const mockSupabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: authUser },
+          error: null,
+        }),
+      },
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }),
+    };
+
+    const mockAdmin = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        upsert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: validUuid,
+                email: 'orphaned@university.edu',
+                full_name: 'Orphaned Student',
+                role: 'student',
+                identifier: 'STU-12345678',
+                created_at: '2026-10-08T00:00:00Z',
+                updated_at: '2026-10-08T00:00:00Z',
+              },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+
+    vi.spyOn(adminSupabase, 'createAdminClient').mockReturnValue(mockAdmin as any);
+
+    const context = await requireAuth(mockSupabase as any);
+    expect(context.profile.id).toBe(validUuid);
+    expect(context.profile.fullName).toBe('Orphaned Student');
+    expect(context.profile.role).toBe('student');
+  });
+
+  // 7. Unauthorized profile access
+  it('7. Unauthorized access: requireAuth rejects unauthenticated requests with 401', async () => {
+    const mockSupabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: 'Invalid JWT signature' },
+        }),
+      },
+    };
 
     await expect(requireAuth(mockSupabase as any)).rejects.toThrow(UnauthorizedError);
   });
 
-  // 7. Logout & login again
-  it('7. Logout & login again: cleanly clears cached credentials and re-establishes authentic identity', async () => {
+  // 8. RLS rejection
+  it('8. RLS rejection: client cannot query or access another user’s profile', async () => {
+    const studentUser = { id: '00000000-0000-0000-0000-000000000088', email: 'stu@univ.edu' };
+    const mockSupabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: studentUser },
+          error: null,
+        }),
+      },
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: null,
+          error: null, // RLS filters out rows
+        }),
+      }),
+    };
+
+    // If client RLS filters out the row and admin lookup cannot proceed
+    vi.spyOn(adminSupabase, 'createAdminClient').mockImplementation(() => {
+      throw new Error('Service role disabled in browser client context');
+    });
+
+    await expect(requireAuth(mockSupabase as any)).rejects.toThrow(DatabaseError);
+  });
+
+  // 9. Logout & login again
+  it('9. Logout & login again: cleanly clears cached credentials and re-establishes authentic identity', async () => {
     // Initial login as User A
     const userA = {
       id: '00000000-0000-0000-0000-000000000002',
@@ -241,8 +365,8 @@ describe('Auth & Profile Lifecycle Comprehensive Suite (Requirement 13)', () => 
     expect(getCurrentUserProfile()?.fullName).not.toBe('Jane Doe');
   });
 
-  // 8. Page refresh after login
-  it('8. Page refresh after login: resolves authentic profile from server without falling back to mock data', async () => {
+  // 10. Page refresh after login
+  it('10. Page refresh after login: resolves authentic profile from server without falling back to mock data', async () => {
     const globalFetch = global.fetch;
     const mockStorage: Record<string, string> = {};
     vi.stubGlobal('window', {

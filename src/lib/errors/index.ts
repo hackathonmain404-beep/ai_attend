@@ -54,6 +54,12 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class DatabaseError extends AppError {
+  constructor(message = 'Database operation failed', code: StandardErrorCode = 'INTERNAL_SERVER_ERROR') {
+    super(message, 500, code);
+  }
+}
+
 export class InternalServerError extends AppError {
   constructor(message = 'An unexpected server error occurred') {
     super(message, 500, 'INTERNAL_SERVER_ERROR');
