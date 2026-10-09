@@ -56,3 +56,4 @@ ai_attend/
 # Supabase temp
 .temp/
 supabase/.temp/
+
