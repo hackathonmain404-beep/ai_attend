@@ -28,7 +28,7 @@ export function FaceVerificationStatus({
       <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
         <Lock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
         <span className="leading-tight">
-          <strong className="text-slate-200 font-medium">Privacy Guaranteed:</strong> Captured frames are processed in-memory and never saved to disk or permanent storage.
+          <strong className="text-slate-200 font-medium">Privacy Guaranteed:</strong> Zero raw images stored on server. Captured frames are processed in-memory and never saved to disk or permanent storage.
         </span>
       </div>
 

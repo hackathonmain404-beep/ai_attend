@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { X } from "lucide-react";
-import { FaceCapture } from "@/components/biometrics/FaceCapture";
+import { FaceVerification } from "@/components/face-verification";
 import {
   FaceAttendanceStatusPanel,
   type FaceVerificationUIState,
@@ -133,13 +133,17 @@ export function FaceVerificationModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in-50 duration-200"
     >
       <div className="relative w-full max-w-lg rounded-2xl border border-zinc-800/80 bg-[#0B0D10] shadow-2xl overflow-hidden">
-        {/* Render FaceCapture component if capturing/reviewing */}
+        {/* Render Member 1 reusable FaceVerification component if capturing/reviewing */}
         {(uiState === "ready" || uiState === "camera_active" || uiState === "image_captured") && (
-          <FaceCapture
-            onCapture={handleCaptureConfirmed}
+          <FaceVerification
+            onCapture={(_blob, dataUrl) => handleCaptureConfirmed(dataUrl)}
             onCancel={onClose}
-            isProcessing={isSubmitting}
-            disabled={isSubmitting}
+            autoStart={true}
+            confirmLabel="Confirm & Submit Attendance"
+            captureLabel="Capture Face"
+            title="Facial Biometric Verification"
+            description="Center your face inside the framing guide to verify classroom presence."
+            className="border-0 bg-transparent shadow-none p-5 sm:p-6"
           />
         )}
 

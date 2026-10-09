@@ -7,6 +7,7 @@ import {
   type FailureReason,
 } from "@/components/student/FaceAttendanceStatusPanel";
 import { FaceCapture } from "@/components/biometrics/FaceCapture";
+import { FaceVerificationModal } from "@/components/student/FaceVerificationModal";
 import {
   submitFaceCheckIn,
   type FaceCheckInClientResult,
@@ -382,6 +383,40 @@ describe("Face Verification Attendance Frontend Flow (Member 2 UI)", () => {
       expect(res.status).toBe("present");
       expect(res.recordId).toBe("rec-qr-only-123");
       expect(res.reVerified).toBe(false);
+    });
+  });
+
+  // ============================================================================
+  // 5. FaceVerificationModal Integration with Member 1 FaceVerification
+  // ============================================================================
+  describe("5. FaceVerificationModal Component Integration", () => {
+    it("renders modal dialog containing Member 1 FaceVerification component when open", () => {
+      const html = renderToString(
+        <FaceVerificationModal
+          isOpen={true}
+          onClose={vi.fn()}
+          challengeToken={mockToken}
+          deviceFingerprint={mockDeviceFp}
+        />
+      );
+
+      expect(html).toContain("Facial Biometric Verification");
+      expect(html).toContain("Center your face inside the framing guide");
+      expect(html).toContain("role=\"dialog\"");
+      expect(html).toContain("Zero raw images stored");
+    });
+
+    it("returns null when isOpen is false", () => {
+      const html = renderToString(
+        <FaceVerificationModal
+          isOpen={false}
+          onClose={vi.fn()}
+          challengeToken={mockToken}
+          deviceFingerprint={mockDeviceFp}
+        />
+      );
+
+      expect(html).toBe("");
     });
   });
 });
