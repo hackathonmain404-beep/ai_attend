@@ -48,6 +48,8 @@ export interface AttendanceSession {
   qrRotationIntervalSec: number;
   activeTokenHash: string | null;
   tokenExpiresAt: string | null;
+  reverifyChallengeId?: string | null;
+  reverifyExpiresAt?: string | null;
   isArchived?: boolean;
   archivedAt?: string | null;
   startedAt: string;

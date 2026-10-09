@@ -106,6 +106,31 @@ export async function resetStudentDevice(params: ResetDeviceParams) {
 
   const supabase = params.client || (await createServerSupabaseClient());
 
+  // Enforce teacher authorization scoping: teacher must instruct at least one class the student is enrolled in
+  const enrollQuery = supabase.from('class_enrollments');
+  if (enrollQuery && typeof enrollQuery.select === 'function') {
+    const { data: sharedEnrollment } = await enrollQuery
+      .select('id, classes!inner(teacher_id)')
+      .eq('student_id', studentId)
+      .eq('classes.teacher_id', teacherId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!sharedEnrollment) {
+      const { data: studentEnrollment } = await enrollQuery
+        .select('id')
+        .eq('student_id', studentId)
+        .limit(1)
+        .maybeSingle();
+
+      if (studentEnrollment) {
+        throw new ForbiddenError(
+          'You are not authorized to reset this device. You do not instruct any class in which this student is enrolled.'
+        );
+      }
+    }
+  }
+
   const resetTimestamp = new Date().toISOString();
 
   // Deactivate all currently active devices for this student

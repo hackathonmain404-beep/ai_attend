@@ -82,10 +82,14 @@ export async function triggerReverificationChallenge(params: TriggerReverifyPara
     expiresAtIso,
   });
 
-  // 3. Update session status to re_verifying
+  // 3. Update session status to re_verifying and persist challenge in PostgreSQL
   await supabase
     .from('attendance_sessions')
-    .update({ status: 're_verifying' })
+    .update({
+      status: 're_verifying',
+      reverify_challenge_id: challengeId,
+      reverify_expires_at: expiresAtIso,
+    })
     .eq('id', sessionId);
 
   // 4. Broadcast Realtime prompt to connected student clients
@@ -123,9 +127,31 @@ export async function acknowledgeReverification(params: AcknowledgeReverifyParam
     throw new ValidationError('deviceFingerprint is required.');
   }
 
-  // 1. Assert active challenge exists and window is open (fail-fast without DB roundtrip)
-  const active = activeChallenges.get(sessionId);
+  const supabase = params.client || (await createServerSupabaseClient());
+  const adminDb = params.adminClient || createAdminClient();
+
+  // 1. Assert active challenge exists and window is open
+  // Check local cache, then fallback to database for serverless multi-instance consistency
+  let active = activeChallenges.get(sessionId);
   const nowSec = Math.floor(Date.now() / 1000);
+
+  if (!active || active.challengeId !== challengeId) {
+    const { data: dbSession } = await supabase
+      .from('attendance_sessions')
+      .select('id, status, reverify_challenge_id, reverify_expires_at')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (dbSession && dbSession.reverify_challenge_id && dbSession.reverify_expires_at) {
+      const expiresAtSec = Math.floor(new Date(dbSession.reverify_expires_at).getTime() / 1000);
+      active = {
+        challengeId: dbSession.reverify_challenge_id,
+        expiresAtSec,
+        expiresAtIso: dbSession.reverify_expires_at,
+      };
+      activeChallenges.set(sessionId, active);
+    }
+  }
 
   if (!active || active.challengeId !== challengeId || nowSec > active.expiresAtSec) {
     throw new ConflictError(
@@ -133,9 +159,6 @@ export async function acknowledgeReverification(params: AcknowledgeReverifyParam
       'REVERIFY_WINDOW_CLOSED' as any
     );
   }
-
-  const supabase = params.client || (await createServerSupabaseClient());
-  const adminDb = params.adminClient || createAdminClient();
 
   // 2. Validate student device binding
   await validateDeviceBinding({

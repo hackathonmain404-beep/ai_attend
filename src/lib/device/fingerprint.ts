@@ -29,8 +29,13 @@ export async function getClientDeviceFingerprint(simulatedMismatch = false): Pro
     return "fp_unregistered_mismatch_device_" + Math.random().toString(16).substring(2, 8);
   }
 
-  // In demo / test environments, return registered hash from seed.sql
+  // In headless Node / Vitest test environments, return deterministic baseline
   if (typeof window === "undefined") {
+    return "fp_hash_jane_iphone_15_pro_abc123";
+  }
+
+  // Allow explicit demo persona override only if requested
+  if (typeof window !== "undefined" && window.localStorage?.getItem("attendguard_mock_device") === "jane") {
     return "fp_hash_jane_iphone_15_pro_abc123";
   }
 
@@ -42,7 +47,6 @@ export async function getClientDeviceFingerprint(simulatedMismatch = false): Pro
     new Date().getTimezoneOffset(),
   ].join("|");
 
-  // In mock environment, map to registered device
   const computedHash = await sha256(signals);
-  return "fp_hash_jane_iphone_15_pro_abc123";
+  return `fp_${computedHash.slice(0, 32)}`;
 }
