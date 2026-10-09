@@ -11,6 +11,7 @@
 -- (b) The event concerns a student currently enrolled in one of their classes.
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Teachers can read audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Teachers can read scoped audit logs" ON public.audit_logs;
 
 CREATE POLICY "Teachers can read scoped audit logs" 
 ON public.audit_logs FOR SELECT 

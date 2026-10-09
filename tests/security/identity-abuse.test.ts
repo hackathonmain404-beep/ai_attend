@@ -3,6 +3,7 @@ import { processStudentCheckIn } from '@/lib/attendance/check-in-service';
 import { registerStudentDevice } from '@/lib/device/service';
 import { ConflictError, ForbiddenError } from '@/lib/errors';
 import * as qrCrypto from '@/lib/qr/crypto';
+import { resetSecurityGuardsForTesting } from '@/lib/attendance/security-guards';
 
 describe('Security Attack Simulation: Identity & Device Abuse (SEC-02, SEC-03, SEC-07)', () => {
   const sessionId = '00000000-0000-0000-0000-000000000001';
@@ -13,6 +14,7 @@ describe('Security Attack Simulation: Identity & Device Abuse (SEC-02, SEC-03, S
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetSecurityGuardsForTesting();
     vi.spyOn(qrCrypto, 'verifyQrChallengeToken').mockReturnValue({
       sessionId,
       sequence: 1,

@@ -4,6 +4,30 @@
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
+-- 0. NORMALIZE PRE-EXISTING ATTENDANCE RECORDS
+-- Ensure legacy or dirty rows comply with lifecycle state machine before constraint enforcement.
+-- ------------------------------------------------------------------------------
+-- Default any null re_verified booleans to false
+UPDATE public.attendance_records
+SET re_verified = false
+WHERE re_verified IS NULL;
+
+-- If marked present and re_verified = true, ensure re_verified_at timestamp is populated
+UPDATE public.attendance_records
+SET re_verified_at = COALESCE(re_verified_at, check_in_time, created_at, NOW())
+WHERE status = 'present' AND re_verified = true AND re_verified_at IS NULL;
+
+-- If marked failed or absent, reset re_verified flag to false and nullify timestamp
+UPDATE public.attendance_records
+SET re_verified = false, re_verified_at = NULL
+WHERE status IN ('re_verify_failed', 'absent') AND (re_verified = true OR re_verified_at IS NOT NULL);
+
+-- Normalize any non-conforming or null status values to 'present'
+UPDATE public.attendance_records
+SET status = 'present'
+WHERE status NOT IN ('present', 'absent', 're_verify_failed') OR status IS NULL;
+
+-- ------------------------------------------------------------------------------
 -- 1. ATTENDANCE RECORD LIFECYCLE CHECK CONSTRAINT
 -- Enforces valid combinations of (status, re_verified, re_verified_at) at the database engine level.
 -- ------------------------------------------------------------------------------
