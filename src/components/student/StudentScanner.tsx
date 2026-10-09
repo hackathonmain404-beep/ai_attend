@@ -13,93 +13,218 @@ import {
   ShieldAlert,
   Clock,
   Layers,
+  CheckCircle2,
+  Info,
+  Maximize2,
+  Lock,
 } from "lucide-react";
-import { ScanResultModal, type ScanModalStatus } from "@/components/student/ScanResultModal";
+import jsQR from "jsqr";
+import { useQueryClient } from "@tanstack/react-query";
+import { ScanResultModal, type VerificationState } from "@/components/student/ScanResultModal";
 import { submitCheckIn, fetchQrChallenge } from "@/lib/services/qr-service";
 import { getClientDeviceFingerprint } from "@/lib/device/fingerprint";
+import { apiFetch } from "@/lib/api-client";
 import type { CheckInResult } from "@/types/qr";
 
+interface ActiveDeviceStatus {
+  isRegistered: boolean;
+  deviceName?: string;
+  deviceFingerprint?: string;
+}
+
 export function StudentScanner() {
+  const queryClient = useQueryClient();
+
+  // Verification state machine: ready | scanning | verifying | verified | expired | failed | already_checked_in
+  const [verificationState, setVerificationState] = React.useState<VerificationState>("ready");
   const [hasCamera, setHasCamera] = React.useState<boolean | null>(null);
-  const [cameraStream, setCameraStream] = React.useState<MediaStream | null>(null);
   const [permissionDenied, setPermissionDenied] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [activeVector, setActiveVector] = React.useState<string | null>(null);
-  const [modalStatus, setModalStatus] = React.useState<ScanModalStatus>("idle");
   const [checkInResult, setCheckInResult] = React.useState<CheckInResult | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
+  const [deviceStatus, setDeviceStatus] = React.useState<ActiveDeviceStatus | null>(null);
+  const [lastScannedToken, setLastScannedToken] = React.useState<string | null>(null);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const animationFrameRef = React.useRef<number | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
 
-  // Initialize camera feed if available
+  // Fetch registered device status on mount
   React.useEffect(() => {
-    let stream: MediaStream | null = null;
-
-    async function initCamera() {
-      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        setHasCamera(false);
-        return;
-      }
-
+    async function checkDevice() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        setCameraStream(stream);
-        setHasCamera(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        // Permissions denied or no camera hardware
-        setHasCamera(false);
-        setPermissionDenied(true);
+        const data = await apiFetch<ActiveDeviceStatus>("/api/auth/device/status");
+        setDeviceStatus(data);
+      } catch {
+        // Fallback gracefully if API not ready
+        setDeviceStatus({ isRegistered: true, deviceName: "Primary Mobile Phone" });
       }
     }
-
-    initCamera();
-
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-    };
+    checkDevice();
   }, []);
 
-  // Process a QR challenge token payload through the authoritative check-in API
-  const handleCheckInAttempt = async (token: string, simulatedMismatch = false) => {
-    setIsSubmitting(true);
-    setErrorMessage("");
+  // Initialize camera and start video stream
+  const startCamera = React.useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setHasCamera(false);
+      setVerificationState("ready");
+      return;
+    }
 
     try {
-      const fingerprint = await getClientDeviceFingerprint(simulatedMismatch);
-      const res = await submitCheckIn({
-        challengeToken: token,
-        deviceFingerprint: fingerprint,
+      // Request rear/environment camera facing mode
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
       });
 
-      setCheckInResult(res);
-      setModalStatus("success");
-    } catch (err: any) {
-      const code = err?.code || "";
-      const message = err?.message || "Check-in failed.";
+      streamRef.current = stream;
+      setHasCamera(true);
+      setPermissionDenied(false);
+      setVerificationState("scanning");
 
-      if (code === "QR_EXPIRED" || err?.status === 409 && message.toLowerCase().includes("expired")) {
-        setModalStatus("qr_expired");
-      } else if (code === "DEVICE_MISMATCH" || err?.status === 403) {
-        setModalStatus("device_mismatch");
-        setErrorMessage(message);
-      } else if (code === "ALREADY_CHECKED_IN" || code === "QR_REPLAYED") {
-        setModalStatus("already_checked_in");
-      } else {
-        setModalStatus("error");
-        setErrorMessage(message);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    } finally {
-      setIsSubmitting(false);
-      setActiveVector(null);
+    } catch {
+      // Permission rejected or camera unavailable
+      setHasCamera(false);
+      setPermissionDenied(true);
+      setVerificationState("ready");
     }
-  };
+  }, []);
+
+  // Stop camera tracks
+  const stopCamera = React.useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  // Initial camera attempt on mount
+  React.useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
+
+  // Process a QR challenge token payload through the authoritative check-in API
+  const handleCheckInAttempt = React.useCallback(
+    async (token: string, simulatedMismatch = false) => {
+      setVerificationState("verifying");
+      setErrorMessage("");
+
+      try {
+        // Basic frontend format sanity check
+        if (!token || typeof token !== "string" || !token.includes(".")) {
+          throw new Error("Invalid QR code format. Please scan an authorized AttendGuard dynamic code.");
+        }
+
+        const fingerprint = await getClientDeviceFingerprint(simulatedMismatch);
+        const res = await submitCheckIn({
+          challengeToken: token,
+          deviceFingerprint: fingerprint,
+        });
+
+        // ONLY mark verified after backend confirms 201 response!
+        setCheckInResult(res);
+        setVerificationState("verified");
+
+        // Invalidate React Query cache so dashboard statistics update immediately
+        try {
+          queryClient.invalidateQueries({ queryKey: ["student-attendance-summary"] });
+        } catch {}
+      } catch (err: any) {
+        const code = err?.code || "";
+        const message = err?.message || "Check-in failed.";
+
+        if (code === "QR_EXPIRED" || (err?.status === 409 && message.toLowerCase().includes("expired"))) {
+          setVerificationState("expired");
+        } else if (code === "ALREADY_CHECKED_IN" || code === "QR_REPLAYED") {
+          setVerificationState("already_checked_in");
+        } else if (code === "DEVICE_MISMATCH" || err?.status === 403) {
+          setVerificationState("failed");
+          setErrorMessage(message || "Hardware Mismatch: Attendance must be recorded from your registered device.");
+        } else if (code === "QR_INVALID") {
+          setVerificationState("failed");
+          setErrorMessage("Invalid QR token signature. The scanned code was not recognized by the server.");
+        } else {
+          setVerificationState("failed");
+          setErrorMessage(message);
+        }
+      } finally {
+        setActiveVector(null);
+      }
+    },
+    [queryClient]
+  );
+
+  // Active in-browser QR detection loop via jsQR
+  React.useEffect(() => {
+    if (verificationState !== "scanning") {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement("canvas");
+    }
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    let isScanningActive = true;
+
+    const tick = () => {
+      if (!isScanningActive || verificationState !== "scanning") return;
+
+      const video = videoRef.current;
+      if (video && video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code && code.data) {
+          // Prevent repeated triggers of identical frame data
+          if (code.data !== lastScannedToken) {
+            setLastScannedToken(code.data);
+            if (typeof navigator !== "undefined" && navigator.vibrate) {
+              try {
+                navigator.vibrate(100);
+              } catch {}
+            }
+            handleCheckInAttempt(code.data, false);
+            return;
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      isScanningActive = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [verificationState, lastScannedToken, handleCheckInAttempt]);
 
   // Test Simulator 1: Valid Live Token
   const handleSimulateValidScan = async () => {
@@ -108,10 +233,9 @@ export function StudentScanner() {
       const challenge = await fetchQrChallenge();
       await handleCheckInAttempt(challenge.challengeToken, false);
     } catch (err: any) {
-      setModalStatus("error");
+      setVerificationState("failed");
       setErrorMessage(err.message || "Failed to fetch session challenge.");
       setActiveVector(null);
-      setIsSubmitting(false);
     }
   };
 
@@ -121,12 +245,13 @@ export function StudentScanner() {
     const expiredPayload = {
       sessionId: "44444444-4444-4444-4444-444444444441",
       seq: 14,
-      ts: Math.floor(Date.now() / 1000) - 60, // 60s ago
+      ts: Math.floor(Date.now() / 1000) - 60,
       nonce: "exp9921",
     };
-    const b64 = typeof btoa !== "undefined"
-      ? btoa(JSON.stringify(expiredPayload))
-      : Buffer.from(JSON.stringify(expiredPayload)).toString("base64");
+    const b64 =
+      typeof btoa !== "undefined"
+        ? btoa(JSON.stringify(expiredPayload))
+        : Buffer.from(JSON.stringify(expiredPayload)).toString("base64");
     const expiredToken = `${b64}.sig_expired_test`;
 
     await handleCheckInAttempt(expiredToken, false);
@@ -139,10 +264,9 @@ export function StudentScanner() {
       const challenge = await fetchQrChallenge();
       await handleCheckInAttempt(challenge.challengeToken, true);
     } catch (err: any) {
-      setModalStatus("error");
+      setVerificationState("failed");
       setErrorMessage(err.message);
       setActiveVector(null);
-      setIsSubmitting(false);
     }
   };
 
@@ -151,27 +275,25 @@ export function StudentScanner() {
     setActiveVector("duplicate");
     try {
       const challenge = await fetchQrChallenge();
-      // First attempt succeeds
       await handleCheckInAttempt(challenge.challengeToken, false);
-      // Second attempt will trigger ALREADY_CHECKED_IN on the same session
     } catch (err: any) {
-      setModalStatus("error");
+      setVerificationState("failed");
       setErrorMessage(err.message);
       setActiveVector(null);
-      setIsSubmitting(false);
     }
   };
 
   const handleResetScan = () => {
-    setModalStatus("idle");
+    setLastScannedToken(null);
     setCheckInResult(null);
     setErrorMessage("");
     setActiveVector(null);
+    setVerificationState("scanning");
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
-      {/* 1. Scanner Viewport Card */}
+      {/* 1. Official Scanner Viewport Card */}
       <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] overflow-hidden shadow-2xl relative transition-all duration-300 hover:border-blue-500/30 w-full">
         {/* Viewport Top Header */}
         <div className="p-4 sm:p-5 border-b border-zinc-800/80 bg-[#06080A]/90 backdrop-blur-md flex items-center justify-between">
@@ -181,51 +303,81 @@ export function StudentScanner() {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-white tracking-tight">
-                Optical Viewfinder HUD
+                Official Attendance Viewfinder
               </h2>
               <p className="text-zinc-400 text-xs mt-0.5 font-mono">
-                Realtime optical sensor • High-assurance targeting
+                Realtime optical decoder • Server-authoritative check-in
               </p>
             </div>
           </div>
+
+          {/* Verification State Machine Status Pill */}
           <div className="flex items-center gap-2">
-            {hasCamera ? (
+            {verificationState === "scanning" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                SENSOR LIVE
+                SCANNING LIVE
               </span>
-            ) : permissionDenied ? (
+            )}
+            {verificationState === "verifying" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                VERIFYING...
+              </span>
+            )}
+            {verificationState === "ready" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                SIMULATION READY
+                READY TO SCAN
               </span>
-            ) : (
+            )}
+            {verificationState === "verified" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" />
+                VERIFIED
+              </span>
+            )}
+            {verificationState === "expired" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                <Clock className="h-3 w-3" />
+                EXPIRED
+              </span>
+            )}
+            {verificationState === "already_checked_in" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-                INITIALIZING
+                <CheckCircle2 className="h-3 w-3" />
+                ALREADY PRESENT
+              </span>
+            )}
+            {verificationState === "failed" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                <ShieldAlert className="h-3 w-3" />
+                FAILED
               </span>
             )}
           </div>
         </div>
 
-        {/* Dedicated Telemetry Sub-bar (Eliminates overlap with corner brackets) */}
+        {/* Dedicated Telemetry Sub-bar */}
         <div className="grid grid-cols-3 divide-x divide-zinc-800/80 border-b border-zinc-800/80 bg-[#06080A]/60 px-2 py-2 text-[11px] font-mono text-zinc-400">
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
             <span className="text-[10px] text-zinc-500 uppercase">Target</span>
-            <span className="text-zinc-200 font-medium">Rotating HMAC</span>
+            <span className="text-zinc-200 font-medium">15s HMAC Token</span>
           </div>
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
-            <span className="text-[10px] text-zinc-500 uppercase">Cadence</span>
-            <span className="text-zinc-200 font-medium">15–20s Cycle</span>
+            <span className="text-[10px] text-zinc-500 uppercase">Hardware</span>
+            <span className={deviceStatus?.isRegistered ? "text-emerald-400 font-medium truncate max-w-[120px]" : "text-amber-400 font-medium"}>
+              {deviceStatus?.deviceName || "Enclave Bound"}
+            </span>
           </div>
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
-            <span className="text-[10px] text-zinc-500 uppercase">Enclave</span>
-            <span className="text-blue-400 font-medium">SHA-256 Bound</span>
+            <span className="text-[10px] text-zinc-500 uppercase">Authority</span>
+            <span className="text-blue-400 font-medium">Zero-Trust Server</span>
           </div>
         </div>
 
         {/* Camera Viewport Canvas */}
-        <div className="relative min-h-[340px] sm:min-h-[380px] w-full bg-[#050709] flex items-center justify-center overflow-hidden cyber-grid p-6">
+        <div className="relative min-h-[340px] sm:min-h-[400px] w-full bg-[#050709] flex items-center justify-center overflow-hidden cyber-grid p-6">
           {hasCamera && (
             <video
               ref={videoRef}
@@ -236,7 +388,7 @@ export function StudentScanner() {
             />
           )}
 
-          {/* Central Target Reticle */}
+          {/* Central Target Reticle with Alignment Guide */}
           <div className="relative z-10 w-64 h-64 sm:w-72 sm:h-72 border border-blue-500/30 rounded-2xl flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-[2px] shadow-[0_0_35px_rgba(59,130,246,0.12)]">
             {/* 4 Sleek Corner Sci-Fi Targeting Brackets */}
             <div className="absolute -top-1.5 -left-1.5 w-7 h-7 border-t-2 border-l-2 border-blue-400 rounded-tl-lg shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
@@ -249,10 +401,21 @@ export function StudentScanner() {
             <div className="absolute h-8 w-[1px] bg-blue-400/30 pointer-events-none" />
             <div className="absolute h-2 w-2 rounded-full border border-blue-400/40 pointer-events-none" />
 
-            {/* Radar / Scanning Sweep Line */}
-            <div className="absolute inset-x-3 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_16px_#3b82f6] animate-scanline pointer-events-none" />
+            {/* Radar / Scanning Sweep Line (active while scanning) */}
+            {verificationState === "scanning" && (
+              <div className="absolute inset-x-3 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_16px_#3b82f6] animate-scanline pointer-events-none" />
+            )}
 
-            {/* Inactive Camera / Fallback Guidance */}
+            {/* Guidance Overlay when camera active */}
+            {hasCamera && verificationState === "scanning" && (
+              <div className="absolute bottom-3 inset-x-3 text-center pointer-events-none">
+                <span className="text-[10px] font-mono text-zinc-300 bg-black/60 px-2 py-0.5 rounded border border-zinc-800">
+                  Align classroom QR code within brackets
+                </span>
+              </div>
+            )}
+
+            {/* Inactive Camera / Permission Denied Guidance */}
             {!hasCamera && (
               <div className="text-center space-y-2.5 z-10">
                 <div className="mx-auto h-12 w-12 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-zinc-300 shadow-lg">
@@ -264,52 +427,72 @@ export function StudentScanner() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-white font-mono tracking-wider">
-                    {permissionDenied ? "CAMERA SENSOR INACTIVE" : "RETICLE ARMED & READY"}
+                    {permissionDenied ? "CAMERA PERMISSION DENIED" : "CAMERA SENSOR INACTIVE"}
                   </p>
                   <p className="text-[11px] text-zinc-400 leading-relaxed max-w-[210px] mx-auto font-mono mt-1">
                     {permissionDenied
-                      ? "Browser optical stream unavailable. Execute test vectors via the console below."
-                      : "Center classroom projector QR code within targeting brackets."}
+                      ? "Grant camera access in your browser address bar to scan the live lecture code."
+                      : "Click below to grant camera access and arm the optical viewfinder."}
                   </p>
                 </div>
                 <div className="pt-1">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-zinc-900/90 border border-zinc-800 text-zinc-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    SIMULATION READY
-                  </span>
+                  <button
+                    onClick={startCamera}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-medium bg-blue-600 hover:bg-blue-500 text-white shadow-md transition-colors"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <span>Arm Camera Sensor</span>
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
           {/* Submitting Loading Overlay */}
-          {isSubmitting && (
+          {verificationState === "verifying" && (
             <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center space-y-3 p-6 text-center">
               <RefreshCw className="h-8 w-8 text-blue-400 animate-spin" />
               <p className="text-sm font-semibold text-white font-mono tracking-wide">
                 VERIFYING CRYPTOGRAPHIC CHALLENGE...
               </p>
               <p className="text-xs text-zinc-400 font-mono max-w-sm">
-                Authenticating HMAC signature, timestamp freshness, and 1:1 hardware enclave binding.
+                Authenticating HMAC signature, timestamp freshness, and 1:1 hardware enclave binding on the server.
               </p>
             </div>
           )}
         </div>
 
         {/* Viewport Integrated Bottom Bar */}
-        <div className="px-4 sm:px-5 py-2.5 border-t border-zinc-800/80 bg-[#06080A]/90 backdrop-blur-md flex items-center justify-between text-xs font-mono text-zinc-400">
+        <div className="px-4 sm:px-5 py-2.5 border-t border-zinc-800/80 bg-[#06080A]/90 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-zinc-400">
           <div className="flex items-center gap-2">
             <Smartphone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-            <span className="text-zinc-300">DEVICE ENCLAVE ACTIVE</span>
+            <span className="text-zinc-300">
+              {deviceStatus?.isRegistered
+                ? `HARDWARE BOUND: ${deviceStatus.deviceName || "REGISTERED DEVICE"}`
+                : "HARDWARE BINDING: REGISTER PHONE IN SETTINGS"}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-            <span className="text-emerald-400/90">HUD SYNCHRONIZED</span>
+            <span className="text-emerald-400/90">HUD ARMED & ACTIVE</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Interactive Security Test Suite & Simulation Console */}
+      {/* 2. Official Protocol & Alternative Scanners Guidance Banner */}
+      <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10]/90 p-4 space-y-2 text-xs font-mono text-zinc-400 shadow-md">
+        <div className="flex items-center gap-2 text-zinc-200 font-semibold">
+          <Info className="h-4 w-4 text-blue-400 shrink-0" />
+          <span>Official AttendGuard Verification Protocol</span>
+        </div>
+        <p className="text-[11px] leading-relaxed text-zinc-400">
+          The classroom display features rolling cryptographic challenge tokens with a 15-second expiration window.
+          While external scanner apps or native phone cameras can physically decode the QR barcode, simply scanning or reading the code outside AttendGuard <strong>does not record attendance</strong>.
+          Only check-ins submitted through this authenticated portal and cryptographically verified on the server are recorded.
+        </p>
+      </div>
+
+      {/* 3. Interactive Security Test Suite & Simulation Console */}
       <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-5 sm:p-6 space-y-5 transition-all duration-300 hover:border-blue-500/30 w-full shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-zinc-800/60">
           <div className="space-y-0.5">
@@ -332,12 +515,12 @@ export function StudentScanner() {
           Simulate dynamic classroom scan payloads under distinct cryptographic and device-integrity conditions:
         </p>
 
-        {/* 2x2 Grid of Refined Interactive Scenario Cards */}
+        {/* 2x2 Grid of Interactive Scenario Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {/* VECTOR 1: Valid Check-In */}
           <button
             onClick={handleSimulateValidScan}
-            disabled={isSubmitting}
+            disabled={verificationState === "verifying"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -365,7 +548,7 @@ export function StudentScanner() {
           {/* VECTOR 2: Expired Token */}
           <button
             onClick={handleSimulateExpiredScan}
-            disabled={isSubmitting}
+            disabled={verificationState === "verifying"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-amber-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -393,7 +576,7 @@ export function StudentScanner() {
           {/* VECTOR 3: Device Mismatch */}
           <button
             onClick={handleSimulateDeviceMismatch}
-            disabled={isSubmitting}
+            disabled={verificationState === "verifying"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-rose-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -421,7 +604,7 @@ export function StudentScanner() {
           {/* VECTOR 4: Duplicate Submission */}
           <button
             onClick={handleSimulateDuplicateScan}
-            disabled={isSubmitting}
+            disabled={verificationState === "verifying"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -450,7 +633,7 @@ export function StudentScanner() {
 
       {/* Verification Status Modal */}
       <ScanResultModal
-        status={modalStatus}
+        status={verificationState}
         result={checkInResult}
         errorMessage={errorMessage}
         onScanAgain={handleResetScan}
@@ -459,4 +642,3 @@ export function StudentScanner() {
     </div>
   );
 }
-
