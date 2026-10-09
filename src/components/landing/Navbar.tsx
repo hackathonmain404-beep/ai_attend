@@ -17,6 +17,8 @@ export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
   const ctaBtnRef = React.useRef<HTMLAnchorElement>(null);
   const mobileMenuRef = React.useRef<HTMLDivElement>(null);
   const mobileLinksRef = React.useRef<HTMLDivElement>(null);
+  const logoRef = React.useRef<HTMLAnchorElement>(null);
+  const navLinksContainerRef = React.useRef<HTMLElement>(null);
 
   // Monitor scroll for subtle navbar styling
   React.useEffect(() => {
@@ -33,16 +35,59 @@ export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
   React.useEffect(() => {
     if (typeof window === "undefined" || !headerRef.current) return;
 
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (!isLoaded) {
-      gsap.set(headerRef.current, { opacity: 0, y: -20 });
+      if (!prefersReducedMotion) {
+        gsap.set(headerRef.current, { opacity: 0, y: -20 });
+      }
       return;
     }
 
-    gsap.fromTo(
-      headerRef.current,
-      { opacity: 0, y: -20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", delay: 0.05 }
-    );
+    const ctx = gsap.context(() => {
+      if (prefersReducedMotion) {
+        gsap.set([headerRef.current, logoRef.current, navLinksContainerRef.current, ctaBtnRef.current], {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          x: 0,
+        });
+        return;
+      }
+
+      const tl = gsap.timeline({ delay: 0.08 });
+      tl.fromTo(
+        headerRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
+      )
+        .fromTo(
+          logoRef.current,
+          { opacity: 0, scale: 0.94, x: -10 },
+          { opacity: 1, scale: 1, x: 0, duration: 0.5, ease: "power2.out" },
+          "-=0.4"
+        );
+
+      if (navLinksContainerRef.current) {
+        tl.fromTo(
+          navLinksContainerRef.current.children,
+          { opacity: 0, y: -8 },
+          { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, ease: "power2.out" },
+          "-=0.3"
+        );
+      }
+
+      if (ctaBtnRef.current) {
+        tl.fromTo(
+          ctaBtnRef.current,
+          { opacity: 0, scale: 0.93 },
+          { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" },
+          "-=0.25"
+        );
+      }
+    }, headerRef);
+
+    return () => ctx.revert();
   }, [isLoaded]);
 
   // Lock body scroll when mobile menu is open
@@ -140,9 +185,10 @@ export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between">
           {/* Brand Logo */}
           <Link
+            ref={logoRef}
             href="/"
             onClick={closeMobileMenu}
-            className="flex items-center gap-2 sm:gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1 -ml-1"
+            className="flex items-center gap-2 sm:gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1 -ml-1 will-change-transform"
           >
             <div className="h-7 w-7 rounded-lg bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:border-blue-400 group-hover:text-blue-300 transition-colors shadow-sm">
               <Shield className="h-3.5 w-3.5 stroke-[2]" />
@@ -159,6 +205,7 @@ export function Navbar({ currentUser, isLoaded = true }: NavbarProps) {
 
           {/* Desktop Nav Links */}
           <nav
+            ref={navLinksContainerRef}
             className="hidden md:flex items-center gap-7 text-sm font-normal text-zinc-400"
             aria-label="Desktop Navigation"
           >

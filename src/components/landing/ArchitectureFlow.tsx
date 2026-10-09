@@ -55,6 +55,7 @@ const ARCHITECTURE_NODES: FlowNode[] = [
 
 export function ArchitectureFlow() {
   const sectionRef = React.useRef<HTMLElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
   const lineProgressRef = React.useRef<HTMLDivElement>(null);
   const mobileLineRef = React.useRef<HTMLDivElement>(null);
   const desktopNodesRef = React.useRef<(HTMLDivElement | null)[]>([]);
@@ -68,91 +69,135 @@ export function ArchitectureFlow() {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const mm = gsap.matchMedia();
-
-    // Desktop Architecture Animation
-    mm.add("(min-width: 1024px)", () => {
-      if (lineProgressRef.current && sectionRef.current) {
+    const ctx = gsap.context(() => {
+      // 1. Header Reveal
+      if (headerRef.current) {
         gsap.fromTo(
-          lineProgressRef.current,
-          { scaleX: 0, transformOrigin: "left center" },
-          {
-            scaleX: 1,
-            ease: "none",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: "top 70%",
-              end: "bottom 60%",
-              scrub: 1,
-            },
-          }
-        );
-      }
-
-      desktopNodesRef.current.forEach((node) => {
-        if (!node) return;
-        gsap.fromTo(
-          node,
-          { opacity: 0.35, y: 24, scale: 0.96 },
+          headerRef.current.children,
+          { opacity: 0, y: 24 },
           {
             opacity: 1,
             y: 0,
-            scale: 1,
-            duration: 0.6,
+            duration: 0.65,
+            stagger: 0.12,
             ease: "power2.out",
             scrollTrigger: {
-              trigger: node,
-              start: "top 80%",
-              end: "bottom 60%",
-              toggleActions: "play none none reverse",
-            },
-          }
-        );
-      });
-    });
-
-    // Mobile Vertical Flow Animation
-    mm.add("(max-width: 1023px)", () => {
-      // Animate vertical progress line
-      if (mobileLineRef.current && sectionRef.current) {
-        gsap.fromTo(
-          mobileLineRef.current,
-          { scaleY: 0, transformOrigin: "top center" },
-          {
-            scaleY: 1,
-            ease: "none",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: "top 75%",
-              end: "bottom 70%",
-              scrub: 1,
-            },
-          }
-        );
-      }
-
-      // Progressive reveal of each node
-      mobileNodesRef.current.forEach((node) => {
-        if (!node) return;
-        gsap.fromTo(
-          node,
-          { opacity: 0, y: 18 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: node,
+              trigger: headerRef.current,
               start: "top 85%",
-              toggleActions: "play none none reverse",
+              once: true,
             },
           }
         );
-      });
-    });
+      }
 
-    return () => mm.revert();
+      const mm = gsap.matchMedia();
+
+      // Desktop Architecture Animation
+      mm.add("(min-width: 1024px)", () => {
+        if (lineProgressRef.current && sectionRef.current) {
+          gsap.fromTo(
+            lineProgressRef.current,
+            { scaleX: 0, transformOrigin: "left center" },
+            {
+              scaleX: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: sectionRef.current,
+                start: "top 68%",
+                end: "bottom 65%",
+                scrub: 0.8,
+              },
+            }
+          );
+        }
+
+        desktopNodesRef.current.forEach((node, idx) => {
+          if (!node) return;
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: "top 65%",
+              once: true,
+            },
+          });
+
+          tl.fromTo(
+            node,
+            { opacity: 0, y: 26, scale: 0.96 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.6,
+              delay: idx * 0.12,
+              ease: "power2.out",
+            }
+          );
+
+          // Subtle electric-blue pulse on the node's icon box
+          const iconBox = node.querySelector(".node-icon-box");
+          if (iconBox) {
+            tl.fromTo(
+              iconBox,
+              { borderColor: "rgba(59,130,246,0.3)", boxShadow: "0 0 0px rgba(56,189,248,0)" },
+              {
+                borderColor: "rgba(56,189,248,0.7)",
+                boxShadow: "0 0 22px rgba(56,189,248,0.35)",
+                duration: 0.45,
+                yoyo: true,
+                repeat: 1,
+                ease: "power2.out",
+              },
+              "-=0.4"
+            );
+          }
+        });
+      });
+
+      // Mobile Vertical Flow Animation
+      mm.add("(max-width: 1023px)", () => {
+        // Animate vertical progress line
+        if (mobileLineRef.current && sectionRef.current) {
+          gsap.fromTo(
+            mobileLineRef.current,
+            { scaleY: 0, transformOrigin: "top center" },
+            {
+              scaleY: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: sectionRef.current,
+                start: "top 75%",
+                end: "bottom 70%",
+                scrub: 1,
+              },
+            }
+          );
+        }
+
+        // Progressive reveal of each node
+        mobileNodesRef.current.forEach((node) => {
+          if (!node) return;
+          gsap.fromTo(
+            node,
+            { opacity: 0, y: 18 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.5,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: node,
+                start: "top 85%",
+                once: true,
+              },
+            }
+          );
+        });
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -162,7 +207,7 @@ export function ArchitectureFlow() {
       className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20 sm:scroll-mt-24 z-10"
     >
       {/* Section Header */}
-      <div className="max-w-3xl mb-12 sm:mb-16 text-left">
+      <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 text-left">
         <p className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-3">
           SYSTEM ARCHITECTURE // INFRASTRUCTURE PIPELINE
         </p>
@@ -267,7 +312,7 @@ export function ArchitectureFlow() {
                 >
                   {/* Node Status Dot + Step Number */}
                   <div className="flex items-center justify-between w-full mb-5">
-                    <div className="h-10 w-10 rounded-2xl bg-[#0a0f1d] border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.25)] group-hover:border-cyan-400/50 group-hover:text-cyan-300 transition-colors">
+                    <div className="node-icon-box h-10 w-10 rounded-2xl bg-[#0a0f1d] border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.25)] group-hover:border-cyan-400/50 group-hover:text-cyan-300 transition-colors">
                       <Icon className="h-5 w-5 stroke-[1.75]" />
                     </div>
                     <span className="font-mono text-xs font-semibold text-zinc-500">

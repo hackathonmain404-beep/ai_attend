@@ -75,7 +75,9 @@ const PILLARS_DATA: PillarItem[] = [
 
 export function SecurityPillars() {
   const sectionRef = React.useRef<HTMLElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
   const cardsContainerRef = React.useRef<HTMLDivElement>(null);
+  const desktopCardsRef = React.useRef<HTMLDivElement>(null);
 
   // Mobile tap-to-expand state for each pillar (first one open by default)
   const [expandedPillars, setExpandedPillars] = React.useState<Record<string, boolean>>({
@@ -101,55 +103,108 @@ export function SecurityPillars() {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const mm = gsap.matchMedia();
-
-    // Desktop: Smooth reveal of split layout
-    mm.add("(min-width: 1024px)", () => {
-      if (cardsContainerRef.current) {
+    const ctx = gsap.context(() => {
+      // 1. Header Reveal (Eyebrow -> Heading -> Description)
+      if (headerRef.current) {
         gsap.fromTo(
-          cardsContainerRef.current.children,
-          { opacity: 0, y: 25 },
+          headerRef.current.children,
+          { opacity: 0, y: 24 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.6,
+            duration: 0.65,
             stagger: 0.12,
             ease: "power2.out",
             scrollTrigger: {
-              trigger: cardsContainerRef.current,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
+              trigger: headerRef.current,
+              start: "top 85%",
+              once: true,
             },
           }
         );
       }
-    });
 
-    // Mobile: Sequential vertical card reveals without long scroll pinning trap
-    mm.add("(max-width: 1023px)", () => {
-      const cards = cardsContainerRef.current?.querySelectorAll(".pillar-card");
-      if (cards && cards.length > 0) {
-        cards.forEach((card) => {
-          gsap.fromTo(
-            card,
-            { opacity: 0, y: 20 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              ease: "power2.out",
+      const mm = gsap.matchMedia();
+
+      // Desktop: Staggered reveal of 2x2 grid with border glow emphasis
+      mm.add("(min-width: 1024px)", () => {
+        const cards = desktopCardsRef.current?.querySelectorAll(".desktop-pillar-card");
+        if (cards && cards.length > 0) {
+          cards.forEach((card, idx) => {
+            const tl = gsap.timeline({
               scrollTrigger: {
                 trigger: card,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
+                start: "top 82%",
+                once: true,
               },
-            }
-          );
-        });
-      }
-    });
+            });
 
-    return () => mm.revert();
+            // Card entrance with subtle border glow flash
+            tl.fromTo(
+              card,
+              {
+                opacity: 0,
+                y: 28,
+                scale: 0.98,
+                borderColor: "rgba(59,130,246,0.45)",
+              },
+              {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                borderColor: "rgba(255,255,255,0.08)",
+                duration: 0.65,
+                delay: (idx % 2) * 0.1,
+                ease: "power2.out",
+              }
+            );
+
+            // Technical feature badges short stagger
+            const badges = card.querySelectorAll(".pillar-badge");
+            if (badges && badges.length > 0) {
+              tl.fromTo(
+                badges,
+                { opacity: 0, y: 8 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.4,
+                  stagger: 0.05,
+                  ease: "power2.out",
+                },
+                "-=0.35"
+              );
+            }
+          });
+        }
+      });
+
+      // Mobile: Sequential vertical card reveals without layout shifts
+      mm.add("(max-width: 1023px)", () => {
+        const cards = cardsContainerRef.current?.querySelectorAll(".pillar-card");
+        if (cards && cards.length > 0) {
+          cards.forEach((card) => {
+            gsap.fromTo(
+              card,
+              { opacity: 0, y: 20 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: card,
+                  start: "top 88%",
+                  once: true,
+                },
+              }
+            );
+          });
+        }
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -166,7 +221,7 @@ export function SecurityPillars() {
 
       <div className="w-full">
         {/* Section Header */}
-        <div className="max-w-3xl mb-12 sm:mb-16 text-left">
+        <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 text-left">
           <div className="flex items-center gap-2.5 mb-3">
             <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold">
               SECURITY PILLARS // ZERO-TRUST DEFENSE
@@ -267,14 +322,14 @@ export function SecurityPillars() {
         {/* ========================================================
             DESKTOP VIEW (>= 1024px): Balanced 2x2 Grid Layout
            ======================================================== */}
-        <div className="hidden lg:grid grid-cols-2 gap-6 w-full">
+        <div ref={desktopCardsRef} className="hidden lg:grid grid-cols-2 gap-6 w-full">
           {PILLARS_DATA.map((pillar) => {
             const Icon = pillar.icon;
 
             return (
               <div
                 key={pillar.id}
-                className="group relative rounded-3xl p-6 border border-white/[0.08] bg-gradient-to-b from-[#0c101d]/90 to-[#06080d]/95 hover:border-blue-500/50 shadow-xl shadow-black/40 hover:shadow-2xl hover:shadow-blue-950/30 transition-all duration-300 hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
+                className="desktop-pillar-card will-change-transform group relative rounded-3xl p-6 border border-white/[0.08] bg-gradient-to-b from-[#0c101d]/90 to-[#06080d]/95 hover:border-blue-500/50 shadow-xl shadow-black/40 hover:shadow-2xl hover:shadow-blue-950/30 transition-all duration-300 hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between gap-4 mb-4">
@@ -306,7 +361,7 @@ export function SecurityPillars() {
                   {pillar.technicalDetails.map((detail) => (
                     <span
                       key={detail}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-mono text-blue-300"
+                      className="pillar-badge will-change-transform px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-mono text-blue-300"
                     >
                       {detail}
                     </span>

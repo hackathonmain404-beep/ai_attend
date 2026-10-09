@@ -28,14 +28,14 @@ export function FinalCTA({ destinationHref }: FinalCTAProps) {
       if (glowRef.current) {
         gsap.fromTo(
           glowRef.current,
-          { opacity: 0.2, scale: 0.8 },
+          { opacity: 0.2, scale: 0.85 },
           {
             opacity: 0.65,
-            scale: 1.15,
+            scale: 1.2,
             scrollTrigger: {
               trigger: sectionRef.current,
               start: "top 85%",
-              end: "bottom 80%",
+              end: "bottom 75%",
               scrub: 1,
             },
           }
@@ -51,12 +51,12 @@ export function FinalCTA({ destinationHref }: FinalCTAProps) {
             opacity: 1,
             y: 0,
             filter: "blur(0px)",
-            duration: 0.8,
+            duration: 0.85,
             ease: "power3.out",
             scrollTrigger: {
               trigger: headlineRef.current,
               start: "top 85%",
-              toggleActions: "play none none reverse",
+              once: true,
             },
           }
         );
@@ -77,27 +77,28 @@ export function FinalCTA({ destinationHref }: FinalCTAProps) {
             scrollTrigger: {
               trigger: headlineRef.current,
               start: "top 85%",
-              toggleActions: "play none none reverse",
+              once: true,
             },
           }
         );
       }
 
-      // CTA button reveals
+      // CTA button reveals with slight scale
       if (ctaBtnRef.current) {
         gsap.fromTo(
           ctaBtnRef.current,
-          { opacity: 0, y: 18 },
+          { opacity: 0, y: 18, scale: 0.94 },
           {
             opacity: 1,
             y: 0,
+            scale: 1,
             duration: 0.6,
             delay: 0.2,
             ease: "power3.out",
             scrollTrigger: {
               trigger: headlineRef.current,
               start: "top 85%",
-              toggleActions: "play none none reverse",
+              once: true,
             },
           }
         );

@@ -24,7 +24,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const violetGlowRef = React.useRef<HTMLDivElement>(null);
   const cyanGlowRef = React.useRef<HTMLDivElement>(null);
 
-  // 1. GSAP Hero Entrance Animation (Order: Status Badge -> Headline -> Description -> CTAs)
+  // 1. GSAP Hero Entrance Animation (Order: Status Badge -> Headline Words -> Description -> CTAs)
   React.useEffect(() => {
     if (typeof window === "undefined" || !isLoaded) return;
 
@@ -47,53 +47,81 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
             scale: 1,
           }
         );
+        const headlineWords = headlineRef.current?.querySelectorAll(".hero-headline-word");
+        if (headlineWords) {
+          gsap.set(headlineWords, { opacity: 1, y: 0, filter: "blur(0px)" });
+        }
         return;
       }
 
-      // Initial hidden states with shorter distances for mobile fluidity
-      gsap.set(statusBadgeRef.current, { opacity: 0, y: -12 });
-      gsap.set(headlineRef.current, { opacity: 0, y: 35, filter: "blur(8px)" });
-      gsap.set(copyRef.current, { opacity: 0, y: 20, filter: "blur(4px)" });
-      gsap.set(ctaPrimaryRef.current, { opacity: 0, y: 16 });
+      // Initial hidden states
+      gsap.set(statusBadgeRef.current, { opacity: 0, scale: 0.9, y: -12 });
+      const headlineWords = headlineRef.current?.querySelectorAll(".hero-headline-word");
+      if (headlineWords && headlineWords.length > 0) {
+        gsap.set(headlineWords, { opacity: 0, y: 35, filter: "blur(8px)" });
+      } else {
+        gsap.set(headlineRef.current, { opacity: 0, y: 35, filter: "blur(8px)" });
+      }
+      gsap.set(copyRef.current, { opacity: 0, y: 22, filter: "blur(4px)" });
+      gsap.set(ctaPrimaryRef.current, { opacity: 0, y: 16, scale: 0.95 });
       gsap.set(ctaSecondaryRef.current, { opacity: 0, y: 16 });
 
       // Entrance timeline
-      const tl = gsap.timeline({ delay: 0.15 });
+      const tl = gsap.timeline({ delay: 0.12 });
 
       tl.to(statusBadgeRef.current, {
         opacity: 1,
+        scale: 1,
         y: 0,
-        duration: 0.5,
+        duration: 0.55,
         ease: "power2.out",
-      })
-        .to(
+      });
+
+      if (headlineWords && headlineWords.length > 0) {
+        tl.to(
+          headlineWords,
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.85,
+            stagger: 0.15,
+            ease: "power3.out",
+          },
+          "-=0.25"
+        );
+      } else {
+        tl.to(
           headlineRef.current,
           {
             opacity: 1,
             y: 0,
             filter: "blur(0px)",
-            duration: 0.8,
+            duration: 0.85,
             ease: "power3.out",
           },
-          "-=0.3"
-        )
-        .to(
-          copyRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            filter: "blur(0px)",
-            duration: 0.65,
-            ease: "power3.out",
-          },
-          "-=0.5"
-        )
+          "-=0.25"
+        );
+      }
+
+      tl.to(
+        copyRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          duration: 0.7,
+          ease: "power3.out",
+        },
+        "-=0.45"
+      )
         .to(
           ctaPrimaryRef.current,
           {
             opacity: 1,
             y: 0,
-            duration: 0.55,
+            scale: 1,
+            duration: 0.6,
             ease: "power3.out",
           },
           "-=0.4"
@@ -106,8 +134,42 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
             duration: 0.55,
             ease: "power3.out",
           },
-          "-=0.4"
+          "-=0.35"
         );
+
+      // Subtle atmospheric light breathing drift on pointer devices
+      if (blueGlowRef.current) {
+        gsap.to(blueGlowRef.current, {
+          y: "+=22",
+          scale: 1.08,
+          duration: 6.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        });
+      }
+      if (cyanGlowRef.current) {
+        gsap.to(cyanGlowRef.current, {
+          x: "+=18",
+          y: "-=14",
+          scale: 1.05,
+          duration: 8,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        });
+      }
+      if (violetGlowRef.current) {
+        gsap.to(violetGlowRef.current, {
+          x: "-=18",
+          y: "+=14",
+          scale: 1.06,
+          duration: 7.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        });
+      }
     }, heroRef);
 
     return () => ctx.revert();
@@ -272,8 +334,13 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
           ref={headlineRef}
           className="text-[clamp(2.7rem,10.5vw,4.5rem)] sm:text-7xl md:text-8xl lg:text-[6.8rem] font-medium tracking-tight text-white leading-[0.98] mb-5 sm:mb-6 max-w-4xl will-change-transform"
         >
-          <span className="bg-gradient-to-b from-white via-white to-zinc-300 bg-clip-text text-transparent">
-            Zero-Proxy Attendance.
+          <span className="sr-only">Zero-Proxy Attendance.</span>
+          <span
+            aria-hidden="true"
+            className="bg-gradient-to-b from-white via-white to-zinc-300 bg-clip-text text-transparent inline-flex flex-wrap justify-center gap-x-3 sm:gap-x-5"
+          >
+            <span className="hero-headline-word inline-block will-change-transform">Zero-Proxy</span>
+            <span className="hero-headline-word inline-block will-change-transform">Attendance.</span>
           </span>
         </h1>
 

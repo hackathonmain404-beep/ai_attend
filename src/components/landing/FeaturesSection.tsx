@@ -44,6 +44,7 @@ const FEATURES: Feature[] = [
 
 export function FeaturesSection() {
   const sectionRef = React.useRef<HTMLElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
   const cardRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   React.useEffect(() => {
@@ -55,24 +56,71 @@ export function FeaturesSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      cardRefs.current.forEach((card, idx) => {
-        if (!card) return;
+      // 1. Section Header Reveal
+      if (headerRef.current) {
         gsap.fromTo(
-          card,
+          headerRef.current.children,
           { opacity: 0, y: 24 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.6,
-            delay: idx * 0.08,
+            duration: 0.65,
+            stagger: 0.12,
             ease: "power2.out",
             scrollTrigger: {
-              trigger: card,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              trigger: headerRef.current,
+              start: "top 85%",
+              once: true,
             },
           }
         );
+      }
+
+      // 2. Choreographed Stagger for Feature Cards
+      cardRefs.current.forEach((card, idx) => {
+        if (!card) return;
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 85%",
+            once: true,
+          },
+        });
+
+        tl.fromTo(
+          card,
+          { opacity: 0, y: 28, scale: 0.98 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.6,
+            delay: (idx % 2) * 0.12,
+            ease: "power2.out",
+          }
+        );
+
+        const icon = card.querySelector(".feature-icon-box");
+        if (icon) {
+          tl.fromTo(
+            icon,
+            { scale: 0.82, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.5)" },
+            "-=0.35"
+          );
+        }
+
+        const title = card.querySelector(".feature-title");
+        const desc = card.querySelector(".feature-desc");
+        if (title && desc) {
+          tl.fromTo(
+            [title, desc],
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.08, ease: "power2.out" },
+            "-=0.25"
+          );
+        }
       });
     }, sectionRef);
 
@@ -86,7 +134,7 @@ export function FeaturesSection() {
       className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20 sm:scroll-mt-24 z-10"
     >
       {/* Section Header */}
-      <div className="max-w-3xl mb-12 sm:mb-16 text-left">
+      <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 text-left">
         <p className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-blue-400 font-semibold mb-3">
           CAMPUS PLATFORM CAPABILITIES
         </p>
@@ -108,10 +156,10 @@ export function FeaturesSection() {
               ref={(el) => {
                 cardRefs.current[idx] = el;
               }}
-              className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#050811]/75 border border-white/[0.08] hover:border-white/20 transition-all duration-300 group text-left backdrop-blur-xl will-change-transform"
+              className="p-5 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-[#050811]/75 border border-white/[0.08] hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-950/20 hover:-translate-y-1 transition-all duration-300 group text-left backdrop-blur-xl will-change-transform"
             >
               <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
-                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 group-hover:text-cyan-300 transition-colors shrink-0">
+                <div className="feature-icon-box h-9 w-9 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 group-hover:text-cyan-300 transition-colors shrink-0">
                   <Icon className="h-4 w-4 sm:h-5 sm:w-5 stroke-[1.75]" />
                 </div>
                 <span className="text-[9.5px] sm:text-[10px] font-mono uppercase tracking-wider text-zinc-400 border border-white/[0.08] bg-white/[0.02] px-2.5 py-0.5 rounded-full truncate">
@@ -119,10 +167,10 @@ export function FeaturesSection() {
                 </span>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-medium text-white tracking-tight mb-2 group-hover:text-cyan-200 transition-colors">
+              <h3 className="feature-title text-lg sm:text-xl font-medium text-white tracking-tight mb-2 group-hover:text-cyan-200 transition-colors">
                 {item.title}
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+              <p className="feature-desc text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
                 {item.description}
               </p>
             </div>

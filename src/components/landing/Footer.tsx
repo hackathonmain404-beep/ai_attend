@@ -58,7 +58,7 @@ export function Footer() {
             scale: 1.1,
             scrollTrigger: {
               trigger: footerRef.current,
-              start: "top 90%",
+              start: "top 92%",
               end: "bottom bottom",
               scrub: 1,
             },
@@ -66,23 +66,42 @@ export function Footer() {
         );
       }
 
-      // Staggered reveal of footer columns
+      // Brand column & status indicator reveal
       if (brandColRef.current && footerRef.current) {
-        const elementsToAnimate = [brandColRef.current, ...navColRefs.current.filter(Boolean)];
-
         gsap.fromTo(
-          elementsToAnimate,
-          { opacity: 0, y: 24 },
+          brandColRef.current,
+          { opacity: 0, y: 20 },
           {
             opacity: 1,
             y: 0,
             duration: 0.6,
-            stagger: 0.1,
             ease: "power2.out",
             scrollTrigger: {
               trigger: footerRef.current,
               start: "top 88%",
-              toggleActions: "play none none reverse",
+              once: true,
+            },
+          }
+        );
+      }
+
+      // Staggered reveal of Product, Resources, and Company columns
+      const navCols = navColRefs.current.filter(Boolean);
+      if (navCols.length > 0 && footerRef.current) {
+        gsap.fromTo(
+          navCols,
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.55,
+            stagger: 0.08,
+            delay: 0.12,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: footerRef.current,
+              start: "top 88%",
+              once: true,
             },
           }
         );
@@ -97,12 +116,12 @@ export function Footer() {
             opacity: 1,
             y: 0,
             duration: 0.5,
-            delay: 0.3,
+            delay: 0.25,
             ease: "power2.out",
             scrollTrigger: {
               trigger: footerRef.current,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
+              start: "top 85%",
+              once: true,
             },
           }
         );
