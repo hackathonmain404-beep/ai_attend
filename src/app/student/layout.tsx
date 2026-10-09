@@ -105,7 +105,7 @@ export default function StudentLayout({
         />
 
         {/* Dashboard Main Content Area */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-28 md:pb-16 space-y-12 sm:space-y-16 relative z-10">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-32 sm:pb-36 md:pb-16 space-y-12 sm:space-y-16 relative z-10">
           {children}
         </main>
       </div>
@@ -115,9 +115,9 @@ export default function StudentLayout({
           ========================================================= */}
       <nav
         aria-label="Student Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/80 bg-[#0B0D10]/95 backdrop-blur-lg md:hidden shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/80 bg-[#0B0D10]/95 backdrop-blur-lg md:hidden shadow-2xl pb-[env(safe-area-inset-bottom,0px)]"
       >
-        <div className="max-w-md mx-auto grid grid-cols-5 h-16 items-center px-1">
+        <div className="max-w-md mx-auto grid grid-cols-4 h-16 items-center px-1">
           {STUDENT_NAV_ITEMS.map((item) => {
             const isActive = item.exact
               ? pathname === item.href
@@ -130,22 +130,22 @@ export default function StudentLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-col items-center justify-center -mt-5 group"
+                  className="flex flex-col items-center justify-center h-full min-h-[44px] group"
                 >
                   <div
                     className={cn(
-                      "h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-200 group-active:scale-95",
+                      "h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-200 group-active:scale-95",
                       isActive
-                        ? "bg-blue-600 text-white shadow-blue-950/80 ring-2 ring-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                        : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-950/50"
+                        ? "bg-blue-600 text-white shadow-[0_0_14px_rgba(59,130,246,0.55)] ring-2 ring-blue-400"
+                        : "bg-blue-600/90 text-white hover:bg-blue-500 shadow-md shadow-blue-950/60"
                     )}
                   >
-                    <Icon className="h-6 w-6" />
+                    <Icon className="h-4.5 w-4.5" />
                   </div>
                   <span
                     className={cn(
                       "text-[10px] font-mono mt-1 transition-colors uppercase tracking-tight",
-                      isActive ? "text-blue-400 font-bold" : "text-zinc-400"
+                      isActive ? "text-blue-400 font-bold" : "text-zinc-300 font-medium"
                     )}
                   >
                     {item.name}

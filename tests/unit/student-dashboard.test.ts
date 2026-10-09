@@ -116,4 +116,15 @@ describe("Student Attendance Summary Data Contract", () => {
     expect(summaryB.student.identifier).toBe("STU-002-B");
     expect(summaryA.student.id).not.toBe(summaryB.student.id);
   });
+
+  it("STUDENT_NAV_ITEMS defines exactly 4 balanced items for mobile dock", async () => {
+    const { STUDENT_NAV_ITEMS } = await import("@/components/student/StudentSidebar");
+    expect(STUDENT_NAV_ITEMS.length).toBe(4);
+    expect(STUDENT_NAV_ITEMS.map((i) => i.name)).toEqual([
+      "Dashboard",
+      "Scan QR",
+      "History",
+      "Advisor",
+    ]);
+  });
 });
