@@ -357,8 +357,10 @@ QR_TOKEN_TTL_SECONDS=20
 IP_CHECK_ENABLED=true
 # Enforcement policy: 'review' (default, flag for teacher audit) or 'reject' (strict 403 denial)
 IP_MISMATCH_POLICY=review
-# Approved campus public IP addresses or CIDR subnets (comma-separated)
-CAMPUS_IP_ALLOWLIST=127.0.0.1, ::1, 192.168.1.0/24, 203.0.113.0/24
+# Approved campus public IP addresses or CIDR subnets (comma-separated).
+# Default loopback entries for local development. For production verification, supply
+# authoritative institutional public IP CIDRs directly from campus network administration:
+CAMPUS_IP_ALLOWLIST=127.0.0.1, ::1
 # Reverse proxy trust settings
 TRUST_PROXY=true
 TRUSTED_PROXY_COUNT=1

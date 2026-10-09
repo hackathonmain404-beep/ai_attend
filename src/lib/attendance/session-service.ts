@@ -9,6 +9,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ValidationError, ForbiddenError, NotFoundError, ConflictError } from '@/lib/errors';
 import { finalizeSessionReverifications } from '@/lib/attendance/reverify-service';
 import { broadcastSessionStatus } from '@/lib/realtime/broadcast';
+import { logSecurityEvent } from '@/lib/security/audit-service';
+import { logAuditEvent } from '@/lib/audit/logger';
 import { Profile } from '@/types/database';
 
 export interface StartSessionParams {
@@ -265,4 +267,117 @@ export async function endAttendanceSession(params: EndSessionParams) {
     totalAbsent: absent,
     endedAt,
   };
+}
+
+export interface ResolveAttendanceParams {
+  sessionId: string;
+  teacherId: string;
+  recordId: string;
+  status: 'present' | 'absent';
+  reason?: string;
+  ipAddress?: string | null;
+  client?: SupabaseClient;
+  adminClient?: SupabaseClient;
+}
+
+/**
+ * Authoritatively resolves/corrects an attendance record (e.g., from review_required to present or absent)
+ * by the authorized session instructor, creating an immutable audit trail.
+ */
+export async function resolveSessionAttendanceRecord(params: ResolveAttendanceParams) {
+  const { sessionId, teacherId, recordId, status, reason, ipAddress } = params;
+
+  if (!recordId || typeof recordId !== 'string') {
+    throw new ValidationError('A valid recordId string is required.');
+  }
+
+  if (status !== 'present' && status !== 'absent') {
+    throw new ValidationError("Resolution status must be either 'present' or 'absent'.");
+  }
+
+  const supabase = params.client || (await createServerSupabaseClient());
+  const adminDb = params.adminClient || createAdminClient();
+
+  // 1. Verify session exists and belongs to this teacher
+  const { data: session, error: sessionError } = await supabase
+    .from('attendance_sessions')
+    .select('id, teacher_id, class_id')
+    .eq('id', sessionId)
+    .single();
+
+  if (sessionError || !session) {
+    throw new NotFoundError('Session not found.');
+  }
+
+  if (session.teacher_id !== teacherId) {
+    throw new ForbiddenError('You are not authorized to modify attendance for this session.');
+  }
+
+  // 2. Verify attendance record belongs to this session
+  const { data: record, error: recordError } = await supabase
+    .from('attendance_records')
+    .select('id, session_id, student_id, status, re_verified, ip_verification_status')
+    .eq('id', recordId)
+    .eq('session_id', sessionId)
+    .single();
+
+  if (recordError || !record) {
+    throw new NotFoundError('Attendance record not found in this session.');
+  }
+
+  // 3. Update attendance status via adminDb (service_role bypasses client mutation block)
+  const { data: updated, error: updateError } = await adminDb
+    .from('attendance_records')
+    .update({
+      status,
+      verification_reason: reason || `Resolved to ${status} by instructor`,
+    })
+    .eq('id', recordId)
+    .select('id, session_id, student_id, status, check_in_time, ip_verification_status, verification_reason')
+    .single();
+
+  if (updateError || !updated) {
+    throw new Error(`Failed to update attendance record: ${updateError?.message}`);
+  }
+
+  // 4. Log security event audit trail
+  const auditReason = reason || `Attendance corrected from ${record.status} to ${status} by instructor`;
+  await logSecurityEvent(
+    {
+      eventType: 'ATTENDANCE_CORRECTION',
+      sessionId,
+      studentId: record.student_id,
+      verificationStatus: status === 'present' ? 'matched' : 'rejected',
+      reason: auditReason,
+      ipAddress,
+      metadata: {
+        recordId,
+        previousStatus: record.status,
+        newStatus: status,
+        teacherId,
+      },
+    },
+    adminDb
+  );
+
+  // 5. Append to general audit log
+  await logAuditEvent(
+    {
+      actorId: teacherId,
+      action: 'ATTENDANCE_CORRECTION',
+      entityType: 'attendance_records',
+      entityId: recordId,
+      details: {
+        sessionId,
+        studentId: record.student_id,
+        previousStatus: record.status,
+        newStatus: status,
+        reason: auditReason,
+      },
+      ipAddress: ipAddress || null,
+    },
+    adminDb
+  );
+
+  return updated;
 }

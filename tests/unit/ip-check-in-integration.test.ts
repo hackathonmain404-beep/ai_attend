@@ -164,11 +164,13 @@ describe('Campus IP Check-In Integration (src/lib/attendance/check-in-service.ts
       adminClient: mockAdmin,
     });
 
-    expect(result.status).toBe('present');
+    expect(result.status).toBe('review_required');
+    expect(result.isConfirmed).toBe(false);
     expect(result.ipVerificationStatus).toBe('review_required');
     expect(result.verificationReason).toBe('NETWORK_MISMATCH');
     expect(result.attendanceRecorded).toBe(true);
 
+    expect(insertedRecord.status).toBe('review_required');
     expect(insertedRecord.ip_verification_status).toBe('review_required');
     expect(insertedRecord.verification_reason).toBe('NETWORK_MISMATCH');
     expect(insertedRecord.ip_address).toBe('203.0.113.88');

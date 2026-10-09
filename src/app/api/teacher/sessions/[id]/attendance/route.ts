@@ -3,4 +3,4 @@
  * GET /api/teacher/sessions/:id/attendance
  */
 
-export { GET } from '@/app/api/sessions/[id]/attendance/route';
+export { GET, PATCH } from '@/app/api/sessions/[id]/attendance/route';

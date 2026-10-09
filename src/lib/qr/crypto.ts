@@ -28,12 +28,13 @@ export function createQrChallengeToken(
   sessionId: string,
   sequence: number,
   customSecret?: string,
-  customTtl?: number
+  customTtl?: number,
+  customTimestamp?: number
 ): GeneratedChallenge {
   const secret = customSecret || config.qr.hmacSecret;
   const ttl = customTtl || config.qr.ttlSeconds;
 
-  const nowSec = Math.floor(Date.now() / 1000);
+  const nowSec = customTimestamp !== undefined ? customTimestamp : Math.floor(Date.now() / 1000);
   const nonce = crypto.randomBytes(8).toString('hex'); // 16-character cryptographically secure nonce
 
   const payload: QrTokenPayload = {

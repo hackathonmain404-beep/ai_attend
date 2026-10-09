@@ -153,9 +153,9 @@ describe('Phase 5: Attendance Status Lifecycle State Machine & Re-Verification H
   });
 
   describe('3. Database State Machine Integrity Assertions', () => {
-    // Functional simulation of Migration 008 check constraint and trigger
+    // Functional simulation of Migration 008 & 011 check constraint and trigger
     function simulateRecordValidation(record: {
-      status: 'present' | 'absent' | 're_verify_failed';
+      status: 'present' | 'absent' | 're_verify_failed' | 'review_required';
       re_verified: boolean;
       re_verified_at: string | null;
     }) {
@@ -163,7 +163,8 @@ describe('Phase 5: Attendance Status Lifecycle State Machine & Re-Verification H
         (record.status === 'present' &&
           (record.re_verified === false || (record.re_verified === true && record.re_verified_at !== null))) ||
         (record.status === 're_verify_failed' && record.re_verified === false) ||
-        (record.status === 'absent' && record.re_verified === false);
+        (record.status === 'absent' && record.re_verified === false) ||
+        (record.status === 'review_required' && record.re_verified === false);
 
       if (!isValid) {
         throw new Error('Check constraint violation: chk_attendance_record_lifecycle failed.');
@@ -208,6 +209,9 @@ describe('Phase 5: Attendance Status Lifecycle State Machine & Re-Verification H
 
       // 4. Mark absent
       expect(simulateRecordValidation({ status: 'absent', re_verified: false, re_verified_at: null })).toBe(true);
+
+      // 5. Review required for IP mismatch
+      expect(simulateRecordValidation({ status: 'review_required', re_verified: false, re_verified_at: null })).toBe(true);
     });
 
     it('rejects illegal state combinations at database engine level', () => {

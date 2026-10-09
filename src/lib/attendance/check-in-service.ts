@@ -46,12 +46,13 @@ export interface CheckInResult {
   recordId: string;
   sessionId: string;
   className: string;
-  status: 'present';
+  status: 'present' | 'review_required';
   checkInTime: string;
   reVerified: boolean;
   ipVerificationStatus?: IpVerificationStatus;
   verificationReason?: string | null;
   attendanceRecorded?: boolean;
+  isConfirmed?: boolean;
 }
 
 /**
@@ -380,6 +381,9 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
 
   const now = new Date().toISOString();
 
+  const attendanceStatus = ipResult.status === 'review_required' ? 'review_required' : 'present';
+  const isConfirmed = attendanceStatus === 'present';
+
   // Commit authoritative attendance record using service-role adminDb (bypass RLS write block)
   const { data: record, error: recordError } = await adminDb
     .from('attendance_records')
@@ -387,7 +391,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       session_id: sessionId,
       student_id: studentId,
       device_id: activeDevice.id,
-      status: 'present',
+      status: attendanceStatus,
       re_verified: false,
       check_in_time: now,
       created_at: now,
@@ -459,7 +463,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       fullName: studentProfile?.full_name || 'Enrolled Student',
       rollNumber: studentProfile?.identifier || 'STU',
       checkInTime: record.check_in_time,
-      status: 'present',
+      status: attendanceStatus,
     },
     adminDb
   );
@@ -473,10 +477,11 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
         entityId: record.id,
         details: {
           sessionId,
-          status: 'present',
+          status: attendanceStatus,
           tokenSnippet: challengeToken.slice(0, 32),
           ipVerificationStatus: ipResult.status,
           verificationReason: ipResult.reason,
+          isConfirmed,
         },
         ipAddress: ipAddress || null,
       },
@@ -487,12 +492,13 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       recordId: record.id,
       sessionId,
       className,
-      status: 'present',
+      status: attendanceStatus,
       checkInTime: record.check_in_time,
       reVerified: false,
       ipVerificationStatus: ipResult.status,
       verificationReason: ipResult.reason,
       attendanceRecorded: true,
+      isConfirmed,
     };
   } finally {
     releaseLock();

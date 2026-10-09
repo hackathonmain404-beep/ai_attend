@@ -20,7 +20,7 @@ export interface AttendeeBroadcastPayload {
   fullName: string;
   rollNumber: string;
   checkInTime: string;
-  status: 'present';
+  status: 'present' | 'review_required';
 }
 
 export interface ReverifyPromptBroadcastPayload {
