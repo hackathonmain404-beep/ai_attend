@@ -8,7 +8,7 @@
  * 4. Server-Authoritative Campus Perimeter (Haversine) Verification
  */
 
-import { ConflictError, RateLimitError, ForbiddenError } from '@/lib/errors';
+import { ConflictError, RateLimitError, ForbiddenError, VerificationAttemptReplayedError } from '@/lib/errors';
 
 // ----------------------------------------------------------------------------
 // 1. In-Flight Concurrency Locks
@@ -86,6 +86,72 @@ function cleanExpiredTokens(now: number) {
     }
   }
 }
+
+// ----------------------------------------------------------------------------
+// 2b. Verification Attempt Replay & Session Binding Ledger
+// ----------------------------------------------------------------------------
+interface ConsumedAttemptEntry {
+  studentId: string;
+  sessionId: string;
+  consumedAt: number;
+  expiresAt: number;
+}
+
+const consumedAttemptStore = new Map<string, ConsumedAttemptEntry>();
+
+/**
+ * Validates and atomically records a verification attempt.
+ * Prevents:
+ * 1. Verification attempt reuse (replay attacks)
+ * 2. Attempt token hijacking / cross-student result transfer
+ * 3. Session substitution (attempt generated for session A used on session B)
+ */
+export function assertAndConsumeVerificationAttempt(
+  attemptId: string,
+  studentId: string,
+  sessionId: string,
+  ttlSeconds = 60
+): void {
+  const now = Date.now();
+  cleanExpiredAttempts(now);
+
+  const existing = consumedAttemptStore.get(attemptId);
+  if (existing) {
+    if (existing.studentId !== studentId) {
+      throw new ForbiddenError(
+        'Cross-student verification attempt reuse detected. Attempt belongs to another student.',
+        'FORBIDDEN' as any
+      );
+    }
+    if (existing.sessionId !== sessionId) {
+      throw new ConflictError(
+        'Verification attempt is bound to a different attendance session.',
+        'CONFLICT' as any
+      );
+    }
+    throw new VerificationAttemptReplayedError(
+      'This verification attempt has already been consumed or processed.'
+    );
+  }
+
+  consumedAttemptStore.set(attemptId, {
+    studentId,
+    sessionId,
+    consumedAt: now,
+    expiresAt: now + ttlSeconds * 1000,
+  });
+}
+
+function cleanExpiredAttempts(now: number) {
+  if (consumedAttemptStore.size > 500) {
+    for (const [key, entry] of consumedAttemptStore.entries()) {
+      if (entry.expiresAt < now) {
+        consumedAttemptStore.delete(key);
+      }
+    }
+  }
+}
+
 
 // ----------------------------------------------------------------------------
 // 3. Sliding-Window Rate Limiter
@@ -224,5 +290,6 @@ export function verifyServerCampusPerimeter(
 export function resetSecurityGuardsForTesting(): void {
   activeSubmissionLocks.clear();
   consumedTokenStore.clear();
+  consumedAttemptStore.clear();
   rateLimitMap.clear();
 }
