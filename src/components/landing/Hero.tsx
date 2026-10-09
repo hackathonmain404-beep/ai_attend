@@ -173,70 +173,53 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
 
     const mm = gsap.matchMedia();
 
-    // Desktop Parallax and Scrub
+    // Desktop Parallax and Scrub: keep content opacity 1.0 so hero is never dimmed or lagged on return
     mm.add("(min-width: 1024px)", () => {
       if (contentWrapperRef.current) {
         gsap.to(contentWrapperRef.current, {
-          y: -80,
-          scale: 0.95,
-          opacity: 0.45,
+          y: -60,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
             start: "top top",
             end: "bottom top",
-            scrub: 1.2,
+            scrub: 0.5,
           },
         });
       }
 
       if (dotGridRef.current) {
         gsap.to(dotGridRef.current, {
-          y: -70,
+          y: -50,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
             start: "top top",
             end: "bottom top",
-            scrub: 1.5,
-          },
-        });
-      }
-
-      if (blueGlowRef.current) {
-        gsap.to(blueGlowRef.current, {
-          y: -140,
-          scale: 1.2,
-          opacity: 0.5,
-          ease: "none",
-          scrollTrigger: {
-            trigger: heroRef.current,
-            start: "top top",
-            end: "bottom top",
-            scrub: 1.5,
+            scrub: 0.5,
           },
         });
       }
     });
 
-    // Mobile / Tablet: subtle scroll fade without excessive travel distances
+    // Mobile / Tablet: subtle translation without opacity reduction
     mm.add("(max-width: 1023px)", () => {
       if (contentWrapperRef.current) {
         gsap.to(contentWrapperRef.current, {
-          opacity: 0.7,
+          y: -25,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
-            start: "center top",
+            start: "top top",
             end: "bottom top",
-            scrub: true,
+            scrub: 0.5,
           },
         });
       }
     });
 
     return () => mm.revert();
-  }, []);
+  }, [isLoaded]);
 
   // Micro-interaction: Primary CTA magnetic pull (only on fine pointer / desktop)
   const isFinePointer = () => {

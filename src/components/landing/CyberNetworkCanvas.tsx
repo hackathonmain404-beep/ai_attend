@@ -90,7 +90,8 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
 
     // Scroll-reactive controller values tweened by GSAP ScrollTrigger
     const controller = {
-      globalAlpha: 0,
+      entranceAlpha: 0,
+      scrollAlpha: 1,
       lineBrightness: 1,
       packetActivity: 1,
       parallaxOffset: 0,
@@ -241,87 +242,55 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
     gsap.registerPlugin(ScrollTrigger);
 
     const gsapCtx = gsap.context(() => {
-      // Entrance fade-in when loader finishes
+      // 1. Entrance fade-in when loader finishes (affects entranceAlpha only)
       gsap.to(controller, {
-        globalAlpha: 1,
+        entranceAlpha: 1,
         duration: 1.2,
         ease: "power2.out",
         delay: isLoaded ? 0.1 : 0.4,
       });
 
       if (!prefersReducedMotion) {
-        // Subtle Parallax scrubbing across the full page
-        gsap.to(controller, {
-          parallaxOffset: 80,
-          ease: "none",
-          scrollTrigger: {
-            trigger: document.body,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1.2,
-          },
+        // 2. Deterministic, unified scroll reactivity across the entire page
+        const updateScrollState = (progress: number) => {
+          const p = Math.max(0, Math.min(1, progress));
+          controller.parallaxOffset = p * 60;
+
+          // Technical data packet & brightness peak in middle sections
+          const mid = Math.sin(p * Math.PI);
+          controller.lineBrightness = 1 + mid * 0.35;
+          controller.packetActivity = 1 + mid * 0.6;
+          controller.focalGlowMultiplier = 1 + mid * 0.3;
+
+          // Subtly soften network into the deep background only near footer
+          // Crucially: for all p <= 0.88 (and strictly at top p === 0), scrollAlpha is 1.0!
+          if (p > 0.88) {
+            controller.scrollAlpha = 1 - ((p - 0.88) / 0.12) * 0.45;
+          } else {
+            controller.scrollAlpha = 1.0;
+          }
+        };
+
+        ScrollTrigger.create({
+          trigger: document.body,
+          start: "top top",
+          end: "bottom bottom",
+          onUpdate: (self) => updateScrollState(self.progress),
+          onRefresh: (self) => updateScrollState(self.progress),
         });
 
-        // Hero -> Security Pillars: Slightly increase line intensity
-        const securitySection = document.getElementById("security");
-        if (securitySection) {
-          gsap.to(controller, {
-            lineBrightness: 1.25,
-            focalGlowMultiplier: 1.3,
-            scrollTrigger: {
-              trigger: securitySection,
-              start: "top 80%",
-              end: "bottom 40%",
-              scrub: true,
-            },
-          });
-        }
-
-        // Architecture Flow: Peak technical data packet activity
-        const archSection = document.getElementById("architecture");
-        if (archSection) {
-          gsap.to(controller, {
-            packetActivity: 1.8,
-            lineBrightness: 1.4,
-            scrollTrigger: {
-              trigger: archSection,
-              start: "top 75%",
-              end: "bottom 35%",
-              scrub: true,
-            },
-          });
-        }
-
-        // Features & CTA: Subdued line brightness so cards/text remain crisp
-        const featSection = document.getElementById("features");
-        if (featSection) {
-          gsap.to(controller, {
-            lineBrightness: 0.9,
-            packetActivity: 1.1,
-            scrollTrigger: {
-              trigger: featSection,
-              start: "top 70%",
-              end: "bottom 40%",
-              scrub: true,
-            },
-          });
-        }
-
-        // Footer: Gradually fade network into deep navy/black
-        const footerElem = document.querySelector("footer");
-        if (footerElem) {
-          gsap.to(controller, {
-            globalAlpha: 0.35,
-            scrollTrigger: {
-              trigger: footerElem,
-              start: "top 90%",
-              end: "bottom bottom",
-              scrub: true,
-            },
-          });
-        }
+        // Initialize state for current scroll position
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const currentProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        updateScrollState(currentProgress);
       }
     }, containerRef);
+
+    if (isLoaded) {
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    }
 
     // =========================================================================
     // Core HTML Canvas Rendering Engine
@@ -331,7 +300,7 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
 
       ctx.clearRect(0, 0, width, height);
 
-      const currentGlobalAlpha = controller.globalAlpha;
+      const currentGlobalAlpha = controller.entranceAlpha * controller.scrollAlpha;
       if (currentGlobalAlpha <= 0.01) return;
 
       const { maxDist } = getCounts();
@@ -529,7 +498,8 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
 
     // Start rendering
     if (prefersReducedMotion) {
-      controller.globalAlpha = 1;
+      controller.entranceAlpha = 1;
+      controller.scrollAlpha = 1;
       drawFrame();
     } else {
       renderLoop();
