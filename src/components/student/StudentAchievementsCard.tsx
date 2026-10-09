@@ -68,7 +68,7 @@ export function StudentAchievementsCard({
       id: "tech_guardian",
       title: "TECH GUARDIAN",
       criteria: "TRUSTED DEVICE VERIFIED",
-      description: "1:1 hardware biometric binding registered.",
+      description: "1:1 hardware device binding registered.",
       isUnlocked: isDeviceBound,
       progress: isDeviceBound ? "Verified" : "Pending",
       progressPct: isDeviceBound ? 100 : 0,

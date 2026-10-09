@@ -55,11 +55,10 @@ describe('Security Attack Simulation: Temporal & Clock Tampering (SEC-06)', () =
     it('rejects late student re-verification acknowledgment beyond the 60-second window', async () => {
       // Challenge created with expiry 10 seconds in the past
       const pastExpiresAt = new Date(Date.now() - 10000).toISOString();
-      (reverifyService as any).activeChallenges.set(challengeId, {
-        sessionId,
+      (reverifyService as any).activeChallenges.set(sessionId, {
         challengeId,
-        issuedAt: new Date(Date.now() - 70000).toISOString(),
-        expiresAt: pastExpiresAt,
+        expiresAtSec: Math.floor(Date.now() / 1000) - 10,
+        expiresAtIso: pastExpiresAt,
       });
 
       await expect(

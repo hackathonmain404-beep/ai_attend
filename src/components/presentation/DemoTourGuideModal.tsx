@@ -126,7 +126,7 @@ export const TOUR_STEPS: TourStep[] = [
     story:
       "At minute 35 of the lecture, the professor fires a surprise re-verification challenge to catch students who scanned the QR and left the room.",
     antiProxyMechanism:
-      "Students receive an urgent 60-second biometric/device challenge on their screen. Absent students cannot respond from outside the classroom before the deadline expires.",
+      "Students receive an urgent 60-second hardware presence challenge on their screen. Absent students cannot respond from outside the classroom before the deadline expires.",
     testInstructions: [
       "Observe the re-verification trigger controls on the teacher portal.",
       "Check the student dashboard where active challenges pop up with audio-visual urgency.",

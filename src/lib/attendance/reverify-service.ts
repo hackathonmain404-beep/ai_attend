@@ -127,13 +127,20 @@ export async function acknowledgeReverification(params: AcknowledgeReverifyParam
     throw new ValidationError('deviceFingerprint is required.');
   }
 
-  const supabase = params.client || (await createServerSupabaseClient());
-  const adminDb = params.adminClient || createAdminClient();
-
   // 1. Assert active challenge exists and window is open
   // Check local cache, then fallback to database for serverless multi-instance consistency
   let active = activeChallenges.get(sessionId);
   const nowSec = Math.floor(Date.now() / 1000);
+
+  if (active && active.challengeId === challengeId && nowSec > active.expiresAtSec) {
+    throw new ConflictError(
+      'The re-verification window has expired.',
+      'REVERIFY_WINDOW_CLOSED' as any
+    );
+  }
+
+  const supabase = params.client || (await createServerSupabaseClient());
+  const adminDb = params.adminClient || createAdminClient();
 
   if (!active || active.challengeId !== challengeId) {
     const { data: dbSession } = await supabase

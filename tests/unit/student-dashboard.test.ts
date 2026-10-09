@@ -117,12 +117,13 @@ describe("Student Attendance Summary Data Contract", () => {
     expect(summaryA.student.id).not.toBe(summaryB.student.id);
   });
 
-  it("STUDENT_NAV_ITEMS defines exactly 4 balanced items for mobile dock", async () => {
+  it("STUDENT_NAV_ITEMS defines exactly 5 balanced items for navigation and mobile dock", async () => {
     const { STUDENT_NAV_ITEMS } = await import("@/components/student/StudentSidebar");
-    expect(STUDENT_NAV_ITEMS.length).toBe(4);
+    expect(STUDENT_NAV_ITEMS.length).toBe(5);
     expect(STUDENT_NAV_ITEMS.map((i) => i.name)).toEqual([
       "Dashboard",
       "Scan QR",
+      "Device",
       "History",
       "Advisor",
     ]);

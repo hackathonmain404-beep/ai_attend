@@ -77,7 +77,7 @@ function UnauthorizedContent() {
             {isAccessingTeacher
               ? "Faculty console is strictly reserved for course instructors to launch cryptographic QR attendance sessions."
               : isAccessingStudent
-              ? "Student command center is reserved for student biometric QR check-ins and academic margin telemetry."
+              ? "Student command center is reserved for student verified QR check-ins and academic margin telemetry."
               : "AttendGuard enforces strict separation between student attendance terminals and faculty controls."}
           </p>
         </div>
