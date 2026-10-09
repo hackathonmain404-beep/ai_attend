@@ -65,3 +65,39 @@ export class InternalServerError extends AppError {
     super(message, 500, 'INTERNAL_SERVER_ERROR');
   }
 }
+
+export class BiometricEnrollmentRequiredError extends AppError {
+  constructor(message = 'Biometric enrollment and consent required before face verification can be performed.') {
+    super(message, 403, 'BIOMETRIC_ENROLLMENT_REQUIRED');
+  }
+}
+
+export class FaceVerificationFailedError extends AppError {
+  constructor(message = 'Face verification failed. The provided face does not match the enrolled biometric profile.') {
+    super(message, 403, 'FACE_VERIFICATION_FAILED');
+  }
+}
+
+export class FaceInconclusiveError extends AppError {
+  constructor(message = 'Face verification inconclusive due to low confidence or poor lighting. Please retry in better lighting.') {
+    super(message, 422, 'FACE_INCONCLUSIVE');
+  }
+}
+
+export class NoFaceDetectedError extends AppError {
+  constructor(message = 'No human face detected in the captured image. Please ensure your face is clearly visible.') {
+    super(message, 422, 'NO_FACE_DETECTED');
+  }
+}
+
+export class BiometricServiceUnavailableError extends AppError {
+  constructor(message = 'Biometric verification service is temporarily unavailable. Please try again or inform your instructor.') {
+    super(message, 503, 'BIOMETRIC_SERVICE_UNAVAILABLE');
+  }
+}
+
+export class VerificationAttemptReplayedError extends AppError {
+  constructor(message = 'This verification attempt has already been consumed or processed.') {
+    super(message, 409, 'VERIFICATION_ATTEMPT_REPLAYED');
+  }
+}
