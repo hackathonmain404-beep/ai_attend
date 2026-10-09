@@ -224,23 +224,28 @@ export async function resolveCurrentUserProfile(forceRefresh: boolean = false): 
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const { data: dbProfile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .maybeSingle();
+          let dbProfile: any = null;
+          try {
+            const res = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", session.user.id)
+              .maybeSingle();
+            dbProfile = res?.data;
+          } catch {}
 
-          if (dbProfile) {
-            const liveProfile: UserProfile = {
-              id: dbProfile.id,
-              email: dbProfile.email,
-              fullName: dbProfile.full_name,
-              role: dbProfile.role as "student" | "teacher",
-              identifier: dbProfile.identifier,
-            };
-            saveCurrentUserProfile(liveProfile);
-            return liveProfile;
-          }
+          const meta = session.user.user_metadata || {};
+          const fallbackRole = (meta.role === "teacher" ? "teacher" : "student") as "student" | "teacher";
+
+          const liveProfile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || `${session.user.id}@university.edu`,
+            fullName: dbProfile?.full_name || meta.full_name || meta.name || "Academic User",
+            role: (dbProfile?.role as "student" | "teacher") || fallbackRole,
+            identifier: dbProfile?.identifier || meta.identifier || `STU-${session.user.id.slice(0, 8).toUpperCase()}`,
+          };
+          saveCurrentUserProfile(liveProfile);
+          return liveProfile;
         }
       } catch {}
 

@@ -57,7 +57,10 @@ export async function GET(request: NextRequest) {
 
         const redirectResponse = NextResponse.redirect(new URL(destination, request.url));
         cookiesToApply.forEach(({ name, value, options }) => {
-          redirectResponse.cookies.set(name, value, options);
+          redirectResponse.cookies.set(name, value, {
+            ...options,
+            path: '/',
+          });
         });
 
         // Set explicit role cookie to assist immediate client and edge middleware routing

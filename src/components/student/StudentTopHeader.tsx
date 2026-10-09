@@ -91,13 +91,13 @@ export function StudentTopHeader({
             {/* User Details Stack */}
             <div className="flex flex-col text-left font-mono min-w-0 pr-0.5">
               <span className="text-[11px] font-medium text-zinc-200 uppercase tracking-tight truncate max-w-[110px] sm:max-w-[140px] leading-tight">
-                {userProfile?.fullName || (userProfile === null ? "Loading..." : "Student")}
+                {userProfile?.fullName || (userProfile === undefined ? "Loading..." : "Student")}
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[9px] text-zinc-400 font-medium truncate">
-                  {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
+                  {userProfile?.identifier || (userProfile === undefined ? "..." : "STU-AUTH")}
                 </span>
-                {userProfile === null ? (
+                {userProfile === undefined ? (
                   <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-mono text-zinc-500">
                     SYNCING...
                   </span>

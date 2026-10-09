@@ -17,8 +17,9 @@ export default function StudentLayout({
   const pathname = usePathname();
 
   // Active user profile state with authoritative session resolution
+  // undefined = resolving auth, null = unauthenticated, object = authenticated profile
   const [userProfile, setUserProfile] = React.useState<any>(() => {
-    return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+    return typeof window !== "undefined" ? getCurrentUserProfile() || undefined : undefined;
   });
 
   // Sidebar collapse state with localStorage persistence (compact/collapsed by default)
@@ -53,9 +54,9 @@ export default function StudentLayout({
   // Synchronize authenticated user profile changes
   React.useEffect(() => {
     let isMounted = true;
-    if (!userProfile) {
+    if (userProfile === undefined) {
       resolveCurrentUserProfile().then((p) => {
-        if (isMounted && p) setUserProfile(p);
+        if (isMounted) setUserProfile(p);
       });
     }
 

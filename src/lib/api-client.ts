@@ -35,6 +35,7 @@ export async function apiFetch<T>(
   options?: RequestInit
 ): Promise<T> {
   const response = await fetch(endpoint, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,

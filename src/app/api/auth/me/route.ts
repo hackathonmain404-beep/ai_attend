@@ -37,7 +37,7 @@ export const GET = withErrorHandler(async () => {
   const responsePayload = {
     id: profile.id,
     email: profile.email,
-    fullName: profile.fullName,
+    fullName: profile.fullName || (profile as any).full_name || 'Academic User',
     role: profile.role,
     identifier: profile.identifier,
     device: {
