@@ -71,5 +71,21 @@ describe('Database Schema & Type Invariants (Phase 1)', () => {
 
     expect(record.status).toBe('present');
     expect(record.reVerified).toBe(false);
+
+    const reviewRecord: AttendanceRecord = {
+      ...record,
+      status: 'review_required',
+    };
+    expect(reviewRecord.status).toBe('review_required');
+  });
+
+  it('should verify Migration 011 defines review_required status and lifecycle constraint', () => {
+    const migration11Path = path.resolve(__dirname, '../../supabase/migrations/011_attendance_review_status.sql');
+    expect(fs.existsSync(migration11Path)).toBe(true);
+
+    const sql = fs.readFileSync(migration11Path, 'utf-8');
+    expect(sql).toContain("review_required");
+    expect(sql).toContain("chk_attendance_record_lifecycle");
+    expect(sql).toContain("trg_validate_attendance_record_transition");
   });
 });

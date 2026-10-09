@@ -42,6 +42,8 @@ export interface SessionAttendeeView {
   checkInTime: string;
   status: string;
   reVerified: boolean;
+  ipVerificationStatus?: string;
+  verificationReason?: string | null;
 }
 
 export interface SessionAttendanceView {
@@ -595,6 +597,8 @@ export async function getSessionAttendance(
       status,
       re_verified,
       check_in_time,
+      ip_verification_status,
+      verification_reason,
       student:profiles!attendance_records_student_id_fkey(
         id,
         full_name,
@@ -616,6 +620,8 @@ export async function getSessionAttendance(
     checkInTime: r.check_in_time,
     status: r.status,
     reVerified: Boolean(r.re_verified),
+    ipVerificationStatus: r.ip_verification_status,
+    verificationReason: r.verification_reason,
   }));
 
   const presentCount = attendees.filter((a) => a.status === 'present').length;

@@ -39,16 +39,18 @@ export function acquireSubmissionLock(lockKey: string): () => void {
 // 2. Token Nonce & Fingerprint Consumption Ledger
 // ----------------------------------------------------------------------------
 interface ConsumedTokenEntry {
-  studentId: string;
-  consumedAt: number;
+  consumedStudentIds: Set<string>;
+  createdAt: number;
   expiresAt: number;
 }
 
 const consumedTokenStore = new Map<string, ConsumedTokenEntry>();
 
 /**
- * Checks and marks a dynamic QR token fingerprint as consumed.
- * Throws 409 Conflict with QR_REPLAYED if the exact token has already been consumed.
+ * Checks and marks a dynamic QR token fingerprint as consumed for a student.
+ * Dynamic classroom QR tokens are broadcast and shared across all students in the room.
+ * Allows multiple distinct students to scan the same valid token within its TTL.
+ * Throws 409 Conflict with QR_REPLAYED if the same student attempts to reuse the same token.
  */
 export function assertAndConsumeToken(
   tokenFingerprint: string,
@@ -62,17 +64,19 @@ export function assertAndConsumeToken(
 
   const existing = consumedTokenStore.get(tokenFingerprint);
   if (existing) {
-    if (existing.studentId === studentId) {
+    if (existing.consumedStudentIds.has(studentId)) {
       throw new ConflictError(
-        'This attendance QR token has already been consumed. Please scan the current code on the screen.',
+        'This attendance QR token has already been consumed by your account. Please scan the current code on the screen.',
         'QR_REPLAYED' as any
       );
     }
+    existing.consumedStudentIds.add(studentId);
+    return;
   }
 
   consumedTokenStore.set(tokenFingerprint, {
-    studentId,
-    consumedAt: now,
+    consumedStudentIds: new Set([studentId]),
+    createdAt: now,
     expiresAt: now + ttlSeconds * 1000 + 5000, // keep for TTL + 5s buffer
   });
 }

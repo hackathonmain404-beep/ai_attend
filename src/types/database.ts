@@ -5,7 +5,7 @@
 
 export type UserRole = 'student' | 'teacher';
 export type SessionStatus = 'active' | 're_verifying' | 'ended';
-export type AttendanceStatus = 'present' | 'absent' | 're_verify_failed';
+export type AttendanceStatus = 'present' | 'absent' | 're_verify_failed' | 'review_required';
 export type VerificationType = 'initial_qr' | 're_verify_challenge';
 export type VerificationStatus = 'success' | 'expired' | 'invalid' | 'duplicate' | 'device_mismatch';
 
