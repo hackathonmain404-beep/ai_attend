@@ -265,7 +265,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[#02040a] via-[#030712] to-zinc-950"
+      className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 overflow-hidden bg-transparent"
     >
       {/* 1. Parallax Atmosphere: Continuous Technical Dot Grid */}
       <div
@@ -294,7 +294,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       {/* 4. Seamless Bottom Gradient Dissolve */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-36 sm:h-64 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent pointer-events-none z-[5]"
+        className="absolute inset-x-0 bottom-0 h-28 sm:h-44 bg-gradient-to-t from-[#02040a]/80 via-transparent to-transparent pointer-events-none z-[5]"
       />
 
       {/* 5. Main Hero Content Wrapper - Centered */}

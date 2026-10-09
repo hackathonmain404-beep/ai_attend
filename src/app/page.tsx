@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { Navbar } from "@/components/landing/Navbar";
+import { CyberNetworkCanvas } from "@/components/landing/CyberNetworkCanvas";
 import { Hero } from "@/components/landing/Hero";
 import { SecurityPillars } from "@/components/landing/SecurityPillars";
 import { ArchitectureFlow } from "@/components/landing/ArchitectureFlow";
@@ -133,7 +134,10 @@ export default function HomePage() {
     : "/login";
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden relative">
+    <main className="min-h-screen bg-[#02040a] text-zinc-100 flex flex-col selection:bg-blue-600/30 selection:text-blue-200 antialiased overflow-x-hidden relative">
+      {/* 0. Advanced Cybersecurity Network Canvas Background */}
+      <CyberNetworkCanvas isLoaded={isPageLoaded} />
+
       {/* Initial Cybersecurity System Loading Sequence */}
       {!isPageLoaded && (
         <PageLoader onComplete={() => setIsPageLoaded(true)} />
