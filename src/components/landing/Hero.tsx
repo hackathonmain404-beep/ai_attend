@@ -18,7 +18,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const contentWrapperRef = React.useRef<HTMLDivElement>(null);
 
   // Parallax Atmosphere Background Elements
-  const dotGridRef = React.useRef<HTMLDivElement>(null);
   const blueGlowRef = React.useRef<HTMLDivElement>(null);
   const violetGlowRef = React.useRef<HTMLDivElement>(null);
   const cyanGlowRef = React.useRef<HTMLDivElement>(null);
@@ -187,19 +186,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
           },
         });
       }
-
-      if (dotGridRef.current) {
-        gsap.to(dotGridRef.current, {
-          y: -50,
-          ease: "none",
-          scrollTrigger: {
-            trigger: heroRef.current,
-            start: "top top",
-            end: "bottom top",
-            scrub: 0.5,
-          },
-        });
-      }
     });
 
     // Mobile / Tablet: subtle translation without opacity reduction
@@ -248,36 +234,23 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 overflow-hidden bg-transparent"
+      className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 bg-transparent"
     >
-      {/* 1. Parallax Atmosphere: Continuous Technical Dot Grid */}
-      <div
-        ref={dotGridRef}
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:24px_24px] sm:[background-size:28px_28px] pointer-events-none will-change-transform z-0"
-      />
-
-      {/* 2. Parallax Atmosphere: Multi-Speed Blur Light Fields (carefully bounded) */}
+      {/* Atmosphere: Continuous Multi-Speed Blur Light Fields without edge clipping */}
       <div
         ref={cyanGlowRef}
         aria-hidden="true"
-        className="absolute -bottom-16 -left-24 sm:-left-36 w-[320px] sm:w-[680px] h-[300px] sm:h-[460px] rounded-full bg-gradient-to-tr from-cyan-500/20 via-blue-600/20 to-indigo-600/10 blur-[80px] sm:blur-[120px] pointer-events-none opacity-30 sm:opacity-40 mix-blend-screen will-change-transform z-0"
+        className="absolute bottom-0 left-0 w-[320px] sm:w-[680px] h-[300px] sm:h-[460px] rounded-full bg-gradient-to-tr from-cyan-500/15 via-blue-600/15 to-indigo-600/10 blur-[80px] sm:blur-[120px] pointer-events-none opacity-30 sm:opacity-40 mix-blend-screen will-change-transform z-0"
       />
       <div
         ref={violetGlowRef}
         aria-hidden="true"
-        className="absolute -bottom-20 -right-24 sm:-right-36 w-[300px] sm:w-[660px] h-[280px] sm:h-[440px] rounded-full bg-gradient-to-tl from-violet-600/20 via-indigo-600/15 to-blue-600/10 blur-[80px] sm:blur-[130px] pointer-events-none opacity-25 sm:opacity-35 mix-blend-screen will-change-transform z-0"
+        className="absolute bottom-0 right-0 w-[300px] sm:w-[660px] h-[280px] sm:h-[440px] rounded-full bg-gradient-to-tl from-violet-600/15 via-indigo-600/10 to-blue-600/10 blur-[80px] sm:blur-[130px] pointer-events-none opacity-25 sm:opacity-35 mix-blend-screen will-change-transform z-0"
       />
       <div
         ref={blueGlowRef}
         aria-hidden="true"
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[680px] h-[260px] sm:h-[420px] rounded-full bg-blue-600/15 blur-[90px] sm:blur-[130px] pointer-events-none opacity-35 sm:opacity-40 will-change-transform z-0"
-      />
-
-      {/* 4. Seamless Bottom Gradient Dissolve */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-28 sm:h-44 bg-gradient-to-t from-[#02040a]/80 via-transparent to-transparent pointer-events-none z-[5]"
       />
 
       {/* 5. Main Hero Content Wrapper - Centered */}

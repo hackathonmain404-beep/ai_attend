@@ -145,16 +145,20 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
     ];
 
     function initNetwork() {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const rect = containerRef.current?.getBoundingClientRect();
+      width = Math.ceil(rect?.width || window.innerWidth);
+      height = Math.ceil(rect?.height || window.innerHeight);
       dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas!.width = width * dpr;
-      canvas!.height = height * dpr;
-      canvas!.style.width = `${width}px`;
-      canvas!.style.height = `${height}px`;
+      canvas!.width = Math.round(width * dpr);
+      canvas!.height = Math.round(height * dpr);
+      canvas!.style.width = "100%";
+      canvas!.style.height = "100%";
 
-      ctx!.scale(dpr, dpr);
+      if (ctx) {
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+      }
 
       const { nodeCount, particleCount, packetLimit } = getCounts();
 
@@ -298,7 +302,7 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
     function drawFrame() {
       if (!ctx) return;
 
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width + 2, height + 2);
 
       const currentGlobalAlpha = controller.entranceAlpha * controller.scrollAlpha;
       if (currentGlobalAlpha <= 0.01) return;
@@ -306,41 +310,47 @@ export function CyberNetworkCanvas({ isLoaded = true, className = "" }: CyberNet
       const { maxDist } = getCounts();
       const parallaxY = controller.parallaxOffset;
 
-      // 1. Draw Subtle Multi-Point Ambient Nebula Blooms behind clusters
+      // 1. Draw Subtle Multi-Point Ambient Nebula Blooms behind clusters (pure circular arcs, no sharp rectangular edges)
       if (nodes.length > 5) {
         const focal1 = nodes[0];
         const focal2 = nodes[Math.floor(nodes.length / 2)];
 
         if (focal1) {
+          const fy1 = focal1.y + parallaxY * 0.4;
           const grad1 = ctx.createRadialGradient(
             focal1.x,
-            focal1.y + parallaxY * 0.4,
+            fy1,
             0,
             focal1.x,
-            focal1.y + parallaxY * 0.4,
+            fy1,
             240
           );
           grad1.addColorStop(0, `rgba(37, 99, 235, ${0.12 * currentGlobalAlpha * controller.focalGlowMultiplier})`);
           grad1.addColorStop(0.6, `rgba(6, 182, 212, ${0.04 * currentGlobalAlpha})`);
           grad1.addColorStop(1, "rgba(2, 4, 10, 0)");
           ctx.fillStyle = grad1;
-          ctx.fillRect(focal1.x - 240, focal1.y + parallaxY * 0.4 - 240, 480, 480);
+          ctx.beginPath();
+          ctx.arc(focal1.x, fy1, 240, 0, Math.PI * 2);
+          ctx.fill();
         }
 
         if (focal2) {
+          const fy2 = focal2.y + parallaxY * 0.5;
           const grad2 = ctx.createRadialGradient(
             focal2.x,
-            focal2.y + parallaxY * 0.5,
+            fy2,
             0,
             focal2.x,
-            focal2.y + parallaxY * 0.5,
+            fy2,
             280
           );
           grad2.addColorStop(0, `rgba(59, 130, 246, ${0.09 * currentGlobalAlpha})`);
           grad2.addColorStop(0.7, `rgba(99, 102, 241, ${0.03 * currentGlobalAlpha})`);
           grad2.addColorStop(1, "rgba(2, 4, 10, 0)");
           ctx.fillStyle = grad2;
-          ctx.fillRect(focal2.x - 280, focal2.y + parallaxY * 0.5 - 280, 560, 560);
+          ctx.beginPath();
+          ctx.arc(focal2.x, fy2, 280, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
