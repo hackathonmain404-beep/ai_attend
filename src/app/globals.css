@@ -40,10 +40,18 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-emerald-500/30 selection:text-emerald-200;
+    @apply bg-background text-foreground antialiased selection:bg-blue-600/30 selection:text-blue-200;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 }
 
@@ -270,25 +278,24 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Futuristic Electric Blue Custom Scrollbar */
-* {
-  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(9, 9, 11, 0.9);
+/* Clean Minimal Scrollbar (neutral, unobtrusive) */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(9, 9, 11, 0.9);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.7), rgba(59, 130, 246, 0.5));
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.95), rgba(96, 165, 250, 0.85));
-  box-shadow: 0 0 14px rgba(37, 99, 235, 0.65);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Subtle fade and upward entrance animation */
@@ -345,8 +352,14 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-aurora-left,
-  .animate-aurora-right {
+  .animate-aurora-right,
+  .animate-scanline,
+  .animate-neon-pulse,
+  .animate-ping {
     animation: none !important;
+  }
+  html {
+    scroll-behavior: auto !important;
   }
 }
 

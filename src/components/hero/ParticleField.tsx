@@ -69,8 +69,8 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
       if (width === 0 || height === 0) return;
 
       const isMobile = width < 768;
-      // Dense but elegant particle count: ~135 desktop, ~42 mobile
-      const count = isMobile ? 42 : Math.min(Math.floor((width * height) / 8500), 145);
+      // Dense on desktop, featherlight on mobile
+      const count = isMobile ? 18 : Math.min(Math.floor((width * height) / 8500), 140);
 
       const centerX = width / 2;
       const centerY = height / 2;
@@ -91,7 +91,7 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
           originY: y,
           vx: (Math.random() - 0.5) * 0.16,
           vy: (Math.random() - 0.5) * 0.16,
-          baseRadius: 1.1 + Math.random() * 0.7,
+          baseRadius: isMobile ? 1.0 : 1.1 + Math.random() * 0.7,
           baseAlpha: 0.12 + centerFactor * 0.22 + Math.random() * 0.1,
           currentOffsetX: 0,
           currentOffsetY: 0,
@@ -99,7 +99,9 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
       }
     };
 
-    // Pointer events scoped directly to the Hero section
+    const hasFineHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    // Pointer events scoped directly to the Hero section (desktop fine pointer only)
     const handlePointerMove = (e: PointerEvent) => {
       const rect = heroEl.getBoundingClientRect();
       mouseTargetX = e.clientX - rect.left;
@@ -115,9 +117,11 @@ export function ParticleField({ heroRef }: ParticleFieldProps) {
       mouseTargetActive = false;
     };
 
-    heroEl.addEventListener("pointermove", handlePointerMove, { passive: true });
-    heroEl.addEventListener("pointerenter", handlePointerEnter, { passive: true });
-    heroEl.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+    if (hasFineHover) {
+      heroEl.addEventListener("pointermove", handlePointerMove, { passive: true });
+      heroEl.addEventListener("pointerenter", handlePointerEnter, { passive: true });
+      heroEl.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+    }
 
     // Intersection observer to pause rendering when hero is scrolled out of view
     const observer = new IntersectionObserver(

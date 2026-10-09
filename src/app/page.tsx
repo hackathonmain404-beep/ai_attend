@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentUserProfile, saveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
-import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { SecurityPillars } from "@/components/landing/SecurityPillars";
 import { ArchitectureFlow } from "@/components/landing/ArchitectureFlow";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 import { PageLoader } from "@/components/landing/PageLoader";
@@ -147,11 +148,14 @@ export default function HomePage() {
       {/* 2. Self-Contained Stitch-Inspired Hero Section with GSAP ScrollTrigger */}
       <Hero destinationHref={destinationHref} isLoaded={isPageLoaded} />
 
-      {/* 3. Campus Platform Capabilities */}
-      <FeaturesSection />
+      {/* 3. Four Security Pillars (Zero-Trust Defense) */}
+      <SecurityPillars />
 
-      {/* 5. Scroll-Driven Architecture Story: Generate → Verify → Bind → Record */}
+      {/* 4. Scroll-Driven Architecture Story: Generate → Verify → Bind → Record */}
       <ArchitectureFlow />
+
+      {/* 5. Campus Platform Capabilities */}
+      <FeaturesSection />
 
       {/* 6. Spacious Final CTA Section with Blur-to-Sharp Headline */}
       <FinalCTA destinationHref={destinationHref} />
