@@ -32,7 +32,8 @@ const GHOST_SUBJECTS = [
  */
 export function validateAdvisorResponse(
   rawText: string,
-  context: AttendanceContextPayload
+  context: AttendanceContextPayload,
+  queryText?: string
 ): ValidationResult {
   const issues: string[] = [];
 
@@ -66,12 +67,36 @@ export function validateAdvisorResponse(
   const minReq = facts.policy.minimumRequirement;
   const safeReq = facts.policy.safeThreshold;
 
-  // 1. Detect unlisted ghost courses mentioned in model output
+  // 1. Detect unlisted ghost courses mentioned in model output (unless explicitly disclaimed as unlisted/unenrolled)
   const ghostCoursesMentioned = GHOST_SUBJECTS.filter((g) => {
     const isEnrolled = enrolledCourses.some(
-      (c) => c.lower.includes(g) || g.includes(c.lower) || c.code.includes(g)
+      (c) => new RegExp(`\\b${g}\\b`, 'i').test(c.lower) || c.code.toLowerCase().includes(g)
     );
-    return !isEnrolled && normalizedText.includes(g);
+    if (isEnrolled) return false;
+
+    // Must match whole word boundary in output
+    const ghostRegex = new RegExp(`\\b${g}\\b`, 'i');
+    if (!ghostRegex.test(rawText)) return false;
+
+    // Special handling for 'art': must be an academic subject reference (e.g. art class/course/subject)
+    // rather than common English words or idioms (start, part, smart, state of the art, art of ...)
+    if (g === 'art') {
+      const artCourseRegex = /\b(?:art\s+(?:class|course|subject|department|credit|history|studio)|fine\s+arts?)\b/i;
+      if (!artCourseRegex.test(rawText)) {
+        return false;
+      }
+    }
+
+    // Check if the model explicitly disclaimed or stated no enrollment/records for the course
+    const disclaimerPattern = new RegExp(
+      `(?:not\\s+enrolled\\s+in|no\\s+(?:attendance\\s+)?records?\\s+(?:found\\s+)?(?:for|in)|do\\s+not\\s+have\\s+records?\\s+for|don't\\s+have\\s+records?\\s+for|not\\s+registered\\s+in)\\s+[^.\\n]*\\b${g}\\b`,
+      'i'
+    );
+    if (disclaimerPattern.test(rawText)) {
+      return false; // Valid disclaimer, not a hallucination
+    }
+
+    return true;
   });
 
   for (const ghost of ghostCoursesMentioned) {
@@ -86,18 +111,78 @@ export function validateAdvisorResponse(
   for (const match of percentageMatches) {
     const pFound = parseFloat(match[1]);
     const matchIndex = match.index ?? 0;
+    const matchLength = match[0].length;
 
     // Standard policy numbers (75% minimum, 80% safe) are legitimate institutional citations
     if (pFound === minReq || pFound === safeReq || pFound === 75 || pFound === 80) {
       continue;
     }
 
-    const windowStart = Math.max(0, matchIndex - 40);
-    const windowEnd = Math.min(normalizedText.length, matchIndex + 40);
+    // If the percentage was directly specified in the student's question, it is an in-query target/topic
+    const isFromUserQuery = queryText
+      ? queryText.includes(`${pFound}%`) ||
+        queryText.includes(`${pFound} %`) ||
+        new RegExp(`\\b${pFound.toString().replace('.', '\\.')}(?:%|\\s*%)?\\b`).test(queryText)
+      : false;
+    if (isFromUserQuery) {
+      continue;
+    }
+
+    const windowStart = Math.max(0, matchIndex - 80);
+    const windowEnd = Math.min(normalizedText.length, matchIndex + 80);
     const windowAround = normalizedText.slice(windowStart, windowEnd);
-    const isOverallMention = /overall|total|average|cumulative|standing|across/i.test(
-      windowAround
-    );
+
+    // If the percentage appears in an explicit what-if, hypothetical projection, or delta/goal context
+    const isPastStateAssertion = /\b(?:you\s+have|attendance\s+is|currently\s+(?:at\s+)?|current\s+attendance\s+(?:is\s+)?)\s*100%/i.test(windowAround);
+    const isHypotheticalOrProjection =
+      !isPastStateAssertion &&
+      /(?:if\s+you\s+(?:miss|skip|attend)|miss\s+(?:another|one\s+more|next)|drop\s+(?:to|by)|decrease\s+(?:to|by)|fall\s+(?:to|by)|would\s+(?:be|drop|decrease|fall|become)|will\s+(?:drop|decrease|fall|be|become)|reach(?:es|ing)?|target|goal|aim(?:ing)?|achiev(?:e|ing)|boost|rais(?:e|ing)|potential|hypothetical|projected|possib(?:le|ility)|feasib(?:le|ility)|maintain(?:ing)?|keep(?:ing)?|upcoming|future|going\s+forward|next|over\s+the|attend(?:ing)?\s+100%|100%\s+attendance|100%\s+of|(?:need|must|require|should)\s+(?:\w+\s+)?100%)/i.test(
+        windowAround
+      );
+    if (isHypotheticalOrProjection) {
+      continue;
+    }
+
+    // Check if any nearby enrolled course (within 150 chars) matches this percentage exactly
+    let matchingNearbyCourse: (typeof enrolledCourses)[0] | null = null;
+    let closestCourse: (typeof enrolledCourses)[0] | null = null;
+    let minDistance = Infinity;
+
+    for (const c of enrolledCourses) {
+      const tokens = [c.lower];
+      if (c.code) tokens.push(c.code);
+
+      for (const token of tokens) {
+        let idx = normalizedText.indexOf(token);
+        while (idx !== -1) {
+          const tokenEnd = idx + token.length;
+          let dist: number;
+          if (tokenEnd <= matchIndex) {
+            dist = matchIndex - tokenEnd;
+          } else if (idx >= matchIndex + matchLength) {
+            dist = idx - (matchIndex + matchLength);
+          } else {
+            dist = 0;
+          }
+
+          if (dist < 150 && Math.abs(pFound - c.percentage) <= 0.6) {
+            matchingNearbyCourse = c;
+          }
+
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestCourse = c;
+          }
+
+          idx = normalizedText.indexOf(token, idx + 1);
+        }
+      }
+    }
+
+    // If there is a nearby course that matches this verified percentage, it is validly citing it
+    if (matchingNearbyCourse) {
+      continue;
+    }
 
     const overallPctSummary = context.summary?.overallPercentage;
     const overallPctInsights = context.overall?.overallPercentage;
@@ -105,6 +190,10 @@ export function validateAdvisorResponse(
       (overallPctSummary !== undefined && Math.abs(pFound - overallPctSummary) <= 1.0) ||
       (overallPctInsights !== undefined && Math.abs(pFound - overallPctInsights) <= 1.0) ||
       Math.abs(pFound - overallPct) <= 1.0;
+
+    const isOverallMention = /\b(?:overall(?:\s+attendance)?|cumulative\s+attendance|aggregate\s+attendance|total\s+overall)\b/i.test(
+      windowAround
+    );
 
     if (isOverallMention) {
       if (!matchesOverall) {
@@ -119,40 +208,18 @@ export function validateAdvisorResponse(
       continue;
     }
 
-    // Attribute percentage to the closest enrolled course
-    let closestCourse: (typeof enrolledCourses)[0] | null = null;
-    let minDistance = Infinity;
-
-    for (const c of enrolledCourses) {
-      let idx = normalizedText.indexOf(c.lower);
-      while (idx !== -1) {
-        const dist = Math.abs(idx - matchIndex);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestCourse = c;
-        }
-        idx = normalizedText.indexOf(c.lower, idx + 1);
-      }
-
-      if (c.code) {
-        let cIdx = normalizedText.indexOf(c.code);
-        while (cIdx !== -1) {
-          const dist = Math.abs(cIdx - matchIndex);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestCourse = c;
-          }
-          cIdx = normalizedText.indexOf(c.code, cIdx + 1);
-        }
-      }
-    }
-
     if (closestCourse && minDistance < 120) {
       const diff = Math.abs(pFound - closestCourse.percentage);
       if (diff > 0.6) {
-        issues.push(
-          `[PERCENTAGE_CONTRADICTION] CONTRADICTION: Claimed ${pFound}% for ${closestCourse.name}, but verified is ${closestCourse.percentage}%. (Numerical contradiction for ${closestCourse.name})`
+        // Double check if pFound matches ANY enrolled course anywhere
+        const matchesAnyCourse = enrolledCourses.some(
+          (c) => Math.abs(pFound - c.percentage) <= 0.6
         );
+        if (!matchesAnyCourse) {
+          issues.push(
+            `[PERCENTAGE_CONTRADICTION] CONTRADICTION: Claimed ${pFound}% for ${closestCourse.name}, but verified is ${closestCourse.percentage}%. (Numerical contradiction for ${closestCourse.name})`
+          );
+        }
       }
     } else if (!matchesOverall) {
       // Check if percentage matches any course exactly
@@ -181,9 +248,9 @@ export function validateAdvisorResponse(
     const isOverallMatch =
       attendedClaimed === facts.totalAttended && totalClaimed === facts.totalClasses;
 
-    // Check if matches any enrolled course
+    // Check if matches any enrolled course (attended or missed count)
     const matchingCourse = enrolledCourses.find(
-      (c) => c.attended === attendedClaimed && c.totalHeld === totalClaimed
+      (c) => (c.attended === attendedClaimed || c.missed === attendedClaimed) && c.totalHeld === totalClaimed
     );
 
     if (isOverallMatch || matchingCourse) {
@@ -205,9 +272,9 @@ export function validateAdvisorResponse(
     }
 
     if (nearest && nearestDist < 120) {
-      if (nearest.attended !== attendedClaimed || nearest.totalHeld !== totalClaimed) {
+      if ((nearest.attended !== attendedClaimed && nearest.missed !== attendedClaimed) || nearest.totalHeld !== totalClaimed) {
         issues.push(
-          `[COUNT_CONTRADICTION] CONTRADICTION: Claimed count ${attendedClaimed}/${totalClaimed} for ${nearest.name}, but verified attendance count is ${nearest.attended}/${nearest.totalHeld}.`
+          `[COUNT_CONTRADICTION] CONTRADICTION: Claimed count ${attendedClaimed}/${totalClaimed} for ${nearest.name}, but verified attendance count is ${nearest.attended}/${nearest.totalHeld} (missed: ${nearest.missed}).`
         );
       }
     }
@@ -223,25 +290,50 @@ export function validateAdvisorResponse(
   for (const match of recoveryMatches) {
     const claimedClasses = parseInt(match[1], 10);
     const matchIndex = match.index ?? 0;
+    const matchLength = match[0].length;
 
+    let matchingNearbyCourse: (typeof enrolledCourses)[0] | null = null;
     let nearest: (typeof enrolledCourses)[0] | null = null;
     let nearestDist = Infinity;
+
     for (const c of enrolledCourses) {
-      const idx = normalizedText.indexOf(c.lower);
-      if (idx !== -1) {
-        const d = Math.abs(idx - matchIndex);
+      let idx = normalizedText.indexOf(c.lower);
+      while (idx !== -1) {
+        const tokenEnd = idx + c.lower.length;
+        let d: number;
+        if (tokenEnd <= matchIndex) {
+          d = matchIndex - tokenEnd;
+        } else if (idx >= matchIndex + matchLength) {
+          d = idx - (matchIndex + matchLength);
+        } else {
+          d = 0;
+        }
+
+        if (d < 150 && c.classesNeeded === claimedClasses) {
+          matchingNearbyCourse = c;
+        }
+
         if (d < nearestDist) {
           nearestDist = d;
           nearest = c;
         }
+
+        idx = normalizedText.indexOf(c.lower, idx + 1);
       }
+    }
+
+    if (matchingNearbyCourse) {
+      continue;
     }
 
     if (nearest && nearestDist < 120) {
       if (claimedClasses !== nearest.classesNeeded) {
-        issues.push(
-          `[RECOVERY_CONTRADICTION] CONTRADICTION: Claimed ${claimedClasses} recovery classes needed for ${nearest.name}, but verified requirement is ${nearest.classesNeeded}.`
-        );
+        const matchesAnyCourse = enrolledCourses.some((c) => c.classesNeeded === claimedClasses);
+        if (!matchesAnyCourse) {
+          issues.push(
+            `[RECOVERY_CONTRADICTION] CONTRADICTION: Claimed ${claimedClasses} recovery classes needed for ${nearest.name}, but verified requirement is ${nearest.classesNeeded}.`
+          );
+        }
       }
     }
   }
@@ -254,25 +346,50 @@ export function validateAdvisorResponse(
   for (const match of safeMissMatches) {
     const claimedMisses = parseInt(match[1], 10);
     const matchIndex = match.index ?? 0;
+    const matchLength = match[0].length;
 
+    let matchingNearbyCourse: (typeof enrolledCourses)[0] | null = null;
     let nearest: (typeof enrolledCourses)[0] | null = null;
     let nearestDist = Infinity;
+
     for (const c of enrolledCourses) {
-      const idx = normalizedText.indexOf(c.lower);
-      if (idx !== -1) {
-        const d = Math.abs(idx - matchIndex);
+      let idx = normalizedText.indexOf(c.lower);
+      while (idx !== -1) {
+        const tokenEnd = idx + c.lower.length;
+        let d: number;
+        if (tokenEnd <= matchIndex) {
+          d = matchIndex - tokenEnd;
+        } else if (idx >= matchIndex + matchLength) {
+          d = idx - (matchIndex + matchLength);
+        } else {
+          d = 0;
+        }
+
+        if (d < 150 && c.safeMisses === claimedMisses) {
+          matchingNearbyCourse = c;
+        }
+
         if (d < nearestDist) {
           nearestDist = d;
           nearest = c;
         }
+
+        idx = normalizedText.indexOf(c.lower, idx + 1);
       }
+    }
+
+    if (matchingNearbyCourse) {
+      continue;
     }
 
     if (nearest && nearestDist < 120) {
       if (claimedMisses !== nearest.safeMisses) {
-        issues.push(
-          `[SAFE_MISS_CONTRADICTION] CONTRADICTION: Claimed ${claimedMisses} safe misses for ${nearest.name}, but verified allowance is ${nearest.safeMisses}.`
-        );
+        const matchesAnyCourse = enrolledCourses.some((c) => c.safeMisses === claimedMisses);
+        if (!matchesAnyCourse) {
+          issues.push(
+            `[SAFE_MISS_CONTRADICTION] CONTRADICTION: Claimed ${claimedMisses} safe misses for ${nearest.name}, but verified allowance is ${nearest.safeMisses}.`
+          );
+        }
       }
     }
   }
@@ -286,23 +403,35 @@ export function validateAdvisorResponse(
       const snippet = normalizedText.slice(windowStart, windowEnd);
 
       if (c.risk === 'CRITICAL') {
-        if (
-          /\b(?:is\s+safe|in\s+good\s+standing|completely\s+safe|no\s+danger|\bsafe\b)\b/i.test(
-            snippet
-          )
-        ) {
-          issues.push(
-            `[RISK_CONTRADICTION] CONTRADICTION: Claimed ${c.name} is in good standing/safe, but verified risk level is CRITICAL.`
+        const hasZeroSafeMisses = /\b(?:0|zero|no)\s+safe\s+(?:misses?|absences?|classes?)/i.test(snippet);
+        const hasSafeMissesMention = /\bsafe\s+(?:misses?|absences?|margin|buffer)/i.test(snippet);
+        const claimsSafe = /\b(?:is\s+(?:in\s+)?(?:completely\s+|currently\s+)?safe|in\s+(?:good|safe)\s+standing|no\s+danger|status\s+is\s+safe)\b/i.test(snippet);
+        const isNegated = /\b(?:not\s+safe|isn't\s+safe|is\s+not\s+safe|un-safe)\b/i.test(snippet);
+
+        if (claimsSafe && !hasZeroSafeMisses && !hasSafeMissesMention && !isNegated) {
+          const otherSafeCourse = enrolledCourses.find(
+            (other) => other.risk === 'SAFE' && snippet.includes(other.lower)
           );
+          if (!otherSafeCourse || snippet.indexOf(c.lower) < snippet.indexOf('safe')) {
+            issues.push(
+              `[RISK_CONTRADICTION] CONTRADICTION: Claimed ${c.name} is in good standing/safe, but verified risk level is CRITICAL.`
+            );
+          }
         }
       } else if (c.risk === 'SAFE') {
-        if (
-          /\b(?:is\s+critical|in\s+danger|failing|debarred|\bcritical\b)\b/i.test(snippet) &&
-          !snippet.includes('not in danger')
-        ) {
-          issues.push(
-            `[RISK_CONTRADICTION] CONTRADICTION: Claimed ${c.name} is in danger/critical, but verified risk level is SAFE.`
+        const claimsCritical = /\b(?:is\s+(?:critical|in\s+danger|failing|debarred)|status\s+is\s+critical)\b/i.test(snippet);
+        const isNegated = /\b(?:not\s+(?:in\s+danger|critical)|neither\s+critical)\b/i.test(snippet);
+        const isGeneralImportance = /\b(?:critical\s+to\s+attend|critical\s+that|critical\s+step)\b/i.test(snippet);
+
+        if (claimsCritical && !isNegated && !isGeneralImportance) {
+          const otherCriticalCourse = enrolledCourses.find(
+            (other) => other.risk === 'CRITICAL' && snippet.includes(other.lower)
           );
+          if (!otherCriticalCourse) {
+            issues.push(
+              `[RISK_CONTRADICTION] CONTRADICTION: Claimed ${c.name} is in danger/critical, but verified risk level is SAFE.`
+            );
+          }
         }
       }
     }

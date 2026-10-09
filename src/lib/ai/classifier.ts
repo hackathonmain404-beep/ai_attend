@@ -121,6 +121,15 @@ const ADVICE_PATTERNS = [
   /tips?\s+to\s+(?:improve|maintain)/i,
   /study\s+strategy|action\s+plan/i,
   /recommendations?|advice\s+for\s+me/i,
+  /\bhabits?\b/i,
+  /practical\s+plan|plan\s+for\s+(?:the\s+)?(?:next\s+)?(?:two\s+weeks|2\s+weeks|week|month)/i,
+  /simple\s+words|simple\s+terms|plain\s+english|understand\s+my\s+attendance/i,
+  /\b(?:ineligible|debarment|debarred|worried|anxious)\b/i,
+  /what\s+happens\s+(?:to\s+my\s+attendance\s+)?(?:percentage\s+)?if\s+i\s+miss/i,
+  /if\s+i\s+miss\s+(?:another|one\s+more|a)\s+class/i,
+  /talk\s+to\s+(?:my\s+)?(?:professor|teacher|instructor)/i,
+  /balance\s+(?:my\s+)?(?:classes|commute)/i,
+  /mathematically\s+possible/i,
 ];
 
 /**
@@ -221,7 +230,7 @@ export function classifyHardenedQuestion(query: string): HardenedQuestionCategor
     }
   }
 
-  return 'FACTUAL';
+  return 'GENERAL_ADVICE';
 }
 
 /**

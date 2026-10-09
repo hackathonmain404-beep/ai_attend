@@ -259,6 +259,19 @@ export async function queryAttendanceAdvisorLocal(
         }
       }
     }
+  } else if (/simple\s+words|simple\s+terms|plain\s+english/i.test(q)) {
+    const focus = highestSubjectName ? ` Your main subject of concern is ${highestSubjectName}, which needs attendance recovery.` : '';
+    answerText = `Hello ${name}, in simple words, your overall attendance is ${overallPct}%, which is currently ${overallRisk.toLowerCase()}.${focus}`;
+  } else if (/\bhabits?\b/i.test(q)) {
+    answerText = `Hello ${name}, practical habits to protect your attendance include: prioritizing every lecture in ${highestSubjectName || 'at-risk courses'}, setting early reminders, and saving safe misses strictly for unexpected emergencies.`;
+  } else if (/\b(?:ineligible|debarment|debarred|worried)\b/i.test(q) || (/\bexam\b/i.test(q) && /what\s+should\s+i\s+do|first|prevent/i.test(q))) {
+    answerText = `Hello ${name}, to avoid exam debarment, your first step is to focus on ${highestSubjectName || 'any courses below 75%'} and attend upcoming classes without any absences.`;
+  } else if (/why\s+is\s+(?:one\s+of\s+my\s+|that\s+|a\s+)?(?:subjects?|courses?)\s+(?:more\s+)?risk/i.test(q)) {
+    answerText = `Hello ${name}, ${highestSubjectName || 'that subject'} is more risky because its attendance is below the mandatory 75% threshold and has 0 safe absences remaining, whereas other subjects have safe margins.`;
+  } else if (/practical\s+plan|plan\s+for\s+(?:the\s+)?(?:next\s+)?(?:two\s+weeks|2\s+weeks)/i.test(q)) {
+    answerText = `Hello ${name}, for the next two weeks, focus on attending 100% of classes in ${highestSubjectName || 'your enrolled courses'} to recover your standing above 75%.`;
+  } else if (/what\s+happens\s+(?:to\s+my\s+attendance\s+)?(?:percentage\s+)?if\s+i\s+miss/i.test(q) || /if\s+i\s+miss\s+(?:another|one\s+more|a)\s+class/i.test(q)) {
+    answerText = `Hello ${name}, missing another class will decrease your overall attendance and increase the recovery classes needed, especially in ${highestSubjectName || 'at-risk courses'} where you have 0 safe misses.`;
   } else if (/improve|strategy|plan|advice/i.test(q)) {
     if (highestSubjectName) {
       answerText = `Hello ${name}, to improve your attendance, prioritize attending upcoming classes in ${highestSubjectName} without absence to restore your margin above 75%.`;

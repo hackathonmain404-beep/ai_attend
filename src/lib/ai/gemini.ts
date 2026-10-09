@@ -96,7 +96,10 @@ export async function generateAIResponse(
   config?: GeminiConfig
 ): Promise<AIResponse> {
   const apiKey = config?.apiKey !== undefined ? config.apiKey : getGeminiApiKey();
-  const modelName = config?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  let modelName = config?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  if (modelName === 'gemini-2.5-flash') {
+    modelName = 'gemini-flash-lite-latest';
+  }
 
   if (!apiKey || apiKey.trim() === '') {
     return {
@@ -165,7 +168,10 @@ export async function generateAdvisorContent(
     throw new Error('MISSING_GEMINI_API_KEY: No Gemini API key configured in environment.');
   }
 
-  const model = options?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  let model = options?.model || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  if (model === 'gemini-2.5-flash') {
+    model = 'gemini-flash-lite-latest';
+  }
   const timeoutMs = options?.timeoutMs || 8000;
 
   const ai = new GoogleGenAI({ apiKey });
@@ -177,18 +183,34 @@ export async function generateAdvisorContent(
     }, timeoutMs);
   });
 
-  const apiPromise = ai.models.generateContent({
-    model,
-    contents: prompt,
-    config: {
-      systemInstruction,
-      temperature: 0.2,
-      maxOutputTokens: 800,
-    },
-  });
+  const runCall = (targetModel: string) =>
+    ai.models.generateContent({
+      model: targetModel,
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.2,
+        maxOutputTokens: 800,
+      },
+    });
 
   try {
-    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
+    let apiPromise = runCall(model);
+    let response: any;
+    try {
+      response = (await Promise.race([apiPromise, timeoutPromise])) as any;
+    } catch (firstErr: any) {
+      const errMsg = firstErr?.message || String(firstErr);
+      if (
+        (errMsg.includes('404') || errMsg.includes('not available') || errMsg.includes('NOT_FOUND')) &&
+        model !== 'gemini-flash-lite-latest'
+      ) {
+        // Resilient fallback to active latest flash model
+        response = (await Promise.race([runCall('gemini-flash-lite-latest'), timeoutPromise])) as any;
+      } else {
+        throw firstErr;
+      }
+    }
     const text = response?.text;
 
     if (!text || text.trim() === '') {

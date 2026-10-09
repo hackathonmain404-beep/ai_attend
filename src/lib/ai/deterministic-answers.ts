@@ -344,7 +344,86 @@ export function generateDeterministicAnswer(
     }
   }
 
-  // 10. GENERAL_ADVICE — Deterministic Action Plan
+  // 10. Question-Specific Conversational and Strategic Handlers
+  const qClean = query.toLowerCase();
+
+  // A. Simple Words Explanation
+  if (/simple\s+words|simple\s+terms|plain\s+english/i.test(qClean)) {
+    const top = facts.highestRiskCourse;
+    const topText = top
+      ? ` However, your biggest concern is ${top.courseName} at ${top.currentPercentage.toFixed(1)}%, where you must attend the next ${top.classesNeededForThreshold} consecutive classes to recover.`
+      : ` All your enrolled courses are currently in good standing above the ${minReq.toFixed(1)}% threshold.`;
+    return {
+      answer: `In simple words, your overall attendance is ${facts.overallPercentage.toFixed(1)}% (${facts.totalAttended} out of ${facts.totalClasses} classes attended), which is ${facts.overallPercentage >= minReq ? 'above' : 'below'} the university's ${minReq.toFixed(1)}% requirement.${topText}`,
+      referencedSubjects: [],
+    };
+  }
+
+  // B. Habits & Strategy
+  if (/\bhabits?\b/i.test(qClean)) {
+    const top = facts.highestRiskCourse;
+    return {
+      answer: `Here are practical habits to improve and maintain your attendance: 1) Prioritize attending every class in ${top ? top.courseName : 'your lowest-standing course'} without exception, 2) Set calendar alerts 30 minutes before every scheduled lecture, 3) Monitor your safe absence margins weekly on AttendGuard, and 4) Reserve allowable absences strictly for emergencies rather than discretionary skips.`,
+      referencedSubjects: [],
+    };
+  }
+
+  // C. Exam Ineligibility / Debarment Worry
+  if (/\b(?:ineligible|debarment|debarred|worried|anxious)\b/i.test(qClean) || (/\bexam\b/i.test(qClean) && /what\s+should\s+i\s+do|first|prevent/i.test(qClean))) {
+    const top = facts.highestRiskCourse;
+    return {
+      answer: `To prevent exam ineligibility, your immediate first priority is ${top ? `${top.courseName}, which is at ${top.currentPercentage.toFixed(1)}% and requires attending the next ${top.classesNeededForThreshold} consecutive classes to restore your standing above ${minReq.toFixed(1)}%` : `maintaining your current attendance standing across all courses above ${minReq.toFixed(1)}%`}. Do not take any absences in at-risk courses, and consult your academic advisor if prior absences were due to documented medical circumstances.`,
+      referencedSubjects: [],
+    };
+  }
+
+  // D. Why Subject is More Risky
+  if (/why\s+is\s+(?:one\s+of\s+my\s+|that\s+|a\s+)?(?:subjects?|courses?)\s+(?:more\s+)?risk/i.test(qClean)) {
+    const top = facts.highestRiskCourse;
+    if (top) {
+      return {
+        answer: `Your subject ${top.courseName} is more risky than your others because its attendance is ${top.currentPercentage.toFixed(1)}% (${top.attended}/${top.totalHeld} classes attended), which is below the mandatory ${minReq.toFixed(1)}% threshold. It has 0 safe absences remaining and requires ${top.classesNeededForThreshold} consecutive classes to recover, whereas your other enrolled courses have higher percentage buffers.`,
+        referencedSubjects: [],
+      };
+    }
+  }
+
+  // E. Practical Two-Week Plan
+  if (/practical\s+plan|plan\s+for\s+(?:the\s+)?(?:next\s+)?(?:two\s+weeks|2\s+weeks)/i.test(qClean)) {
+    const top = facts.highestRiskCourse;
+    return {
+      answer: `Here is a practical two-week attendance plan: Over the next 14 days, maintain 100% attendance across all scheduled sessions of ${top ? top.courseName : 'your courses'}, working toward the ${top ? top.classesNeededForThreshold : 0} consecutive classes needed for ${minReq.toFixed(1)}%. In your safer courses, preserve your safe absence allowances and do not take discretionary leaves until your standing is fully restored.`,
+      referencedSubjects: [],
+    };
+  }
+
+  // F. What Happens If I Miss Another Class (What-If Delta Calculation)
+  if (/what\s+happens\s+(?:to\s+my\s+attendance\s+)?(?:percentage\s+)?if\s+i\s+miss/i.test(qClean) || /if\s+i\s+miss\s+(?:another|one\s+more|a)\s+class/i.test(qClean)) {
+    const nextTotal = facts.totalClasses + 1;
+    const projectedOverall = ((facts.totalAttended / nextTotal) * 100).toFixed(1);
+    const top = facts.highestRiskCourse;
+    const topImpact = top
+      ? ` In ${top.courseName}, missing another session would drop your subject attendance from ${top.currentPercentage.toFixed(1)}% to ${((top.attended / (top.totalHeld + 1)) * 100).toFixed(1)}% and increase your recovery target from ${top.classesNeededForThreshold} to ${top.classesNeededForThreshold + 3} consecutive classes.`
+      : '';
+    return {
+      answer: `If you miss one more class, your overall attendance will drop from ${facts.overallPercentage.toFixed(1)}% to ${projectedOverall}% (${facts.totalAttended}/${nextTotal} classes attended).${topImpact} You should avoid any upcoming absences in courses near or below the ${minReq.toFixed(1)}% threshold.`,
+      referencedSubjects: [],
+    };
+  }
+
+  // G. Conversational Greeting + Question
+  if (/^(?:hi|hello|hey|hiya)\b/i.test(qClean) && /understand|help|attendance/i.test(qClean)) {
+    const top = facts.highestRiskCourse;
+    const topNote = top
+      ? ` Your primary area of concern is ${top.courseName} at ${top.currentPercentage.toFixed(1)}% (requires attending ${top.classesNeededForThreshold} consecutive classes to reach ${minReq.toFixed(1)}%).`
+      : ` All your enrolled courses are currently above the ${minReq.toFixed(1)}% threshold.`;
+    return {
+      answer: `Hello! I am happy to help you understand your attendance. Your overall attendance is currently ${facts.overallPercentage.toFixed(1)}% (${facts.overallRisk}).${topNote} What specific questions do you have about your schedule or courses?`,
+      referencedSubjects: [],
+    };
+  }
+
+  // 11. GENERAL_ADVICE — Deterministic Action Plan
   if (category === 'GENERAL_ADVICE') {
     if (facts.highestRiskCourse && facts.highestRiskCourse.classesNeededForThreshold > 0) {
       const top = facts.highestRiskCourse;
@@ -359,7 +438,7 @@ export function generateDeterministicAnswer(
     };
   }
 
-  // 11. FACTUAL / Default Overview
+  // 12. FACTUAL / Default Overview
   return {
     answer: `Here is your verified attendance overview: Overall attendance is ${facts.overallPercentage.toFixed(1)}% (${facts.totalAttended}/${facts.totalClasses} classes attended). You have ${facts.safeCoursesCount} safe course(s), ${facts.atRiskCoursesCount} at-risk course(s), and ${facts.criticalCoursesCount} critical course(s). Minimum requirement is ${minReq.toFixed(1)}%.`,
     referencedSubjects: [],

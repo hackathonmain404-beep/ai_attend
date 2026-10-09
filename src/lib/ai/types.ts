@@ -132,7 +132,8 @@ export interface GeminiConfig {
   model?: string;
 }
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL =
+  (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-flash-lite-latest';
 
 export interface AdvisorQueryRequest {
   question: string;

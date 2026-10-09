@@ -397,25 +397,25 @@ export async function answerAttendanceQuestion(
     };
   }
 
-  // 3. Check if caller explicitly provided test geminiOptions / apiKey (mock test path)
-  const isExplicitTestMock =
-    geminiOptions?.apiKey !== undefined &&
-    geminiOptions.apiKey !== '';
-
+  // 3. Check if caller explicitly disabled LLM (e.g., in offline test suites) or lacks an API key
   const isExplicitlyDisabled =
-    geminiOptions?.apiKey === '';
+    geminiOptions?.apiKey === '' ||
+    maybeOptions?.config?.apiKey === '';
 
-  // 4. Core Accuracy Principle: If caller did not explicitly request LLM mock test,
-  // route Numerical / Factual / Recovery / Safe Misses / Ambiguous directly to deterministic answer
-  const isFactualOrNumerical =
-    hardenedCategory === 'NUMERICAL' ||
-    hardenedCategory === 'RECOVERY' ||
-    hardenedCategory === 'SAFE_MISSES' ||
-    hardenedCategory === 'SUBJECT_ANALYSIS' ||
-    hardenedCategory === 'AMBIGUOUS' ||
-    hardenedCategory === 'FACTUAL';
+  const hasApiKey =
+    Boolean(geminiOptions?.apiKey && geminiOptions.apiKey.trim() !== '') ||
+    Boolean(maybeOptions?.config?.apiKey && maybeOptions.config.apiKey.trim() !== '') ||
+    Boolean(getGeminiApiKey() && getGeminiApiKey().trim() !== '');
 
-  if (!isExplicitTestMock && (isExplicitlyDisabled || isFactualOrNumerical)) {
+  // Pure exact count queries (e.g. "what is my percentage", "how many classes did I attend", "how many classes have I missed")
+  // use pure TypeScript math authority directly
+  const isPureCountQuery =
+    hardenedCategory === 'NUMERICAL' &&
+    /^(?:what\s+(?:is\s+my|percentage)|how\s+many\s+classes\s+(?:have\s+i|did\s+i\s+)?(?:attend|miss)|attended\s+count|missed\s+count|total\s+classes)/i.test(query.trim()) &&
+    !/explain|why|how\s+can|habit|plan|if\s+i\s+miss|worried|simple/i.test(query);
+
+  // 4. If offline/disabled or pure count lookup, serve authoritative deterministic answer immediately
+  if (isExplicitlyDisabled || !hasApiKey || isPureCountQuery) {
     const deterministic = generateDeterministicAnswer(query, hardenedCategory, facts);
     return {
       success: true,
@@ -430,13 +430,14 @@ export async function answerAttendanceQuestion(
     };
   }
 
-  // 5. Call Gemini model for advice / explanation (or explicit test mock)
+  // 5. Call Gemini model for natural language questions, advice, explanations, trends, and follow-ups
   try {
     const prompt = buildAdvisorPrompt(context, query, facts.studentName);
     let modelReply = '';
 
     const effectiveOptions: GeminiOptions = {
-      ...geminiOptions,
+      apiKey: geminiOptions?.apiKey || maybeOptions?.config?.apiKey,
+      model: geminiOptions?.model || maybeOptions?.config?.model,
       timeoutMs: geminiOptions?.timeoutMs || 8000,
     };
 
@@ -461,7 +462,7 @@ export async function answerAttendanceQuestion(
     }
 
     if (modelReply) {
-      const validation = validateAdvisorResponse(modelReply, context);
+      const validation = validateAdvisorResponse(modelReply, context, query);
       if (validation.isValid) {
         return {
           success: true,
