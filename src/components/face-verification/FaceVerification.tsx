@@ -25,6 +25,7 @@ export function FaceVerification({
   title = "Facial Biometric Verification",
   description = "Center your face in the camera frame to verify physical classroom presence.",
   confirmLabel = "Confirm & Continue",
+  captureLabel = "Capture Face",
   autoStart = false,
   showGuidelines = true,
   mirrorVideo = true,
@@ -120,7 +121,7 @@ export function FaceVerification({
 
           <h4 className="text-base font-medium text-white mb-2">Camera Access Required</h4>
           <p className="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
-            AttendGuard requires brief front-facing camera access to verify your live physical presence. Images are verified in-memory and never stored on public servers.
+            AttendGuard requires brief front-facing camera access to verify your live physical presence. Zero raw images stored. Images are verified in-memory and never stored on public servers.
           </p>
 
           <button
@@ -186,14 +187,15 @@ export function FaceVerification({
                   {confirmLabel}
                 </button>
               </>
-            ) : isStreaming ? (
-              // Actions during live camera streaming
+            ) : (
+              // Actions during camera session
               <>
                 <button
                   type="button"
                   onClick={switchFacingMode}
+                  disabled={!isStreaming}
                   aria-label="Switch between front and rear cameras"
-                  className="inline-flex items-center justify-center p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 min-h-[44px] min-w-[44px]"
+                  className="inline-flex items-center justify-center p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 min-h-[44px] min-w-[44px] disabled:opacity-50"
                   title="Switch camera"
                 >
                   <SwitchCamera className="w-4 h-4" />
@@ -202,19 +204,19 @@ export function FaceVerification({
                 <button
                   type="button"
                   onClick={handleCapture}
-                  disabled={isCapturing}
+                  disabled={!isStreaming || isCapturing}
                   aria-label="Capture facial photograph"
-                  className={`flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 min-h-[44px] ${
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 min-h-[44px] disabled:opacity-50 ${
                     framingEvaluation.status === "good"
                       ? "bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 shadow-cyan-500/30"
                       : "bg-cyan-500/80 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20"
                   }`}
                 >
                   <Camera className="w-4 h-4" />
-                  {isCapturing ? "Capturing..." : "Capture Face"}
+                  {isCapturing ? "Capturing..." : captureLabel}
                 </button>
               </>
-            ) : null}
+            )}
           </div>
         </div>
       )}

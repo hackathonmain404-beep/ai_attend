@@ -17,10 +17,13 @@ import {
   Info,
   Maximize2,
   Lock,
+  User,
+  ScanFace,
 } from "lucide-react";
 import jsQR from "jsqr";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScanResultModal, type VerificationState } from "@/components/student/ScanResultModal";
+import { FaceVerificationModal } from "@/components/student/FaceVerificationModal";
 import { submitCheckIn, fetchQrChallenge } from "@/lib/services/qr-service";
 import { getClientDeviceFingerprint } from "@/lib/device/fingerprint";
 import { apiFetch } from "@/lib/api-client";
@@ -44,6 +47,12 @@ export function StudentScanner() {
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [deviceStatus, setDeviceStatus] = React.useState<ActiveDeviceStatus | null>(null);
   const [lastScannedToken, setLastScannedToken] = React.useState<string | null>(null);
+
+  // Biometric verification integration states
+  const [verificationMode, setVerificationMode] = React.useState<"face_and_qr" | "qr_only">("face_and_qr");
+  const [isFaceModalOpen, setIsFaceModalOpen] = React.useState(false);
+  const [pendingChallengeToken, setPendingChallengeToken] = React.useState<string>("");
+  const [pendingDeviceFingerprint, setPendingDeviceFingerprint] = React.useState<string>("");
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -113,6 +122,26 @@ export function StudentScanner() {
       stopCamera();
     };
   }, [startCamera, stopCamera]);
+
+  // Initiates the face verification step with a scanned dynamic QR challenge
+  const handleStartFaceVerification = React.useCallback(
+    async (token: string) => {
+      try {
+        if (!token || typeof token !== "string" || !token.includes(".")) {
+          throw new Error("Invalid QR code format. Please scan an authorized AttendGuard dynamic code.");
+        }
+        const fingerprint = await getClientDeviceFingerprint(false);
+        setPendingChallengeToken(token);
+        setPendingDeviceFingerprint(fingerprint);
+        stopCamera();
+        setIsFaceModalOpen(true);
+      } catch (err: any) {
+        setVerificationState("failed");
+        setErrorMessage(err.message || "Failed to initialize device binding for face verification.");
+      }
+    },
+    [stopCamera]
+  );
 
   // Process a QR challenge token payload through the authoritative check-in API
   const handleCheckInAttempt = React.useCallback(
@@ -206,7 +235,11 @@ export function StudentScanner() {
                 navigator.vibrate(100);
               } catch {}
             }
-            handleCheckInAttempt(code.data, false);
+            if (verificationMode === "face_and_qr") {
+              handleStartFaceVerification(code.data);
+            } else {
+              handleCheckInAttempt(code.data, false);
+            }
             return;
           }
         }
@@ -224,7 +257,7 @@ export function StudentScanner() {
         animationFrameRef.current = null;
       }
     };
-  }, [verificationState, lastScannedToken, handleCheckInAttempt]);
+  }, [verificationState, lastScannedToken, verificationMode, handleStartFaceVerification, handleCheckInAttempt]);
 
   // Test Simulator 1: Valid Live Token
   const handleSimulateValidScan = async () => {
@@ -288,11 +321,53 @@ export function StudentScanner() {
     setCheckInResult(null);
     setErrorMessage("");
     setActiveVector(null);
+    setIsFaceModalOpen(false);
+    setPendingChallengeToken("");
     setVerificationState("scanning");
+    startCamera();
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* Verification Modality Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-zinc-800/80 bg-[#0B0D10] text-xs font-mono shadow-md">
+        <div className="flex items-center gap-2">
+          <ScanFace className="h-4 w-4 text-blue-400 shrink-0" />
+          <span className="text-zinc-300 font-medium">Session Verification Mode:</span>
+          <span className="text-zinc-500 hidden sm:inline">•</span>
+          <span className="text-[11px] text-zinc-400 hidden sm:inline">
+            {verificationMode === "face_and_qr"
+              ? "Dynamic QR + Facial Biometrics (Recommended)"
+              : "Standard Dynamic QR (Fast Scan)"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 shrink-0">
+          <button
+            type="button"
+            onClick={() => setVerificationMode("face_and_qr")}
+            className={`px-3 py-1 rounded-md text-[11px] font-mono transition-all ${
+              verificationMode === "face_and_qr"
+                ? "bg-blue-600 text-white font-medium shadow-sm shadow-blue-500/20"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Face + QR (Biometric)
+          </button>
+          <button
+            type="button"
+            onClick={() => setVerificationMode("qr_only")}
+            className={`px-3 py-1 rounded-md text-[11px] font-mono transition-all ${
+              verificationMode === "qr_only"
+                ? "bg-zinc-800 text-white font-medium"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Standard QR
+          </button>
+        </div>
+      </div>
+
       {/* 1. Official Scanner Viewport Card */}
       <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] overflow-hidden shadow-2xl relative transition-all duration-300 hover:border-blue-500/30 w-full">
         {/* Viewport Top Header */}
@@ -628,16 +703,84 @@ export function StudentScanner() {
               <ArrowRight className="h-3 w-3 ml-1.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
+
+          {/* VECTOR 5: Live Face Biometric + Dynamic QR Check-In */}
+          <button
+            onClick={async () => {
+              setActiveVector("face");
+              try {
+                const challenge = await fetchQrChallenge();
+                await handleStartFaceVerification(challenge.challengeToken);
+              } catch (err: any) {
+                setVerificationState("failed");
+                setErrorMessage(err.message || "Failed to fetch session challenge.");
+              } finally {
+                setActiveVector(null);
+              }
+            }}
+            disabled={verificationState === "verifying" || isFaceModalOpen}
+            className="text-left p-4 rounded-xl border border-blue-500/30 bg-blue-950/15 hover:bg-blue-900/25 hover:border-blue-400/50 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 col-span-1 sm:col-span-2 shadow-lg"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="h-8 w-8 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 group-hover:border-blue-400/50 transition-colors">
+                <ScanFace className="h-4 w-4" />
+              </div>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                201 CREATED (DUAL MODALITY)
+              </span>
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-white tracking-tight group-hover:text-blue-300 transition-colors">
+                5. Live Face Biometric + Dynamic QR Check-In
+              </h4>
+              <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
+                Fetches dynamic HMAC challenge token and opens the facial biometric viewfinder modal for live camera capture and authoritative verification.
+              </p>
+            </div>
+            <div className="flex items-center text-[11px] font-mono text-blue-400 group-hover:text-blue-300 font-medium pt-1">
+              <span>{activeVector === "face" ? "Initializing..." : "Launch Face Attendance Flow"}</span>
+              <ArrowRight className="h-3 w-3 ml-1.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Verification Status Modal */}
+      {/* Standard QR Verification Status Modal */}
       <ScanResultModal
         status={verificationState}
         result={checkInResult}
         errorMessage={errorMessage}
         onScanAgain={handleResetScan}
         onClose={handleResetScan}
+      />
+
+      {/* Face Biometric Verification Modal */}
+      <FaceVerificationModal
+        isOpen={isFaceModalOpen}
+        onClose={() => {
+          setIsFaceModalOpen(false);
+          setLastScannedToken(null);
+          startCamera();
+        }}
+        challengeToken={pendingChallengeToken}
+        deviceFingerprint={pendingDeviceFingerprint}
+        onSuccess={(res) => {
+          setIsFaceModalOpen(false);
+          setCheckInResult(res as any);
+          setVerificationState("verified");
+          try {
+            queryClient.invalidateQueries({ queryKey: ["student-attendance-summary"] });
+          } catch {}
+        }}
+        onFallbackToQr={() => {
+          setIsFaceModalOpen(false);
+          setVerificationMode("qr_only");
+          if (pendingChallengeToken) {
+            handleCheckInAttempt(pendingChallengeToken, false);
+          } else {
+            startCamera();
+          }
+        }}
       />
     </div>
   );

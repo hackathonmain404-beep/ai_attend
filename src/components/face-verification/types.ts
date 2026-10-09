@@ -81,6 +81,11 @@ export interface FaceVerificationProps {
   confirmLabel?: string;
 
   /**
+   * Capture button label (e.g., "Capture Face", "Capture Snapshot").
+   */
+  captureLabel?: string;
+
+  /**
    * Whether to automatically request camera access on mount.
    * Defaults to false for privacy & explicit user interaction.
    */
