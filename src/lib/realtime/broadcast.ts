@@ -50,6 +50,9 @@ export async function broadcastToSession<T = Record<string, unknown>>(
 ): Promise<boolean> {
   try {
     const supabase = client || createAdminClient();
+    if (typeof supabase?.channel !== 'function') {
+      return false;
+    }
     const channelName = getSessionChannelName(sessionId);
     const channel = supabase.channel(channelName);
 

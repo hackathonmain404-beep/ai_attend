@@ -221,8 +221,21 @@ export async function finalizeSessionReverifications(
   sessionId: string,
   adminClient: SupabaseClient
 ): Promise<number> {
-  const hadChallenge = activeChallenges.has(sessionId);
+  let hadChallenge = activeChallenges.has(sessionId);
   activeChallenges.delete(sessionId);
+
+  // Fallback to database check for stateless serverless lambda invocations
+  if (!hadChallenge) {
+    const { data: session } = await adminClient
+      .from('attendance_sessions')
+      .select('reverify_challenge_id')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (session?.reverify_challenge_id) {
+      hadChallenge = true;
+    }
+  }
 
   if (!hadChallenge) {
     return 0;
