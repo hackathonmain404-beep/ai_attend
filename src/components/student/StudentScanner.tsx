@@ -89,7 +89,7 @@ export function StudentScanner() {
       } else if (code === "DEVICE_MISMATCH" || err?.status === 403) {
         setModalStatus("device_mismatch");
         setErrorMessage(message);
-      } else if (code === "ALREADY_CHECKED_IN") {
+      } else if (code === "ALREADY_CHECKED_IN" || code === "QR_REPLAYED") {
         setModalStatus("already_checked_in");
       } else {
         setModalStatus("error");

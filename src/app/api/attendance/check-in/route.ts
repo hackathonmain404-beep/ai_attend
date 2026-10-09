@@ -22,7 +22,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     throw new ValidationError('Malformed JSON payload');
   }
 
-  const { challengeToken, deviceFingerprint } = body;
+  const { challengeToken, deviceFingerprint, location } = body;
 
   const forwardedFor = request.headers.get('x-forwarded-for');
   const ipAddress = forwardedFor ? forwardedFor.split(',')[0].trim() : request.ip || null;
@@ -34,6 +34,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     deviceFingerprint,
     ipAddress,
     userAgent,
+    location,
     client: supabase,
   });
 

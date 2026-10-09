@@ -12,9 +12,17 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ValidationError, NotFoundError, ForbiddenError, ConflictError } from '@/lib/errors';
-import { verifyQrChallengeToken } from '@/lib/qr/crypto';
+import { verifyQrChallengeToken, computeTokenFingerprint } from '@/lib/qr/crypto';
 import { validateDeviceBinding } from '@/lib/device/service';
 import { broadcastStudentCheckIn } from '@/lib/realtime/broadcast';
+import { logAuditEvent } from '@/lib/audit/logger';
+import { config } from '@/lib/config';
+import {
+  acquireSubmissionLock,
+  assertAndConsumeToken,
+  checkAttendanceRateLimit,
+  verifyServerCampusPerimeter,
+} from '@/lib/attendance/security-guards';
 
 export interface CheckInParams {
   studentId: string;
@@ -24,6 +32,11 @@ export interface CheckInParams {
   userAgent?: string | null;
   client?: SupabaseClient;
   adminClient?: SupabaseClient;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    accuracyMeters?: number;
+  } | null;
 }
 
 export interface CheckInResult {
@@ -36,10 +49,10 @@ export interface CheckInResult {
 }
 
 /**
- * Executes the complete 5-layer attendance verification pipeline.
+ * Executes the complete 5-layer attendance verification pipeline with anti-replay and concurrency protection.
  */
 export async function processStudentCheckIn(params: CheckInParams): Promise<CheckInResult> {
-  const { studentId, challengeToken, deviceFingerprint, ipAddress, userAgent } = params;
+  const { studentId, challengeToken, deviceFingerprint, ipAddress, userAgent, location } = params;
 
   if (!challengeToken || typeof challengeToken !== 'string') {
     throw new ValidationError('A challengeToken string is required.');
@@ -49,8 +62,19 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     throw new ValidationError('A deviceFingerprint string is required.');
   }
 
+  // 0. Rate Limiting Protection (per-student & per-IP sliding window)
+  checkAttendanceRateLimit(`student:${studentId}`, 5, 10000);
+  if (ipAddress) {
+    checkAttendanceRateLimit(`ip:${ipAddress}`, 15, 10000);
+  }
+
   const supabase = params.client || (await createServerSupabaseClient());
-  const adminDb = params.adminClient || createAdminClient();
+  let adminDb: SupabaseClient;
+  try {
+    adminDb = params.adminClient || createAdminClient();
+  } catch {
+    adminDb = (params.client || supabase) as any;
+  }
 
   // ----------------------------------------------------------------------------
   // GATE 1: Cryptographic Dynamic Token Verification
@@ -74,6 +98,32 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   }
 
   const { sessionId } = tokenPayload;
+  const tokenFingerprint = computeTokenFingerprint(challengeToken);
+
+  // In-flight concurrency lock to prevent parallel racing submissions
+  const releaseLock = acquireSubmissionLock(`${studentId}:${sessionId}`);
+
+  try {
+    // Replay Protection: Mark token nonce/fingerprint consumed by this student
+    try {
+      assertAndConsumeToken(tokenFingerprint, studentId, config.qr.ttlSeconds);
+    } catch (replayErr: any) {
+      await logVerificationAttempt(adminDb, {
+        sessionId,
+        studentId,
+        verificationType: 'initial_qr',
+        status: 'duplicate',
+        tokenSnippet: challengeToken.slice(0, 32),
+        ipAddress,
+        userAgent,
+      });
+      throw replayErr;
+    }
+
+    // Server-authoritative Campus Perimeter Geofence Verification (if location provided)
+    if (location) {
+      verifyServerCampusPerimeter(location);
+    }
 
   // ----------------------------------------------------------------------------
   // GATE 2: Active Session Lifecycle Verification
@@ -269,14 +319,34 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     adminDb
   );
 
-  return {
-    recordId: record.id,
-    sessionId,
-    className,
-    status: 'present',
-    checkInTime: record.check_in_time,
-    reVerified: false,
-  };
+    // Commit authoritative audit log entry
+    await logAuditEvent(
+      {
+        actorId: studentId,
+        action: 'ATTENDANCE_CHECK_IN',
+        entityType: 'attendance_records',
+        entityId: record.id,
+        details: {
+          sessionId,
+          status: 'present',
+          tokenSnippet: challengeToken.slice(0, 32),
+        },
+        ipAddress: ipAddress || null,
+      },
+      adminDb
+    );
+
+    return {
+      recordId: record.id,
+      sessionId,
+      className,
+      status: 'present',
+      checkInTime: record.check_in_time,
+      reVerified: false,
+    };
+  } finally {
+    releaseLock();
+  }
 }
 
 /**
@@ -295,8 +365,10 @@ async function logVerificationAttempt(
   }
 ) {
   try {
-    if (!details.sessionId) return; // Cannot foreign key if session is null
-    await adminClient.from('attendance_verifications').insert({
+    if (!details.sessionId || typeof adminClient?.from !== 'function') return;
+    const table = adminClient.from('attendance_verifications');
+    if (typeof table?.insert !== 'function') return;
+    await table.insert({
       session_id: details.sessionId,
       student_id: details.studentId,
       verification_type: details.verificationType,

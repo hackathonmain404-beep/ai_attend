@@ -34,7 +34,7 @@ export function createQrChallengeToken(
   const ttl = customTtl || config.qr.ttlSeconds;
 
   const nowSec = Math.floor(Date.now() / 1000);
-  const nonce = crypto.randomBytes(4).toString('hex');
+  const nonce = crypto.randomBytes(8).toString('hex'); // 16-character cryptographically secure nonce
 
   const payload: QrTokenPayload = {
     sessionId,
@@ -60,6 +60,13 @@ export function createQrChallengeToken(
     expiresAt,
     ttlSeconds: ttl,
   };
+}
+
+/**
+ * Computes a deterministic SHA-256 fingerprint for token deduplication and forensic logging.
+ */
+export function computeTokenFingerprint(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 /**

@@ -4,7 +4,8 @@ import { processStudentCheckIn } from '@/lib/attendance/check-in-service';
 import { POST as checkInHandler } from '@/app/api/attendance/check-in/route';
 import * as guards from '@/lib/auth/guards';
 import * as serverSupabase from '@/lib/supabase/server';
-import { ConflictError, ValidationError } from '@/lib/errors';
+import { ConflictError, ValidationError, ForbiddenError } from '@/lib/errors';
+import { resetSecurityGuardsForTesting } from '@/lib/attendance/security-guards';
 import { NextRequest } from 'next/server';
 
 describe('Security Attack Simulation: QR Abuse & Tampering (SEC-01, SEC-06)', () => {
@@ -14,6 +15,7 @@ describe('Security Attack Simulation: QR Abuse & Tampering (SEC-01, SEC-06)', ()
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetSecurityGuardsForTesting();
   });
 
   describe('SEC-01: Stale QR Token Replay (TTL Expiration)', () => {
@@ -154,6 +156,277 @@ describe('Security Attack Simulation: QR Abuse & Tampering (SEC-01, SEC-06)', ()
           adminClient: mockSupabase as any,
         })
       ).rejects.toThrow(ConflictError);
+    });
+  });
+
+  describe('SEC-02: Token Replay & Reuse Prevention', () => {
+    it('rejects re-submitting the exact same token with QR_REPLAYED', async () => {
+      const challenge = createQrChallengeToken(sessionId, 5);
+
+      const mockSession = {
+        id: sessionId,
+        class_id: 'cls-1',
+        teacher_id: 'teacher-1',
+        status: 'active',
+        classes: { code: 'CS101', name: 'Intro CS' },
+      };
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === 'attendance_sessions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: mockSession, error: null }),
+            };
+          }
+          if (table === 'registered_devices') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'dev-1', student_id: studentId, is_active: true, device_fingerprint: deviceFp },
+                error: null,
+              }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'dev-1', student_id: studentId, is_active: true, device_fingerprint: deviceFp },
+                error: null,
+              }),
+              update: vi.fn().mockReturnThis(),
+            };
+          }
+          if (table === 'class_enrollments') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'enr-1' }, error: null }),
+            };
+          }
+          if (table === 'attendance_records') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              insert: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { id: 'rec-1', check_in_time: new Date().toISOString() },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'attendance_verifications' || table === 'audit_logs' || table === 'profiles') {
+            return {
+              insert: vi.fn().mockResolvedValue({ error: null }),
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { full_name: 'Jane Doe', identifier: 'STU-1' }, error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      // 1st submission succeeds
+      const firstResult = await processStudentCheckIn({
+        studentId,
+        challengeToken: challenge.challengeToken,
+        deviceFingerprint: deviceFp,
+        client: mockSupabase as any,
+        adminClient: mockSupabase as any,
+      });
+      expect(firstResult.status).toBe('present');
+
+      // 2nd submission with the exact same token must fail with QR_REPLAYED
+      await expect(
+        processStudentCheckIn({
+          studentId,
+          challengeToken: challenge.challengeToken,
+          deviceFingerprint: deviceFp,
+          client: mockSupabase as any,
+          adminClient: mockSupabase as any,
+        })
+      ).rejects.toThrow(ConflictError);
+    });
+  });
+
+  describe('SEC-03: Concurrency Race Condition Protection', () => {
+    it('prevents parallel concurrent check-in submissions for the same student', async () => {
+      const challenge1 = createQrChallengeToken(sessionId, 10);
+      const challenge2 = createQrChallengeToken(sessionId, 10);
+
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === 'attendance_sessions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: () => new Promise((resolve) => {
+                // Simulate slight network delay
+                setTimeout(() => {
+                  resolve({
+                    data: {
+                      id: sessionId,
+                      class_id: 'cls-1',
+                      teacher_id: 'teacher-1',
+                      status: 'active',
+                      classes: { code: 'CS101', name: 'Intro CS' },
+                    },
+                    error: null,
+                  });
+                }, 10);
+              }),
+            };
+          }
+          if (table === 'registered_devices') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'dev-1', student_id: studentId, is_active: true, device_fingerprint: deviceFp },
+                error: null,
+              }),
+              update: vi.fn().mockReturnThis(),
+            };
+          }
+          if (table === 'class_enrollments') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'enr-1' }, error: null }),
+            };
+          }
+          if (table === 'attendance_records') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              insert: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { id: 'rec-concurrent', check_in_time: new Date().toISOString() },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'attendance_verifications' || table === 'audit_logs' || table === 'profiles') {
+            return {
+              insert: vi.fn().mockResolvedValue({ error: null }),
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      // Fire two concurrent requests in parallel
+      const results = await Promise.allSettled([
+        processStudentCheckIn({
+          studentId: 'parallel-student-1',
+          challengeToken: challenge1.challengeToken,
+          deviceFingerprint: deviceFp,
+          client: mockSupabase as any,
+          adminClient: mockSupabase as any,
+        }),
+        processStudentCheckIn({
+          studentId: 'parallel-student-1',
+          challengeToken: challenge2.challengeToken,
+          deviceFingerprint: deviceFp,
+          client: mockSupabase as any,
+          adminClient: mockSupabase as any,
+        }),
+      ]);
+
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const rejected = results.filter((r) => r.status === 'rejected');
+
+      // Exactly one request must succeed, and the other must be rejected due to concurrency lock
+      expect(fulfilled.length).toBe(1);
+      expect(rejected.length).toBe(1);
+    });
+  });
+
+  describe('SEC-04: Campus Perimeter & Rate Limiting Enforcement', () => {
+    it('rejects check-in submissions originating outside the campus perimeter', async () => {
+      const challenge = createQrChallengeToken(sessionId, 12);
+
+      // Distant coordinates (e.g. New York when campus is in San Francisco)
+      const distantLocation = {
+        latitude: 40.7128,
+        longitude: -74.0060,
+        accuracyMeters: 10,
+      };
+
+      const mockSupabase = {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: sessionId, class_id: 'cls-1', status: 'active' },
+            error: null,
+          }),
+        })),
+      };
+
+      await expect(
+        processStudentCheckIn({
+          studentId: 'student-perimeter-test',
+          challengeToken: challenge.challengeToken,
+          deviceFingerprint: deviceFp,
+          location: distantLocation,
+          client: mockSupabase as any,
+          adminClient: mockSupabase as any,
+        })
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it('enforces rate limiting on rapid burst check-in attempts', async () => {
+      const rapidStudentId = 'rapid-student-test';
+      const challenge = createQrChallengeToken(sessionId, 15);
+
+      const mockSupabase = {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: sessionId, class_id: 'cls-1', status: 'active' },
+            error: null,
+          }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      };
+
+      let threwRateLimit = false;
+      try {
+        // Send 6 rapid attempts (limit is 5)
+        for (let i = 0; i < 6; i++) {
+          const freshChallenge = createQrChallengeToken(sessionId, 15 + i);
+          await processStudentCheckIn({
+            studentId: rapidStudentId,
+            challengeToken: freshChallenge.challengeToken,
+            deviceFingerprint: deviceFp,
+            client: mockSupabase as any,
+            adminClient: mockSupabase as any,
+          }).catch((err) => {
+            if (err.statusCode === 429 || err.code === 'RATE_LIMITED') {
+              threwRateLimit = true;
+              throw err;
+            }
+          });
+        }
+      } catch (err: any) {
+        if (err.statusCode === 429 || err.code === 'RATE_LIMITED') {
+          threwRateLimit = true;
+        }
+      }
+
+      expect(threwRateLimit).toBe(true);
     });
   });
 });

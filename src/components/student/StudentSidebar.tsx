@@ -43,12 +43,6 @@ export const STUDENT_NAV_ITEMS: StudentNavItem[] = [
     description: "Session QR Camera Viewfinder",
   },
   {
-    name: "Device",
-    href: "/student/device",
-    icon: Smartphone,
-    description: "Hardware Binding & Security",
-  },
-  {
     name: "History",
     href: "/student/history",
     icon: History,

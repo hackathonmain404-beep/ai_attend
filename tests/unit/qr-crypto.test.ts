@@ -13,7 +13,7 @@ describe('Dynamic QR Cryptographic Engine (src/lib/qr/crypto.ts)', () => {
     expect(challenge.payload.sessionId).toBe(testSessionId);
     expect(challenge.payload.sequence).toBe(1);
     expect(typeof challenge.payload.timestamp).toBe('number');
-    expect(challenge.payload.nonce).toHaveLength(8);
+    expect(challenge.payload.nonce).toHaveLength(16);
     expect(challenge.ttlSeconds).toBe(20);
     expect(new Date(challenge.expiresAt).toISOString()).toBe(challenge.expiresAt);
   });

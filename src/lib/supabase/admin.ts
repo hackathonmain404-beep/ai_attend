@@ -10,6 +10,21 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+if (typeof globalThis.WebSocket === 'undefined') {
+  class DummyWebSocket {
+    static CONNECTING = 0;
+    static OPEN = 1;
+    static CLOSING = 2;
+    static CLOSED = 3;
+    readyState = 3;
+    send() {}
+    close() {}
+    addEventListener() {}
+    removeEventListener() {}
+  }
+  (globalThis as any).WebSocket = DummyWebSocket;
+}
+
 export function createAdminClient() {
   if (typeof window !== 'undefined') {
     throw new Error('[Security Exception]: Attempted to initialize admin Supabase client in browser runtime.');

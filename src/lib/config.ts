@@ -24,7 +24,7 @@ export const config = {
   },
   qr: {
     hmacSecret: getEnv('QR_HMAC_SECRET'),
-    ttlSeconds: parseInt(process.env.QR_TOKEN_TTL_SECONDS || '20', 10),
+    ttlSeconds: parseInt(process.env.QR_TOKEN_TTL_SECONDS || '15', 10),
   },
   ai: {
     baseUrl: process.env.AI_INFERENCE_BASE_URL || 'https://api.groq.com/openai/v1',
