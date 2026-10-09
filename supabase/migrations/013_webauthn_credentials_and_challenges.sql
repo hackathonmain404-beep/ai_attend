@@ -60,6 +60,17 @@ ON public.webauthn_challenges (expires_at);
 -- 3. EXPAND SECURITY_EVENTS EVENT TYPE CONSTRAINT
 -- Allows recording tamper-evident WebAuthn audit events.
 -- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.security_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type TEXT NOT NULL,
+    student_id UUID NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+    session_id UUID NULL REFERENCES public.attendance_sessions(id) ON DELETE SET NULL,
+    severity TEXT NOT NULL DEFAULT 'medium' CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ip_address TEXT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 ALTER TABLE public.security_events DROP CONSTRAINT IF EXISTS security_events_event_type_check;
 ALTER TABLE public.security_events ADD CONSTRAINT security_events_event_type_check
 CHECK (
