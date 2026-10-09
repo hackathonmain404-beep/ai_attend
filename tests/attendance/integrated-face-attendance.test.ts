@@ -134,10 +134,15 @@ describe('Integrated Biometric Attendance (Member 1 + Member 2 E2E Integration)'
     });
 
     vi.spyOn(deviceService, 'validateDeviceBinding').mockResolvedValue({
-      isAllowed: true,
-      deviceId: 'dev-1',
-      status: 'approved',
-    });
+      id: 'dev-1',
+      student_id: studentId,
+      device_fingerprint: deviceFingerprint,
+      device_name: 'Primary Laptop',
+      user_agent: 'Mozilla/5.0',
+      is_active: true,
+      registered_at: new Date().toISOString(),
+      last_used_at: new Date().toISOString(),
+    } as any);
   });
 
   it('1. should complete check-in when face matches enrolled template via Member 1 engine', async () => {
