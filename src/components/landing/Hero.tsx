@@ -11,7 +11,6 @@ interface HeroProps {
 
 export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const heroRef = React.useRef<HTMLElement>(null);
-  const statusBadgeRef = React.useRef<HTMLDivElement>(null);
   const headlineRef = React.useRef<HTMLHeadingElement>(null);
   const copyRef = React.useRef<HTMLParagraphElement>(null);
   const ctaPrimaryRef = React.useRef<HTMLAnchorElement>(null);
@@ -24,7 +23,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   const violetGlowRef = React.useRef<HTMLDivElement>(null);
   const cyanGlowRef = React.useRef<HTMLDivElement>(null);
 
-  // 1. GSAP Hero Entrance Animation (Order: Status Badge -> Headline Words -> Description -> CTAs)
+  // 1. GSAP Hero Entrance Animation (Order: Headline Words -> Description -> CTAs)
   React.useEffect(() => {
     if (typeof window === "undefined" || !isLoaded) return;
 
@@ -34,7 +33,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       if (prefersReducedMotion) {
         gsap.set(
           [
-            statusBadgeRef.current,
             headlineRef.current,
             copyRef.current,
             ctaPrimaryRef.current,
@@ -55,7 +53,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       }
 
       // Initial hidden states
-      gsap.set(statusBadgeRef.current, { opacity: 0, scale: 0.9, y: -12 });
       const headlineWords = headlineRef.current?.querySelectorAll(".hero-headline-word");
       if (headlineWords && headlineWords.length > 0) {
         gsap.set(headlineWords, { opacity: 0, y: 35, filter: "blur(8px)" });
@@ -69,14 +66,6 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       // Entrance timeline
       const tl = gsap.timeline({ delay: 0.12 });
 
-      tl.to(statusBadgeRef.current, {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        duration: 0.55,
-        ease: "power2.out",
-      });
-
       if (headlineWords && headlineWords.length > 0) {
         tl.to(
           headlineWords,
@@ -87,8 +76,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
             duration: 0.85,
             stagger: 0.15,
             ease: "power3.out",
-          },
-          "-=0.25"
+          }
         );
       } else {
         tl.to(
@@ -99,8 +87,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
             filter: "blur(0px)",
             duration: 0.85,
             ease: "power3.out",
-          },
-          "-=0.25"
+          }
         );
       }
 
@@ -315,21 +302,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
         ref={contentWrapperRef}
         className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center w-full will-change-transform"
       >
-        {/* Step 2: Small Security/Product Status Label */}
-        <div
-          ref={statusBadgeRef}
-          className="inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-300 mb-5 sm:mb-6 shadow-sm will-change-transform"
-        >
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="font-mono text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase">
-            LIVE ZERO-TRUST PROTOCOL // ACTIVE PERIMETER
-          </span>
-        </div>
-
-        {/* Step 3: Large Headline: "Zero-Proxy Attendance." (Fluid clamp, no hard breaks) */}
+        {/* Large Headline: "Zero-Proxy Attendance." (Fluid clamp, no hard breaks) */}
         <h1
           ref={headlineRef}
           className="text-[clamp(2.7rem,10.5vw,4.5rem)] sm:text-7xl md:text-8xl lg:text-[6.8rem] font-medium tracking-tight text-white leading-[0.98] mb-5 sm:mb-6 max-w-4xl will-change-transform"

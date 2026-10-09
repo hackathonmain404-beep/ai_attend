@@ -54,10 +54,9 @@ describe("Mobile Navbar Component", () => {
 });
 
 describe("Mobile Hero Component", () => {
-  it("renders layout in exact required order: status badge, headline, copy, and CTAs", () => {
+  it("renders layout in exact required order: headline, copy, and CTAs", () => {
     const html = renderToString(<Hero destinationHref="/login" />);
 
-    expect(html).toContain("LIVE ZERO-TRUST PROTOCOL");
     expect(html).toContain("Zero-Proxy Attendance.");
     expect(html).toContain("Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.");
     expect(html).toContain("Launch Command Center");
