@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentUserProfile, resolveCurrentUserProfile } from "@/lib/auth/auth-client";
 import { StudentSidebar, STUDENT_NAV_ITEMS } from "@/components/student/StudentSidebar";
 import { StudentTopHeader } from "@/components/student/StudentTopHeader";
+import { AtmosphericBackground } from "@/components/landing/AtmosphericBackground";
 
 export default function StudentLayout({
   children,
@@ -71,7 +72,12 @@ export default function StudentLayout({
   }, [userProfile]);
 
   return (
-    <div className="min-h-screen bg-[#06080A] text-zinc-100 flex relative">
+    <div className="min-h-screen bg-[#040608] text-zinc-100 flex relative overflow-x-hidden">
+      {/* =========================================================
+          ATMOSPHERIC AURORA & DOT MATRIX BACKGROUND
+          ========================================================= */}
+      <AtmosphericBackground />
+
       {/* =========================================================
           1. VERTICAL SIDEBAR (Desktop Fixed & Mobile Slide-Out)
           ========================================================= */}
@@ -88,7 +94,7 @@ export default function StudentLayout({
           ========================================================= */}
       <div
         className={cn(
-          "flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] relative z-10",
           isCollapsed ? "md:pl-[68px]" : "md:pl-56"
         )}
       >
@@ -99,7 +105,7 @@ export default function StudentLayout({
         />
 
         {/* Dashboard Main Content Area */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-28 md:pb-16 space-y-12 sm:space-y-16">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-28 md:pb-16 space-y-12 sm:space-y-16 relative z-10">
           {children}
         </main>
       </div>

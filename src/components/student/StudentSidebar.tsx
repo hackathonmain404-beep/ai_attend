@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
+  Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,12 @@ export const STUDENT_NAV_ITEMS: StudentNavItem[] = [
     icon: QrCode,
     highlight: true,
     description: "Session QR Camera Viewfinder",
+  },
+  {
+    name: "Device",
+    href: "/student/device",
+    icon: Smartphone,
+    description: "Hardware Binding & Security",
   },
   {
     name: "History",

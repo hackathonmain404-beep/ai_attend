@@ -28,7 +28,7 @@ export function StudentTopHeader({
   }, [userProfile?.fullName]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#06080A]/90 backdrop-blur-md transition-all duration-300">
+    <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#05070c]/85 backdrop-blur-xl transition-all duration-300">
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 h-14 flex items-center justify-between gap-4">
         {/* =========================================================
             LEFT AREA: Mobile Toggle & Branded Command Center Identity
@@ -39,7 +39,7 @@ export function StudentTopHeader({
             onClick={onOpenMobile}
             variant="ghost"
             size="sm"
-            className="md:hidden h-8 w-8 p-0 text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg shrink-0"
+            className="md:hidden h-8 w-8 p-0 text-zinc-300 hover:text-white hover:bg-zinc-900 border border-white/[0.1] rounded-lg shrink-0"
             aria-label="Open Navigation Menu"
           >
             <Menu className="h-4 w-4" />
@@ -67,24 +67,24 @@ export function StudentTopHeader({
             ========================================================= */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Global System Status indicator */}
-          <div className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-md transition-all duration-200 hover:border-blue-500/30 hover:bg-zinc-900 cursor-default">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span>SYSTEM OPERATIONAL</span>
+          <div className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-white/[0.03] border border-white/[0.08] px-2.5 py-1 rounded-lg transition-all duration-200 hover:border-blue-500/30 hover:bg-white/[0.05] cursor-default">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>OPERATIONAL</span>
           </div>
 
           {/* Compact User Profile Capsule */}
           <div
             className={cn(
-              "flex items-center gap-2 py-1 px-2.5 rounded-lg",
-              "bg-zinc-900/80 border border-zinc-800",
-              "hover:border-zinc-700 hover:bg-zinc-900",
+              "flex items-center gap-2 py-1 px-2.5 rounded-xl",
+              "bg-white/[0.03] border border-white/[0.08]",
+              "hover:border-blue-500/30 hover:bg-white/[0.05]",
               "transition-colors duration-150",
               "group select-none"
             )}
             title={`Logged in as ${userProfile?.fullName || "Student"}`}
           >
             {/* User Avatar */}
-            <div className="h-7 w-7 rounded-md bg-zinc-800 border border-zinc-700 text-blue-400 font-mono font-semibold text-xs flex items-center justify-center shadow-sm shrink-0">
+            <div className="h-7 w-7 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 font-mono font-semibold text-xs flex items-center justify-center shadow-sm shrink-0">
               {userInitials}
             </div>
 
@@ -98,20 +98,24 @@ export function StudentTopHeader({
                   {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
                 </span>
                 {userProfile?.device?.isRegistered ? (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-blue-400">
-                    <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
-                    VERIFIED
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-emerald-400">
+                    <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
+                    BOUND
                   </span>
                 ) : (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-zinc-500">
+                  <Link
+                    href="/student/device"
+                    className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-amber-400 hover:text-amber-300 transition-colors"
+                    title="Register primary smartphone"
+                  >
                     UNBOUND
-                  </span>
+                  </Link>
                 )}
               </div>
             </div>
 
             {/* Vertical Divider */}
-            <div className="h-5 w-[1px] bg-zinc-800 mx-0.5" />
+            <div className="h-5 w-[1px] bg-white/[0.08] mx-0.5" />
 
             {/* Logout Action */}
             <LogoutButton
