@@ -151,11 +151,15 @@ export async function getStudentAttendanceSummary(
 /**
  * TanStack Query Hook for Student Summary
  * Scoped dynamically to the authenticated student's session key.
- * Never renders initial mock data to prevent incorrect persona flash.
+ * Defers execution during initial auth resolution to prevent unauthenticated flash errors.
  */
 export function useStudentSummary() {
   const [profile, setProfile] = React.useState<MockUserProfile | null>(() => {
     return typeof window !== "undefined" ? getCurrentUserProfile() : null;
+  });
+
+  const [isResolvingAuth, setIsResolvingAuth] = React.useState<boolean>(() => {
+    return typeof window !== "undefined" && !getCurrentUserProfile();
   });
 
   React.useEffect(() => {
@@ -163,10 +167,19 @@ export function useStudentSummary() {
 
     async function ensureProfile() {
       if (!profile) {
-        const resolved = await resolveCurrentUserProfile();
-        if (isMounted && resolved) {
-          setProfile(resolved);
+        setIsResolvingAuth(true);
+        try {
+          const resolved = await resolveCurrentUserProfile();
+          if (isMounted && resolved) {
+            setProfile(resolved);
+          }
+        } finally {
+          if (isMounted) {
+            setIsResolvingAuth(false);
+          }
         }
+      } else {
+        setIsResolvingAuth(false);
       }
     }
 
@@ -176,6 +189,7 @@ export function useStudentSummary() {
       const custom = e as CustomEvent<MockUserProfile | null>;
       if (isMounted) {
         setProfile(custom.detail);
+        setIsResolvingAuth(false);
       }
     };
 
@@ -184,13 +198,20 @@ export function useStudentSummary() {
       isMounted = false;
       window.removeEventListener("attendguard-user-changed", handleUserChange);
     };
-  }, [profile]);
+  }, []);
 
   const userKey = profile?.id || profile?.email || "authenticated-session";
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["student-attendance-summary", userKey],
     queryFn: () => getStudentAttendanceSummary(profile || undefined),
+    enabled: typeof window === "undefined" || !isResolvingAuth,
     staleTime: 1000 * 30, // 30 seconds
   });
+
+  return {
+    ...query,
+    isResolvingAuth,
+    isLoading: isResolvingAuth || query.isLoading,
+  };
 }

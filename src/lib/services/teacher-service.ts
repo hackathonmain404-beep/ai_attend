@@ -147,23 +147,41 @@ export async function resetStudentDevice(
 /**
  * TanStack Query Hook for Teacher Overview
  * Dynamically scoped to the authenticated faculty member.
+ * Defers execution during initial auth resolution to prevent unauthenticated flash errors.
  */
 export function useTeacherOverview() {
   const [profile, setProfile] = React.useState<MockUserProfile | null>(() => {
     return typeof window !== "undefined" ? getCurrentUserProfile() : null;
   });
+  const [isResolvingAuth, setIsResolvingAuth] = React.useState<boolean>(() => {
+    return typeof window !== "undefined" && !getCurrentUserProfile();
+  });
 
   React.useEffect(() => {
     let isMounted = true;
-    if (!profile) {
-      resolveCurrentUserProfile().then((p) => {
-        if (isMounted && p) setProfile(p);
-      });
+
+    async function ensureProfile() {
+      if (!profile) {
+        setIsResolvingAuth(true);
+        try {
+          const p = await resolveCurrentUserProfile();
+          if (isMounted && p) setProfile(p);
+        } finally {
+          if (isMounted) setIsResolvingAuth(false);
+        }
+      } else {
+        setIsResolvingAuth(false);
+      }
     }
+
+    ensureProfile();
 
     const handleUserChange = (e: Event) => {
       const custom = e as CustomEvent<MockUserProfile | null>;
-      if (isMounted) setProfile(custom.detail);
+      if (isMounted) {
+        setProfile(custom.detail);
+        setIsResolvingAuth(false);
+      }
     };
 
     window.addEventListener("attendguard-user-changed", handleUserChange);
@@ -171,13 +189,20 @@ export function useTeacherOverview() {
       isMounted = false;
       window.removeEventListener("attendguard-user-changed", handleUserChange);
     };
-  }, [profile]);
+  }, []);
 
   const userKey = profile?.id || profile?.email || "authenticated-teacher";
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["teacher-overview", userKey],
     queryFn: () => getTeacherOverview(profile || undefined),
+    enabled: typeof window === "undefined" || !isResolvingAuth,
     staleTime: 1000 * 30, // 30 seconds
   });
+
+  return {
+    ...query,
+    isResolvingAuth,
+    isLoading: isResolvingAuth || query.isLoading,
+  };
 }

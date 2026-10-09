@@ -97,7 +97,11 @@ export function StudentTopHeader({
                 <span className="text-[9px] text-zinc-400 font-medium truncate">
                   {userProfile?.identifier || (userProfile === null ? "..." : "STU-AUTH")}
                 </span>
-                {userProfile?.device?.isRegistered ? (
+                {userProfile === null ? (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-mono text-zinc-500">
+                    SYNCING...
+                  </span>
+                ) : userProfile?.device?.isRegistered ? (
                   <span className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-medium text-emerald-400">
                     <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
                     BOUND
@@ -131,4 +135,3 @@ export function StudentTopHeader({
     </header>
   );
 }
-

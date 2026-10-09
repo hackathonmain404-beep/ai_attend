@@ -51,28 +51,43 @@ export default function StudentDashboardPage() {
   }
 
   if (isError || !data) {
+    const status = (error as any)?.status;
+    const code = (error as any)?.code;
+    const errorMessage = (error as any)?.message || "";
+
     const isUnauthenticated =
-      (error as any)?.status === 401 ||
-      (error as any)?.code === "UNAUTHENTICATED" ||
-      (error as any)?.message?.toLowerCase().includes("session");
+      status === 401 ||
+      code === "UNAUTHENTICATED" ||
+      errorMessage.toLowerCase().includes("session") ||
+      errorMessage.toLowerCase().includes("sign in");
+
+    const isForbidden =
+      status === 403 ||
+      code === "FORBIDDEN" ||
+      errorMessage.toLowerCase().includes("forbidden") ||
+      errorMessage.toLowerCase().includes("role");
 
     return (
-      <div className="p-8 rounded-xl border border-rose-500/30 bg-[#0B0D10] text-center space-y-4 max-w-lg mx-auto my-12">
+      <div className="p-8 rounded-xl border border-rose-500/30 bg-[#0B0D10] text-center space-y-4 max-w-lg mx-auto my-12 shadow-2xl">
         <div className="mx-auto h-12 w-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
           <AlertCircle className="h-6 w-6" />
         </div>
         <h2 className="text-xl font-bold text-white font-mono">
-          {isUnauthenticated ? "Authentication Required" : "Failed to Load Attendance Records"}
+          {isUnauthenticated
+            ? "Authentication Required"
+            : isForbidden
+            ? "Access Denied: Role Authorization Mismatch"
+            : "Failed to Load Attendance Records"}
         </h2>
         <p className="text-xs text-zinc-400 font-mono">
-          {(error as any)?.message || "A network or server error occurred while retrieving your academic ledger."}
+          {errorMessage || "A network or server error occurred while retrieving your academic ledger."}
         </p>
         <div className="flex items-center justify-center gap-3">
           <Button
             onClick={async () => {
               try {
                 const { resolveCurrentUserProfile } = await import("@/lib/auth/auth-client");
-                await resolveCurrentUserProfile();
+                await resolveCurrentUserProfile(true);
               } catch {}
               refetch();
             }}
@@ -91,6 +106,16 @@ export default function StudentDashboardPage() {
               className="bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold"
             >
               Go to Sign In
+            </Button>
+          )}
+          {isForbidden && (
+            <Button
+              onClick={() => {
+                window.location.href = "/teacher";
+              }}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold"
+            >
+              Go to Faculty Hub
             </Button>
           )}
         </div>

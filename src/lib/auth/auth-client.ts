@@ -25,6 +25,37 @@ export interface AuthSession {
 const STORAGE_KEY = "attendguard-user";
 
 let inMemoryProfile: UserProfile | null = null;
+let resolvingPromise: Promise<UserProfile | null> | null = null;
+
+// Initialize cross-tab synchronization and auth state listener in browser
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY) {
+      if (e.newValue) {
+        try {
+          inMemoryProfile = JSON.parse(e.newValue);
+          window.dispatchEvent(new CustomEvent("attendguard-user-changed", { detail: inMemoryProfile }));
+        } catch {}
+      } else {
+        inMemoryProfile = null;
+        window.dispatchEvent(new CustomEvent("attendguard-user-changed", { detail: null }));
+      }
+    }
+  });
+
+  try {
+    const supabase = createClient();
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        clearCurrentUserProfile();
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        if (session?.user && !inMemoryProfile) {
+          resolveCurrentUserProfile(true);
+        }
+      }
+    });
+  } catch {}
+}
 
 /**
  * Authenticates user credentials via backend API (/api/auth/login) backed by Supabase Auth and database.
@@ -132,76 +163,92 @@ export function getCurrentUserProfile(): UserProfile | null {
  * 1. Checks synchronous cache first.
  * 2. Checks authoritative GET /api/auth/me endpoint.
  * 3. Checks browser Supabase client live session and database profiles.
+ * De-duplicates in-flight requests to eliminate race conditions.
  * Automatically synchronizes authentic profile to client storage.
  */
-export async function resolveCurrentUserProfile(): Promise<UserProfile | null> {
-  // 1. Check synchronous cache first
-  const cached = getCurrentUserProfile();
-  if (cached) return cached;
+export async function resolveCurrentUserProfile(forceRefresh: boolean = false): Promise<UserProfile | null> {
+  // 1. Check synchronous cache first if not forced
+  if (!forceRefresh) {
+    const cached = getCurrentUserProfile();
+    if (cached) return cached;
+  }
 
   if (typeof window === "undefined") return null;
 
-  // 2. Try fetching from /api/auth/me to get the authoritative server profile
-  try {
-    const me = await apiFetch<{
-      id: string;
-      email: string;
-      fullName: string;
-      role: "student" | "teacher";
-      identifier?: string;
-      device?: {
-        isRegistered: boolean;
-        deviceName: string | null;
-        registeredAt: string | null;
-      };
-    }>("/api/auth/me");
-
-    if (me && me.id && me.role) {
-      const liveProfile: UserProfile = {
-        id: me.id,
-        email: me.email,
-        fullName: me.fullName || "Academic User",
-        role: me.role,
-        identifier: me.identifier,
-        device: me.device
-          ? {
-              isRegistered: Boolean(me.device.isRegistered),
-              deviceName: me.device.deviceName ?? null,
-              registeredAt: me.device.registeredAt ?? null,
-            }
-          : undefined,
-      };
-      saveCurrentUserProfile(liveProfile);
-      return liveProfile;
-    }
-  } catch {
-    // Unauthenticated or network issue
+  // De-duplicate concurrent in-flight calls
+  if (resolvingPromise) {
+    return resolvingPromise;
   }
 
-  // 3. Try checking Supabase client session in browser with real database profile lookup
-  try {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const { data: dbProfile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
+  resolvingPromise = (async () => {
+    try {
+      // 2. Try fetching from /api/auth/me to get the authoritative server profile
+      try {
+        const me = await apiFetch<{
+          id: string;
+          email: string;
+          fullName: string;
+          role: "student" | "teacher";
+          identifier?: string;
+          device?: {
+            isRegistered: boolean;
+            deviceName: string | null;
+            registeredAt: string | null;
+          };
+        }>("/api/auth/me");
 
-      if (dbProfile) {
-        const liveProfile: UserProfile = {
-          id: dbProfile.id,
-          email: dbProfile.email,
-          fullName: dbProfile.full_name,
-          role: dbProfile.role as "student" | "teacher",
-          identifier: dbProfile.identifier,
-        };
-        saveCurrentUserProfile(liveProfile);
-        return liveProfile;
+        if (me && me.id && me.role) {
+          const liveProfile: UserProfile = {
+            id: me.id,
+            email: me.email,
+            fullName: me.fullName || "Academic User",
+            role: me.role,
+            identifier: me.identifier,
+            device: me.device
+              ? {
+                  isRegistered: Boolean(me.device.isRegistered),
+                  deviceName: me.device.deviceName ?? null,
+                  registeredAt: me.device.registeredAt ?? null,
+                }
+              : undefined,
+          };
+          saveCurrentUserProfile(liveProfile);
+          return liveProfile;
+        }
+      } catch {
+        // Unauthenticated or network issue
       }
-    }
-  } catch {}
 
-  return null;
+      // 3. Try checking Supabase client session in browser with real database profile lookup
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: dbProfile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (dbProfile) {
+            const liveProfile: UserProfile = {
+              id: dbProfile.id,
+              email: dbProfile.email,
+              fullName: dbProfile.full_name,
+              role: dbProfile.role as "student" | "teacher",
+              identifier: dbProfile.identifier,
+            };
+            saveCurrentUserProfile(liveProfile);
+            return liveProfile;
+          }
+        }
+      } catch {}
+
+      return null;
+    } finally {
+      resolvingPromise = null;
+    }
+  })();
+
+  return resolvingPromise;
 }
