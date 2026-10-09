@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateSubjectStats,
   calculateOverallStats,
+  calculateSubjectAttendance,
+  calculateConsecutiveClassesNeeded,
+  calculateMaxSafeAbsences,
   ATTENDANCE_THRESHOLD,
 } from '@/lib/attendance/calculator';
 
@@ -73,6 +76,62 @@ describe('Deterministic Attendance Calculator', () => {
       expect(stats.totalHeld).toBe(0);
       expect(stats.attended).toBe(0);
       expect(stats.status).toBe('safe');
+    });
+  });
+
+  describe('calculateSubjectAttendance', () => {
+    it('returns 100.0% for 0 classes held', () => {
+      expect(calculateSubjectAttendance(0, 0)).toBe(100.0);
+    });
+
+    it('calculates rounded percentage properly', () => {
+      // 14 / 21 = 66.666... -> 66.7%
+      expect(calculateSubjectAttendance(14, 21)).toBe(66.7);
+    });
+
+    it('clamps attended to totalHeld', () => {
+      expect(calculateSubjectAttendance(25, 20)).toBe(100.0);
+    });
+  });
+
+  describe('calculateConsecutiveClassesNeeded', () => {
+    it('returns 0 if student is already at or above threshold', () => {
+      expect(calculateConsecutiveClassesNeeded(16, 20, 75.0)).toBe(0);
+      expect(calculateConsecutiveClassesNeeded(15, 20, 75.0)).toBe(0);
+    });
+
+    it('calculates classes needed for custom 80% threshold', () => {
+      // 14 / 20 = 70%. Target 80%.
+      // Formula: ceil((0.8 * 20 - 14) / (1 - 0.8)) = ceil((16 - 14) / 0.2) = ceil(2 / 0.2) = 10.
+      // Check: (14 + 10) / (20 + 10) = 24 / 30 = 80.0%
+      expect(calculateConsecutiveClassesNeeded(14, 20, 80.0)).toBe(10);
+    });
+
+    it('returns 0 when 0 classes have been held', () => {
+      expect(calculateConsecutiveClassesNeeded(0, 0, 75.0)).toBe(0);
+    });
+
+    it('returns Infinity if threshold is 100% and a class was missed', () => {
+      expect(calculateConsecutiveClassesNeeded(19, 20, 100.0)).toBe(Infinity);
+      expect(calculateConsecutiveClassesNeeded(20, 20, 100.0)).toBe(0);
+    });
+  });
+
+  describe('calculateMaxSafeAbsences', () => {
+    it('returns 0 if already below threshold', () => {
+      expect(calculateMaxSafeAbsences(14, 20, 75.0)).toBe(0);
+    });
+
+    it('calculates safe absences for custom 80% threshold', () => {
+      // 18 / 20 = 90%. Target 80%.
+      // Formula: floor((18 - 0.8 * 20) / 0.8) = floor((18 - 16) / 0.8) = floor(2 / 0.8) = 2.
+      // Check: 18 / (20 + 2) = 18 / 22 = 81.8% >= 80%
+      // Check: 18 / (20 + 3) = 18 / 23 = 78.3% < 80%
+      expect(calculateMaxSafeAbsences(18, 20, 80.0)).toBe(2);
+    });
+
+    it('returns 0 when 0 classes held', () => {
+      expect(calculateMaxSafeAbsences(0, 0, 75.0)).toBe(0);
     });
   });
 

@@ -383,14 +383,30 @@ The primary check-in endpoint called when a student scans the dynamic QR code.
     "className": "CS301: Distributed Systems",
     "status": "present",
     "checkInTime": "2026-10-06T14:15:12.000Z",
-    "reVerified": false
+    "reVerified": false,
+    "ipVerificationStatus": "matched",
+    "verificationReason": "MATCHED",
+    "attendanceRecorded": true
   },
   "error": null
 }
 ```
 
+*Note on Network Mismatches under Default Review Policy*:
+When `IP_MISMATCH_POLICY=review`, students outside the campus subnet still record attendance (`attendanceRecorded: true`), but their records are flagged for instructor review with `"ipVerificationStatus": "review_required"` and `"verificationReason": "NETWORK_MISMATCH"`.
+
 **Common Error Responses**:
 ```json
+// Campus Network Mismatch under Strict Reject Policy (403 Forbidden)
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "CAMPUS_NETWORK_MISMATCH",
+    "message": "Your network connection is not authorized for campus attendance check-in."
+  }
+}
+
 // QR Expired (409 Conflict)
 {
   "success": false,

@@ -5,7 +5,8 @@
  * 2. Active session state check
  * 3. Registered device hardware check
  * 4. Course enrollment check
- * 5. Anti-duplicate attendance record insertion with forensic logging
+ * 5. Campus IP / network verification check (review vs reject policy)
+ * 6. Anti-duplicate attendance record insertion with forensic audit logging
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -23,6 +24,8 @@ import {
   checkAttendanceRateLimit,
   verifyServerCampusPerimeter,
 } from '@/lib/attendance/security-guards';
+import { verifyCampusIp, type IpVerificationStatus } from '@/lib/security/ip-service';
+import { logSecurityEvent } from '@/lib/security/audit-service';
 
 export interface CheckInParams {
   studentId: string;
@@ -46,10 +49,13 @@ export interface CheckInResult {
   status: 'present';
   checkInTime: string;
   reVerified: boolean;
+  ipVerificationStatus?: IpVerificationStatus;
+  verificationReason?: string | null;
+  attendanceRecorded?: boolean;
 }
 
 /**
- * Executes the complete 5-layer attendance verification pipeline with anti-replay and concurrency protection.
+ * Executes the complete multi-layer attendance verification pipeline with IP verification, anti-replay, and concurrency protection.
  */
 export async function processStudentCheckIn(params: CheckInParams): Promise<CheckInResult> {
   const { studentId, challengeToken, deviceFingerprint, ipAddress, userAgent, location } = params;
@@ -83,8 +89,22 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   try {
     tokenPayload = verifyQrChallengeToken(challengeToken);
   } catch (err: any) {
-    // Forensic log on QR rejection
-    const status = err.code === 'QR_EXPIRED' ? 'expired' : 'invalid';
+    const isExpired = err.code === 'QR_EXPIRED';
+    const status = isExpired ? 'expired' : 'invalid';
+
+    await logSecurityEvent(
+      {
+        eventType: isExpired ? 'EXPIRED_QR' : 'INVALID_QR',
+        studentId,
+        sessionId: null,
+        verificationStatus: 'failed',
+        reason: err.message || 'QR token verification failed',
+        ipAddress,
+        metadata: { tokenSnippet: challengeToken.slice(0, 32) },
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId: null,
       studentId,
@@ -145,6 +165,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     .single();
 
   if (sessionError || !session) {
+    await logSecurityEvent(
+      {
+        eventType: 'INVALID_QR',
+        studentId,
+        sessionId,
+        verificationStatus: 'failed',
+        reason: 'Session referenced in QR challenge does not exist',
+        ipAddress,
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId,
       studentId,
@@ -158,6 +190,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   }
 
   if (session.status !== 'active') {
+    await logSecurityEvent(
+      {
+        eventType: 'INVALID_QR',
+        studentId,
+        sessionId,
+        verificationStatus: 'failed',
+        reason: 'Attendance session is not active',
+        ipAddress,
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId,
       studentId,
@@ -184,6 +228,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       client: supabase,
     });
   } catch (err: any) {
+    await logSecurityEvent(
+      {
+        eventType: 'DEVICE_MISMATCH',
+        studentId,
+        sessionId,
+        verificationStatus: 'rejected',
+        reason: err.message || 'Unregistered device fingerprint',
+        ipAddress,
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId,
       studentId,
@@ -207,6 +263,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     .maybeSingle();
 
   if (enrollmentError || !enrollment) {
+    await logSecurityEvent(
+      {
+        eventType: 'UNAUTHORIZED_ACCESS',
+        studentId,
+        sessionId,
+        verificationStatus: 'rejected',
+        reason: 'Student is not enrolled in this course',
+        ipAddress,
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId,
       studentId,
@@ -223,7 +291,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   }
 
   // ----------------------------------------------------------------------------
-  // GATE 5: Duplicate Attendance Check & Record Creation
+  // GATE 5: Duplicate Attendance Check
   // ----------------------------------------------------------------------------
   const { data: existingRecord } = await supabase
     .from('attendance_records')
@@ -233,6 +301,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     .maybeSingle();
 
   if (existingRecord) {
+    await logSecurityEvent(
+      {
+        eventType: 'DUPLICATE_ATTENDANCE',
+        studentId,
+        sessionId,
+        verificationStatus: 'rejected',
+        reason: 'Duplicate check-in submission detected',
+        ipAddress,
+      },
+      adminDb
+    );
+
     await logVerificationAttempt(adminDb, {
       sessionId,
       studentId,
@@ -245,6 +325,56 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     throw new ConflictError(
       'Attendance has already been recorded for this session.',
       'ALREADY_CHECKED_IN' as any
+    );
+  }
+
+  // ----------------------------------------------------------------------------
+  // GATE 6: Campus IP / Network Verification Policy Enforcement
+  // ----------------------------------------------------------------------------
+  const ipResult = verifyCampusIp(ipAddress);
+
+  if (!ipResult.isAllowed) {
+    // Strict rejection policy triggered
+    await logSecurityEvent(
+      {
+        eventType: 'NETWORK_MISMATCH',
+        studentId,
+        sessionId,
+        verificationStatus: 'rejected',
+        reason: ipResult.details || 'Campus network mismatch (Strict Reject Policy)',
+        ipAddress,
+      },
+      adminDb
+    );
+
+    await logVerificationAttempt(adminDb, {
+      sessionId,
+      studentId,
+      verificationType: 'initial_qr',
+      status: 'invalid',
+      tokenSnippet: challengeToken.slice(0, 32),
+      ipAddress,
+      userAgent,
+    });
+
+    throw new ForbiddenError(
+      'Your network connection is not authorized for campus attendance check-in.',
+      'CAMPUS_NETWORK_MISMATCH' as any
+    );
+  }
+
+  // If review is required under permissive review policy, log alert for teacher
+  if (ipResult.status === 'review_required') {
+    await logSecurityEvent(
+      {
+        eventType: 'NETWORK_MISMATCH',
+        studentId,
+        sessionId,
+        verificationStatus: 'review_required',
+        reason: ipResult.details || 'IP outside campus allowlist - teacher review required',
+        ipAddress,
+      },
+      adminDb
     );
   }
 
@@ -261,6 +391,9 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       re_verified: false,
       check_in_time: now,
       created_at: now,
+      ip_verification_status: ipResult.status,
+      verification_reason: ipResult.reason,
+      ip_address: ipResult.observedIp,
     })
     .select('id, check_in_time')
     .single();
@@ -268,6 +401,18 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   if (recordError || !record) {
     // In case of race conditions caught by PostgreSQL UNIQUE constraint
     if (recordError?.code === '23505') {
+      await logSecurityEvent(
+        {
+          eventType: 'DUPLICATE_ATTENDANCE',
+          studentId,
+          sessionId,
+          verificationStatus: 'rejected',
+          reason: 'Race condition: duplicate attendance constraint triggered',
+          ipAddress,
+        },
+        adminDb
+      );
+
       throw new ConflictError(
         'Attendance has already been recorded for this session.',
         'ALREADY_CHECKED_IN' as any
@@ -330,6 +475,8 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
           sessionId,
           status: 'present',
           tokenSnippet: challengeToken.slice(0, 32),
+          ipVerificationStatus: ipResult.status,
+          verificationReason: ipResult.reason,
         },
         ipAddress: ipAddress || null,
       },
@@ -343,6 +490,9 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       status: 'present',
       checkInTime: record.check_in_time,
       reVerified: false,
+      ipVerificationStatus: ipResult.status,
+      verificationReason: ipResult.reason,
+      attendanceRecorded: true,
     };
   } finally {
     releaseLock();

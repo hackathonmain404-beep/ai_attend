@@ -30,11 +30,11 @@ export function createAdminClient() {
     throw new Error('[Security Exception]: Attempted to initialize admin Supabase client in browser runtime.');
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('[Configuration Error]: Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+    throw new Error('[Configuration Error]: Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY.');
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {

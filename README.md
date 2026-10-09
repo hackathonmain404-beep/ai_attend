@@ -351,6 +351,24 @@ QR_HMAC_SECRET=your_32_character_minimum_random_secret_string
 QR_TOKEN_TTL_SECONDS=20
 
 # ==========================================
+# CAMPUS NETWORK & IP VERIFICATION
+# ==========================================
+# Toggle campus IP verification (true / false)
+IP_CHECK_ENABLED=true
+# Enforcement policy: 'review' (default, flag for teacher audit) or 'reject' (strict 403 denial)
+IP_MISMATCH_POLICY=review
+# Approved campus public IP addresses or CIDR subnets (comma-separated)
+CAMPUS_IP_ALLOWLIST=127.0.0.1, ::1, 192.168.1.0/24, 203.0.113.0/24
+# Reverse proxy trust settings
+TRUST_PROXY=true
+TRUSTED_PROXY_COUNT=1
+
+# Optional Campus Geolocation (Untrusted supporting signal)
+CAMPUS_LAT=37.7749
+CAMPUS_LON=-122.4194
+CAMPUS_RADIUS_METERS=150
+
+# ==========================================
 # AI INFERENCE LAYER (OPEN-WEIGHT LLM)
 # ==========================================
 # Compatible with OpenAI-format endpoints (Groq, Together AI, Ollama, vLLM)
@@ -366,8 +384,16 @@ AI_MODEL_NAME=llama-3.1-8b-instant
 1. **Create a new Supabase Project**: Navigate to the [Supabase Dashboard](https://supabase.com) and create an organization and project.
 2. **Apply Migrations**:
    - Open the **SQL Editor** tab in Supabase.
-   - Run `supabase/migrations/001_initial_schema.sql` to create `profiles`, `classes`, `attendance_sessions`, `attendance_records`, `registered_devices`, `attendance_verifications`, and `audit_logs`.
+   - Run `supabase/migrations/001_initial_schema.sql` to create core tables (`profiles`, `classes`, `attendance_sessions`, `attendance_records`, `registered_devices`, etc.).
    - Run `supabase/migrations/002_rls_policies.sql` to apply security rules.
+   - Run `supabase/migrations/003_performance_indexes.sql` to build composite query indexes.
+   - Run `supabase/migrations/004_auth_profile_provisioning.sql` for automated auth profile provisioning.
+   - Run `supabase/migrations/005_role_security_and_profile_immutability.sql` to enforce role integrity.
+   - Run `supabase/migrations/006_data_retention_and_relational_integrity.sql` for retention constraints.
+   - Run `supabase/migrations/007_device_security_and_reverify_persistence.sql` for device binding rules.
+   - Run `supabase/migrations/008_attendance_lifecycle_state_machine.sql` for session states.
+   - Run `supabase/migrations/009_rls_security_hardening.sql` for RLS hardening.
+   - Run `supabase/migrations/010_ip_verification_and_security_events.sql` to extend `attendance_records` with IP verification fields and create the tamper-evident `security_events` audit table with teacher/student RLS policies.
 3. **Configure Authentication**:
    - In **Authentication > Providers**, ensure Email/Password provider is enabled.
    - Disable email confirmation in development for rapid testing.
@@ -377,6 +403,27 @@ AI_MODEL_NAME=llama-3.1-8b-instant
    - Run `supabase/seed.sql` to populate test teachers, students, and enrolled courses.
 
 For complete database schema specifications, see [docs/DATABASE.md](docs/DATABASE.md).
+
+---
+
+## Campus IP & Network Verification
+
+AttendGuard integrates an authoritative server-side IP verification service to protect attendance integrity:
+
+### Verification Pipeline
+1. **Authoritative Client IP Detection**: The backend extracts the client's observed IP from the TCP connection or trusted reverse proxy headers (`X-Forwarded-For`, `X-Real-IP`).
+2. **Reverse Proxy Hardening**: Configurable through `TRUST_PROXY` and `TRUSTED_PROXY_COUNT`. When untrusted, client-forged `X-Forwarded-For` headers are stripped and ignored.
+3. **Format Normalization**: Handles IPv4, IPv6, bracketed IPv6, and IPv4-mapped IPv6 addresses (`::ffff:192.168.1.1`).
+4. **CIDR Subnet Matching**: Checks exact IP addresses and CIDR subnets (e.g. `192.168.1.0/24`, `2001:db8::/32`).
+5. **Configurable Enforcement Policy**:
+   - `IP_MISMATCH_POLICY=review` (Default & Recommended): The check-in is logged as present, but flagged with `ip_verification_status: 'review_required'` and emits an audit event for teacher review.
+   - `IP_MISMATCH_POLICY=reject`: Stricter enforcement that returns `403 Forbidden` (`CAMPUS_NETWORK_MISMATCH`) and prevents attendance creation.
+   - `IP_CHECK_ENABLED=false` or unconfigured allowlist: Permissively sets status to `skipped` or `not_configured` to prevent development blockage.
+
+### Known Limitations of IP-Based Verification
+- **Carrier CGNAT & Mobile Hotspots**: Students connected via cellular data will present cellular carrier gateway IPs rather than the campus Wi-Fi IP. This is why AttendGuard uses `IP_MISMATCH_POLICY=review` by default rather than blocking students outright.
+- **Institutional Multi-Subnet Campus**: Large universities with multiple Wi-Fi SSIDs (e.g., eduroam, guest, dorms) must have all public gateway CIDR blocks added to `CAMPUS_IP_ALLOWLIST`.
+- **Campus VPN**: Authorized students connecting via institutional VPN share the campus gateway IP, which matches the allowlist. Unauthorized off-campus VPN connections will mismatch.
 
 ---
 

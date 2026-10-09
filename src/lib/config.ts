@@ -3,12 +3,21 @@
  * Centralized reader for server-side environment variables with startup validation.
  */
 
-function getEnv(key: string, required = true, fallback?: string): string {
-  const value = process.env[key] || fallback;
-  if (required && (!value || value.trim() === '')) {
-    throw new Error(`[AttendGuard Config Error]: Missing required environment variable: "${key}"`);
+function getEnv(keys: string | string[], required = true, fallback?: string): string {
+  const keyList = Array.isArray(keys) ? keys : [keys];
+  for (const key of keyList) {
+    const value = process.env[key];
+    if (value && value.trim() !== '') {
+      return value.trim();
+    }
   }
-  return value || '';
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  if (required) {
+    throw new Error(`[AttendGuard Config Error]: Missing required environment variable: "${keyList.join('" or "')}"`);
+  }
+  return '';
 }
 
 export const config = {
@@ -17,10 +26,20 @@ export const config = {
     isProduction: process.env.NODE_ENV === 'production',
   },
   supabase: {
-    url: getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    anonKey: getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    url: getEnv(['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL']),
+    anonKey: getEnv(['SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']),
     // Server-only service role key - should never be accessed in browser code
     serviceRoleKey: getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+  },
+  security: {
+    ipCheckEnabled: process.env.IP_CHECK_ENABLED === 'true' || process.env.IP_CHECK_ENABLED === '1',
+    ipMismatchPolicy: (process.env.IP_MISMATCH_POLICY?.toLowerCase() === 'reject' ? 'reject' : 'review') as 'review' | 'reject',
+    campusIpAllowlist: process.env.CAMPUS_IP_ALLOWLIST || '',
+    trustProxy: process.env.TRUST_PROXY !== 'false',
+    trustedProxyCount: parseInt(process.env.TRUSTED_PROXY_COUNT || '1', 10),
+    campusLat: process.env.CAMPUS_LAT ? parseFloat(process.env.CAMPUS_LAT) : null,
+    campusLon: process.env.CAMPUS_LON ? parseFloat(process.env.CAMPUS_LON) : null,
+    campusRadiusMeters: process.env.CAMPUS_RADIUS_METERS ? parseFloat(process.env.CAMPUS_RADIUS_METERS) : 100,
   },
   qr: {
     hmacSecret: getEnv('QR_HMAC_SECRET'),
@@ -34,3 +53,4 @@ export const config = {
 };
 
 export type AppConfig = typeof config;
+
