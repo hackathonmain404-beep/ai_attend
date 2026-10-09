@@ -265,7 +265,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex flex-col items-center justify-start pt-24 sm:pt-32 lg:pt-36 pb-20 sm:pb-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[#02040a] via-[#030712] to-zinc-950"
+      className="relative min-h-screen flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[#02040a] via-[#030712] to-zinc-950"
     >
       {/* 1. Parallax Atmosphere: Continuous Technical Dot Grid */}
       <div
@@ -288,7 +288,7 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
       <div
         ref={blueGlowRef}
         aria-hidden="true"
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[640px] h-[260px] sm:h-[400px] rounded-full bg-blue-600/15 blur-[90px] sm:blur-[130px] pointer-events-none opacity-35 sm:opacity-40 will-change-transform z-0"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[680px] h-[260px] sm:h-[420px] rounded-full bg-blue-600/15 blur-[90px] sm:blur-[130px] pointer-events-none opacity-35 sm:opacity-40 will-change-transform z-0"
       />
 
       {/* 4. Seamless Bottom Gradient Dissolve */}
@@ -297,36 +297,36 @@ export function Hero({ destinationHref, isLoaded = true }: HeroProps) {
         className="absolute inset-x-0 bottom-0 h-36 sm:h-64 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent pointer-events-none z-[5]"
       />
 
-      {/* 5. Main Hero Content Wrapper */}
+      {/* 5. Main Hero Content Wrapper - Centered */}
       <div
         ref={contentWrapperRef}
-        className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center w-full will-change-transform"
+        className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center justify-center w-full will-change-transform my-auto"
       >
         {/* Large Headline: "Zero-Proxy Attendance." (Fluid clamp, no hard breaks) */}
         <h1
           ref={headlineRef}
-          className="text-[clamp(2.7rem,10.5vw,4.5rem)] sm:text-7xl md:text-8xl lg:text-[6.8rem] font-medium tracking-tight text-white leading-[0.98] mb-5 sm:mb-6 max-w-4xl will-change-transform"
+          className="text-[clamp(2.7rem,10.5vw,4.5rem)] sm:text-7xl md:text-8xl lg:text-[6.8rem] font-medium tracking-tight text-white leading-[0.98] mb-5 sm:mb-6 max-w-4xl will-change-transform text-center mx-auto"
         >
           <span className="sr-only">Zero-Proxy Attendance.</span>
           <span
             aria-hidden="true"
-            className="bg-gradient-to-b from-white via-white to-zinc-300 bg-clip-text text-transparent inline-flex flex-wrap justify-center gap-x-3 sm:gap-x-5"
+            className="bg-gradient-to-b from-white via-white to-zinc-300 bg-clip-text text-transparent inline-flex flex-wrap justify-center items-center text-center gap-x-3 sm:gap-x-5"
           >
-            <span className="hero-headline-word inline-block will-change-transform">Zero-Proxy</span>
-            <span className="hero-headline-word inline-block will-change-transform">Attendance.</span>
+            <span className="hero-headline-word inline-block will-change-transform text-center">Zero-Proxy</span>
+            <span className="hero-headline-word inline-block will-change-transform text-center">Attendance.</span>
           </span>
         </h1>
 
         {/* Step 4: Supporting Description */}
         <p
           ref={copyRef}
-          className="text-zinc-400 text-sm sm:text-base md:text-lg max-w-xl mx-auto leading-relaxed font-normal mb-8 sm:mb-9 px-2 will-change-transform"
+          className="text-zinc-400 text-sm sm:text-base md:text-lg max-w-xl mx-auto text-center leading-relaxed font-normal mb-8 sm:mb-10 px-2 will-change-transform"
         >
           Secure your campus perimeter with cryptographic QR challenges and hardware-bound device verification.
         </p>
 
-        {/* Steps 5 & 6: Action CTAs (Vertical on narrow mobile, horizontal on wider screens) */}
-        <div className="w-full max-w-md sm:max-w-none flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-5 mb-10 sm:mb-12 px-2">
+        {/* Action CTAs - Centered */}
+        <div className="w-full max-w-md sm:max-w-none flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-5 px-2 mx-auto">
           {/* Primary CTA */}
           <a
             ref={ctaPrimaryRef}
