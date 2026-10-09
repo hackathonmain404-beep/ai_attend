@@ -4,6 +4,7 @@ import * as qrCrypto from '@/lib/qr/crypto';
 import * as deviceService from '@/lib/device/service';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/lib/errors';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { resetSecurityGuardsForTesting } from '@/lib/attendance/security-guards';
 
 describe('Student Check-In Pipeline (src/lib/attendance/check-in-service.ts)', () => {
   const mockStudentId = 'stu-1';
@@ -13,6 +14,7 @@ describe('Student Check-In Pipeline (src/lib/attendance/check-in-service.ts)', (
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetSecurityGuardsForTesting();
   });
 
   it('should successfully record attendance when all 5 gates pass', async () => {
