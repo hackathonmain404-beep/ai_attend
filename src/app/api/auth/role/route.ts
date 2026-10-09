@@ -18,22 +18,35 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Check authentic verified profile from database
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // Strict Security (Problem B): Students cannot escalate privileges to teacher
+    if (targetRole === 'teacher' && currentProfile?.role !== 'teacher') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Forbidden: Self-assignment of teacher privileges is prohibited. Contact administrator.',
+        },
+        { status: 403 }
+      );
+    }
+
     const response = NextResponse.json({
       success: true,
       role: targetRole,
     });
-
-    if (user) {
-      try {
-        const admin = createAdminClient();
-        await admin
-          .from('profiles')
-          .update({ role: targetRole, updated_at: new Date().toISOString() })
-          .eq('id', user.id);
-      } catch (dbErr) {
-        console.error('Failed to update DB profile role:', dbErr);
-      }
-    }
 
     // Set cookie for Edge middleware & client sync
     response.cookies.set('attendguard-role', targetRole, {

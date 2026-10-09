@@ -9,7 +9,7 @@ import { apiSuccess, withErrorHandler } from '@/lib/utils/api';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { signupSchema } from '@/lib/validations/auth';
-import { ValidationError, ConflictError } from '@/lib/errors';
+import { ValidationError, ConflictError, ForbiddenError } from '@/lib/errors';
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   let body: unknown;
@@ -27,6 +27,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   const { email, password, fullName, role, identifier } = parseResult.data;
+
+  // Strict Security (Problem B): Faculty / teacher accounts cannot be self-registered.
+  // Privileged faculty access must be granted through authorized administrative channels.
+  if (role === 'teacher') {
+    throw new ForbiddenError(
+      'Faculty / teacher accounts cannot be self-registered. Please contact the academic administrator for official provisioning.'
+    );
+  }
+
   const normalizedEmail = email.trim().toLowerCase();
 
   const supabase = await createServerSupabaseClient();
