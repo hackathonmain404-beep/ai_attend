@@ -20,6 +20,8 @@ export interface QrChallengeResponse {
 export interface CheckInRequest {
   challengeToken: string;
   deviceFingerprint: string;
+  webauthnChallengeId?: string;
+  webauthnResponse?: any;
 }
 
 export interface CheckInResult {
@@ -37,4 +39,8 @@ export type CheckInErrorCode =
   | "ALREADY_CHECKED_IN"
   | "NOT_ENROLLED"
   | "SESSION_INACTIVE"
-  | "QR_INVALID";
+  | "QR_INVALID"
+  | "WEBAUTHN_REQUIRED"
+  | "WEBAUTHN_INVALID"
+  | "WEBAUTHN_EXPIRED"
+  | "WEBAUTHN_REPLAYED";

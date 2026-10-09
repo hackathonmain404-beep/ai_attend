@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   Camera,
   CameraOff,
@@ -15,15 +16,16 @@ import {
   Layers,
   CheckCircle2,
   Info,
-  Maximize2,
-  Lock,
+  Fingerprint,
+  KeyRound,
 } from "lucide-react";
 import jsQR from "jsqr";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScanResultModal, type VerificationState } from "@/components/student/ScanResultModal";
 import { submitCheckIn, fetchQrChallenge } from "@/lib/services/qr-service";
 import { getClientDeviceFingerprint } from "@/lib/device/fingerprint";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, getAttendanceVerificationOptions } from "@/lib/api-client";
+import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import type { CheckInResult } from "@/types/qr";
 
 interface ActiveDeviceStatus {
@@ -35,7 +37,7 @@ interface ActiveDeviceStatus {
 export function StudentScanner() {
   const queryClient = useQueryClient();
 
-  // Verification state machine: ready | scanning | verifying | verified | expired | failed | already_checked_in
+  // Verification state machine
   const [verificationState, setVerificationState] = React.useState<VerificationState>("ready");
   const [hasCamera, setHasCamera] = React.useState<boolean | null>(null);
   const [permissionDenied, setPermissionDenied] = React.useState(false);
@@ -114,10 +116,11 @@ export function StudentScanner() {
     };
   }, [startCamera, stopCamera]);
 
-  // Process a QR challenge token payload through the authoritative check-in API
+  // Process a QR challenge token payload through WebAuthn + check-in API
   const handleCheckInAttempt = React.useCallback(
     async (token: string, simulatedMismatch = false) => {
-      setVerificationState("verifying");
+      // 1. QR detected
+      setVerificationState("qr_detected");
       setErrorMessage("");
 
       try {
@@ -126,15 +129,82 @@ export function StudentScanner() {
           throw new Error("Invalid QR code format. Please scan an authorized AttendGuard dynamic code.");
         }
 
+        // 2. Check browser WebAuthn support
+        const isSupported = browserSupportsWebAuthn();
+        if (!isSupported) {
+          setVerificationState("unsupported_authenticator");
+          return;
+        }
+
+        // 3. Request fresh WebAuthn authentication options from server
+        let optRes;
+        try {
+          optRes = await getAttendanceVerificationOptions(token);
+        } catch (optErr: any) {
+          const code = optErr?.code || "";
+          const msg = optErr?.message || "";
+          if (code === "NO_REGISTERED_CREDENTIALS" || optErr?.data?.requiresRegistration) {
+            setVerificationState("credential_not_registered");
+            return;
+          }
+          if (code === "QR_EXPIRED" || (optErr?.status === 409 && msg.toLowerCase().includes("expired"))) {
+            setVerificationState("qr_expired");
+            return;
+          }
+          if (optErr?.name === "TypeError" || msg.toLowerCase().includes("fetch")) {
+            setVerificationState("network_error");
+            return;
+          }
+          throw optErr;
+        }
+
+        if (optRes.requiresRegistration) {
+          setVerificationState("credential_not_registered");
+          return;
+        }
+
+        let webauthnChallengeId: string | undefined;
+        let webauthnResponse: any | undefined;
+
+        // If WebAuthn challenge was issued by server, prompt authenticator
+        if (optRes.options && optRes.challengeId) {
+          webauthnChallengeId = optRes.challengeId;
+          setVerificationState("authenticating");
+
+          try {
+            webauthnResponse = await startAuthentication({
+              optionsJSON: optRes.options,
+            });
+          } catch (browserAuthErr: any) {
+            if (
+              browserAuthErr?.name === "NotAllowedError" ||
+              browserAuthErr?.message?.toLowerCase().includes("cancel") ||
+              browserAuthErr?.message?.toLowerCase().includes("abort")
+            ) {
+              setVerificationState("verification_cancelled");
+              return;
+            }
+            setVerificationState("verification_failed");
+            setErrorMessage(browserAuthErr?.message || "Identity verification could not be completed.");
+            return;
+          }
+
+          // Browser WebAuthn assertion succeeded, now checking attendance with server
+          setVerificationState("verification_successful");
+        }
+
+        // 4. Submitting final payload to zero-trust backend
         const fingerprint = await getClientDeviceFingerprint(simulatedMismatch);
         const res = await submitCheckIn({
           challengeToken: token,
           deviceFingerprint: fingerprint,
+          webauthnChallengeId,
+          webauthnResponse,
         });
 
-        // ONLY mark verified after backend confirms 201 response!
+        // 5. ONLY mark verified after backend confirms 201 response!
         setCheckInResult(res);
-        setVerificationState("verified");
+        setVerificationState("attendance_confirmed");
 
         // Invalidate React Query cache so dashboard statistics update immediately
         try {
@@ -145,15 +215,26 @@ export function StudentScanner() {
         const message = err?.message || "Check-in failed.";
 
         if (code === "QR_EXPIRED" || (err?.status === 409 && message.toLowerCase().includes("expired"))) {
-          setVerificationState("expired");
+          setVerificationState("qr_expired");
         } else if (code === "ALREADY_CHECKED_IN" || code === "QR_REPLAYED") {
           setVerificationState("already_checked_in");
+        } else if (code === "WEBAUTHN_REQUIRED" || code === "NO_REGISTERED_CREDENTIALS") {
+          setVerificationState("credential_not_registered");
+        } else if (
+          code === "WEBAUTHN_INVALID" ||
+          code === "WEBAUTHN_EXPIRED" ||
+          code === "WEBAUTHN_REPLAYED"
+        ) {
+          setVerificationState("verification_failed");
+          setErrorMessage(message || "Identity verification could not be completed.");
         } else if (code === "DEVICE_MISMATCH" || err?.status === 403) {
           setVerificationState("failed");
           setErrorMessage(message || "Hardware Mismatch: Attendance must be recorded from your registered device.");
         } else if (code === "QR_INVALID") {
           setVerificationState("failed");
           setErrorMessage("Invalid QR token signature. The scanned code was not recognized by the server.");
+        } else if (err?.name === "TypeError" || message.toLowerCase().includes("fetch")) {
+          setVerificationState("network_error");
         } else {
           setVerificationState("failed");
           setErrorMessage(message);
@@ -293,6 +374,22 @@ export function StudentScanner() {
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* WebAuthn Security Status Banner */}
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 flex items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2.5">
+          <Fingerprint className="h-4 w-4 text-emerald-400 shrink-0" />
+          <span className="text-zinc-300">
+            Attendance protected by <strong className="text-white">WebAuthn / Passkey</strong> verification.
+          </span>
+        </div>
+        <Link
+          href="/student/security"
+          className="text-emerald-400 hover:text-emerald-300 underline font-semibold shrink-0"
+        >
+          Manage Passkeys
+        </Link>
+      </div>
+
       {/* 1. Official Scanner Viewport Card */}
       <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] overflow-hidden shadow-2xl relative transition-all duration-300 hover:border-blue-500/30 w-full">
         {/* Viewport Top Header */}
@@ -306,7 +403,7 @@ export function StudentScanner() {
                 Official Attendance Viewfinder
               </h2>
               <p className="text-zinc-400 text-xs mt-0.5 font-mono">
-                Realtime optical decoder • Server-authoritative check-in
+                Realtime optical decoder • Biometric WebAuthn check-in
               </p>
             </div>
           </div>
@@ -319,10 +416,22 @@ export function StudentScanner() {
                 SCANNING LIVE
               </span>
             )}
-            {verificationState === "verifying" && (
+            {verificationState === "qr_detected" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
                 <RefreshCw className="h-3 w-3 animate-spin" />
-                VERIFYING...
+                QR DETECTED
+              </span>
+            )}
+            {verificationState === "authenticating" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                <Fingerprint className="h-3 w-3 animate-pulse" />
+                VERIFYING USER
+              </span>
+            )}
+            {(verificationState === "verifying" || verificationState === "verification_successful") && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                CHECKING SERVER
               </span>
             )}
             {verificationState === "ready" && (
@@ -331,13 +440,13 @@ export function StudentScanner() {
                 READY TO SCAN
               </span>
             )}
-            {verificationState === "verified" && (
+            {(verificationState === "attendance_confirmed" || verificationState === "verified") && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                 <CheckCircle2 className="h-3 w-3" />
                 VERIFIED
               </span>
             )}
-            {verificationState === "expired" && (
+            {(verificationState === "qr_expired" || verificationState === "expired") && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
                 <Clock className="h-3 w-3" />
                 EXPIRED
@@ -362,7 +471,7 @@ export function StudentScanner() {
         <div className="grid grid-cols-3 divide-x divide-zinc-800/80 border-b border-zinc-800/80 bg-[#06080A]/60 px-2 py-2 text-[11px] font-mono text-zinc-400">
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
             <span className="text-[10px] text-zinc-500 uppercase">Target</span>
-            <span className="text-zinc-200 font-medium">15s HMAC Token</span>
+            <span className="text-zinc-200 font-medium">15s Dynamic QR</span>
           </div>
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
             <span className="text-[10px] text-zinc-500 uppercase">Hardware</span>
@@ -371,8 +480,8 @@ export function StudentScanner() {
             </span>
           </div>
           <div className="px-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
-            <span className="text-[10px] text-zinc-500 uppercase">Authority</span>
-            <span className="text-blue-400 font-medium">Zero-Trust Server</span>
+            <span className="text-[10px] text-zinc-500 uppercase">Security</span>
+            <span className="text-emerald-400 font-medium">WebAuthn / FIDO2</span>
           </div>
         </div>
 
@@ -390,7 +499,7 @@ export function StudentScanner() {
 
           {/* Central Target Reticle with Alignment Guide */}
           <div className="relative z-10 w-64 h-64 sm:w-72 sm:h-72 border border-blue-500/30 rounded-2xl flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-[2px] shadow-[0_0_35px_rgba(59,130,246,0.12)]">
-            {/* 4 Sleek Corner Sci-Fi Targeting Brackets */}
+            {/* 4 Corner Sci-Fi Targeting Brackets */}
             <div className="absolute -top-1.5 -left-1.5 w-7 h-7 border-t-2 border-l-2 border-blue-400 rounded-tl-lg shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
             <div className="absolute -top-1.5 -right-1.5 w-7 h-7 border-t-2 border-r-2 border-blue-400 rounded-tr-lg shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
             <div className="absolute -bottom-1.5 -left-1.5 w-7 h-7 border-b-2 border-l-2 border-blue-400 rounded-bl-lg shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
@@ -410,7 +519,7 @@ export function StudentScanner() {
             {hasCamera && verificationState === "scanning" && (
               <div className="absolute bottom-3 inset-x-3 text-center pointer-events-none">
                 <span className="text-[10px] font-mono text-zinc-300 bg-black/60 px-2 py-0.5 rounded border border-zinc-800">
-                  Align classroom QR code within brackets
+                  Scan the classroom QR code to begin attendance verification.
                 </span>
               </div>
             )}
@@ -447,19 +556,6 @@ export function StudentScanner() {
               </div>
             )}
           </div>
-
-          {/* Submitting Loading Overlay */}
-          {verificationState === "verifying" && (
-            <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center space-y-3 p-6 text-center">
-              <RefreshCw className="h-8 w-8 text-blue-400 animate-spin" />
-              <p className="text-sm font-semibold text-white font-mono tracking-wide">
-                VERIFYING CRYPTOGRAPHIC CHALLENGE...
-              </p>
-              <p className="text-xs text-zinc-400 font-mono max-w-sm">
-                Authenticating HMAC signature, timestamp freshness, and 1:1 hardware enclave binding on the server.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Viewport Integrated Bottom Bar */}
@@ -479,7 +575,7 @@ export function StudentScanner() {
         </div>
       </div>
 
-      {/* 2. Official Protocol & Alternative Scanners Guidance Banner */}
+      {/* 2. Official Protocol Guidance Banner */}
       <div className="rounded-xl border border-zinc-800/80 bg-[#0B0D10]/90 p-4 space-y-2 text-xs font-mono text-zinc-400 shadow-md">
         <div className="flex items-center gap-2 text-zinc-200 font-semibold">
           <Info className="h-4 w-4 text-blue-400 shrink-0" />
@@ -487,8 +583,7 @@ export function StudentScanner() {
         </div>
         <p className="text-[11px] leading-relaxed text-zinc-400">
           The classroom display features rolling cryptographic challenge tokens with a 15-second expiration window.
-          While external scanner apps or native phone cameras can physically decode the QR barcode, simply scanning or reading the code outside AttendGuard <strong>does not record attendance</strong>.
-          Only check-ins submitted through this authenticated portal and cryptographically verified on the server are recorded.
+          Attendance requires both an active QR scan and fresh WebAuthn biometric verification on your enrolled device to prevent proxy attendance.
         </p>
       </div>
 
@@ -520,7 +615,7 @@ export function StudentScanner() {
           {/* VECTOR 1: Valid Check-In */}
           <button
             onClick={handleSimulateValidScan}
-            disabled={verificationState === "verifying"}
+            disabled={verificationState === "verifying" || verificationState === "authenticating"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -536,7 +631,7 @@ export function StudentScanner() {
                 1. Valid Dynamic Session
               </h4>
               <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
-                Live HMAC token matched with registered mobile device fingerprint.
+                Live HMAC token matched with registered mobile device and WebAuthn user verification.
               </p>
             </div>
             <div className="flex items-center text-[11px] font-mono text-blue-400 group-hover:text-blue-300 font-medium pt-1">
@@ -548,7 +643,7 @@ export function StudentScanner() {
           {/* VECTOR 2: Expired Token */}
           <button
             onClick={handleSimulateExpiredScan}
-            disabled={verificationState === "verifying"}
+            disabled={verificationState === "verifying" || verificationState === "authenticating"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-amber-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -576,7 +671,7 @@ export function StudentScanner() {
           {/* VECTOR 3: Device Mismatch */}
           <button
             onClick={handleSimulateDeviceMismatch}
-            disabled={verificationState === "verifying"}
+            disabled={verificationState === "verifying" || verificationState === "authenticating"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-rose-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">
@@ -604,7 +699,7 @@ export function StudentScanner() {
           {/* VECTOR 4: Duplicate Submission */}
           <button
             onClick={handleSimulateDuplicateScan}
-            disabled={verificationState === "verifying"}
+            disabled={verificationState === "verifying" || verificationState === "authenticating"}
             className="text-left p-4 rounded-xl border border-zinc-800/80 bg-[#06080A]/80 hover:bg-[#0c0f14] hover:border-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3 group disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
           >
             <div className="flex items-start justify-between gap-2">

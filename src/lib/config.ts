@@ -45,6 +45,12 @@ export const config = {
     hmacSecret: getEnv('QR_HMAC_SECRET'),
     ttlSeconds: parseInt(process.env.QR_TOKEN_TTL_SECONDS || '15', 10),
   },
+  webauthn: {
+    rpName: process.env.WEBAUTHN_RP_NAME || 'AttendGuard',
+    rpID: process.env.WEBAUTHN_RP_ID || 'localhost',
+    origin: process.env.WEBAUTHN_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    challengeTtlSeconds: parseInt(process.env.WEBAUTHN_CHALLENGE_TTL_SECONDS || '120', 10),
+  },
   ai: {
     baseUrl: process.env.AI_INFERENCE_BASE_URL || 'https://api.groq.com/openai/v1',
     apiKey: process.env.AI_INFERENCE_API_KEY || '',

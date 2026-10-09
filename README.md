@@ -478,6 +478,138 @@ AttendGuard incorporates a deterministic risk analytics engine and a conversatio
 
 ---
 
+---
+
+## WebAuthn & Cryptographic Biometric / Passkey Verification (FIDO2)
+
+AttendGuard incorporates a production-grade WebAuthn / FIDO2 authentication layer powered by `@simplewebauthn/server` and `@simplewebauthn/browser`.
+
+### Objective
+In a university classroom, an absent student might lend their unlocked phone to a classmate to scan the attendance QR code on their behalf. AttendGuard eliminates this proxy attack vector by requiring **fresh user verification** on the device's hardware authenticator immediately before attendance is cryptographically confirmed on the server.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor S as Student (Mobile Browser)
+    participant F as AttendGuard Frontend
+    participant B as AttendGuard Zero-Trust Backend
+    participant DB as Supabase PostgreSQL
+
+    Note over S,F: Enrollment Ceremony (One-Time)
+    S->>F: Access /student/security
+    F->>B: POST /api/webauthn/register/options
+    B->>DB: Store registration challenge nonce (60s TTL)
+    B-->>F: Return PublicKeyCredentialCreationOptionsJSON
+    F->>S: Prompt Platform Authenticator (Touch ID, Face ID, Windows Hello, PIN)
+    S-->>F: User verified & Credential generated in Secure Enclave
+    F->>B: POST /api/webauthn/register/verify
+    B->>DB: Atomically consume challenge nonce & verify signature
+    B->>DB: Store public key, credential ID, and transports in webauthn_credentials
+    B-->>F: 201 Created & Enrolled
+
+    Note over S,F: Attendance Verification Ceremony (Live Lecture)
+    S->>F: Scans dynamic classroom QR code
+    F->>B: POST /api/attendance/verification/options (qrToken)
+    B->>DB: Verify student enrollment & active credentials
+    B->>DB: Store bound challenge (studentId + sessionId + tokenFingerprint)
+    B-->>F: Return PublicKeyCredentialRequestOptionsJSON
+    F->>S: Prompt Platform Authenticator to sign challenge
+    S-->>F: User completes biometric/PIN verification & signs challenge
+    F->>B: POST /api/attendance/check-in (token, fingerprint, challengeId, webauthnResponse)
+    B->>DB: Atomically consume challenge nonce & verify assertion signature
+    B->>DB: Validate QR signature, session active, campus IP, and unique attendance
+    B->>DB: Record attendance record (201 Created)
+    B-->>F: Attendance Verified with timestamp & subject
+```
+
+### Non-Negotiable Security Invariants
+1. **Zero Raw Biometric Storage**: AttendGuard **never** collects, transmits, or stores raw fingerprint scans, facial geometry, or biometric templates. User biometrics are handled exclusively inside the device's secure hardware enclave (e.g., Apple Secure Enclave, Android Titan M, TPM).
+2. **Cryptographic Proof Over Client Claims**: The server rejects frontend claims such as `biometricVerified: true`. Attendance is confirmed only after verifying the mathematical signature produced by the private key held in the client hardware against the stored public key.
+3. **Replay & Race Condition Prevention**: Authentication challenges are unpredictable, stored in Supabase with a short TTL (60 seconds), bound to `(studentId, sessionId, tokenFingerprint)`, and consumed **atomically** in SQL (`UPDATE ... WHERE consumed_at IS NULL RETURNING *`). Two concurrent submissions cannot reuse the same challenge.
+4. **Shared QR Preservation**: Rotating classroom QR codes are shared by the entire class. Consuming a WebAuthn challenge is scoped per student, ensuring multiple students scanning the same projected QR code during its 15-second rotation window do not invalidate it for each other.
+5. **Enforced User Verification**: Options explicitly request `userVerification: 'required'`, ensuring the device authenticates the physical presence of the enrolled student via biometrics or screen PIN.
+
+### Configuration & Environment Variables
+
+Add the following WebAuthn configuration settings to your `.env` file:
+
+```env
+# WebAuthn / FIDO2 Passkey Server Configuration
+WEBAUTHN_RP_NAME="AttendGuard Institutional Attendance"
+WEBAUTHN_RP_ID="localhost"
+WEBAUTHN_ORIGIN="http://localhost:3000"
+WEBAUTHN_CHALLENGE_TTL_SECONDS="60"
+```
+
+> [!IMPORTANT]
+> In production, `WEBAUTHN_RP_ID` must match your institution's domain (e.g. `attendance.university.edu`) and `WEBAUTHN_ORIGIN` must match your full HTTPS origin (e.g. `https://attendance.university.edu`). WebAuthn strictly forbids HTTP in non-localhost origins.
+
+### Database Schema & Migrations
+
+Migration `supabase/migrations/013_webauthn_credentials_and_challenges.sql` establishes:
+
+* **`webauthn_credentials`**: Stores public keys and credentials bound to student accounts.
+  * `id`: UUID Primary Key
+  * `user_id`: UUID References `auth.users(id)`
+  * `credential_id`: TEXT Unique (Base64URL identifier)
+  * `public_key`: TEXT (Base64URL encoded public key)
+  * `counter`: BIGINT (Signature counter tracking)
+  * `device_type`: TEXT (`singleDevice` or `multiDevice`)
+  * `backed_up`: BOOLEAN (Passkey sync status)
+  * `transports`: TEXT[] (Supported transports e.g. `internal`, `hybrid`)
+  * `created_at` / `last_used_at` / `revoked_at`: TIMESTAMPTZ
+* **`webauthn_challenges`**: Single-use cryptographic nonces.
+  * `id`: UUID Primary Key
+  * `user_id`: UUID
+  * `session_id`: UUID Nullable
+  * `challenge`: TEXT
+  * `purpose`: TEXT (`registration` or `attendance_authentication`)
+  * `token_fingerprint`: TEXT Nullable
+  * `expires_at` / `consumed_at` / `created_at`: TIMESTAMPTZ
+* **Row-Level Security (RLS)**: Students may only view (`SELECT`) their own credentials; all insert/update/delete actions on credentials and challenges are restricted to server-side service-role clients.
+
+### API Request / Response Contracts
+
+| Endpoint | Method | Purpose | Request Payload | Response |
+| :--- | :--- | :--- | :--- | :--- |
+| `/api/webauthn/register/options` | `POST` | Generate registration options | None (Authenticated session) | `{ success: true, data: { options, challengeId } }` |
+| `/api/webauthn/register/verify` | `POST` | Verify registration response | `{ challengeId, response }` | `{ success: true, data: { verified: true, credentialId } }` |
+| `/api/webauthn/credentials` | `GET` | List student's enrolled keys | None (Authenticated session) | `{ success: true, data: { credentials: [...], count } }` |
+| `/api/webauthn/credentials/:id/revoke` | `POST` | Revoke a compromised key | None (Authenticated session) | `{ success: true, data: { success: true, credentialId } }` |
+| `/api/attendance/verification/options` | `POST` | Request attendance challenge | `{ challengeToken }` | `{ success: true, data: { options, challengeId, requiresRegistration } }` |
+| `/api/attendance/check-in` | `POST` | Authoritative check-in | `{ challengeToken, deviceFingerprint, webauthnChallengeId, webauthnResponse }` | `{ success: true, data: CheckInResult }` |
+
+### Frontend UI & Scanner States
+
+The student portal incorporates a dedicated enrollment interface (`/student/security`) and full WebAuthn orchestration in `StudentScanner.tsx` supporting 11 distinct verification states:
+* **Ready**: Camera viewfinder armed, instructions displayed.
+* **QR detected**: "Preparing secure verification..."
+* **Authenticating**: Device authenticator prompt active ("Verify it's you to submit attendance.").
+* **Verification successful**: "Identity verification completed. Checking attendance..."
+* **Attendance confirmed**: Displays verified class name, session ID, and timestamp.
+* **Verification cancelled**: Clear explanation that prompt was dismissed and no attendance was recorded.
+* **Verification failed**: Graceful error explanation with retry option.
+* **QR expired**: Informs student that 15s classroom QR rotated and prompts scan of active code.
+* **Credential not registered**: Directs student to `/student/security` enrollment page.
+* **Unsupported authenticator**: Alerts student to lack of WebAuthn sensor and directs them to instructor review.
+* **Network error**: Network connection failure notification with safe retry.
+
+### Browser & Device Compatibility Limitations
+* **Supported Platforms**: Modern versions of Chrome, Safari, Edge, and Firefox on iOS 14+, Android 7+, macOS, Windows 10+, and Linux with platform authenticators (Touch ID, Face ID, Windows Hello, Android Biometric Prompt, or hardware security keys).
+* **Limitations**:
+  * Private/Incognito modes in certain mobile browsers restrict WebAuthn APIs.
+  * Very old smartphones without biometric hardware or screen lock PINs cannot generate platform credentials; students on such hardware must use teacher-assisted manual verification.
+  * WebAuthn does not mandate a fingerprint specifically on every device—it enforces user verification via the platform authenticator, which may be a fingerprint, face scan, or system lock PIN.
+
+### Recovery Procedure
+If a student loses or damages their registered device:
+1. The student logs into AttendGuard on a secondary trusted browser using institutional credentials.
+2. Navigates to `/student/security` and clicks **Revoke Authenticator** on the compromised key.
+3. Immediately registers the new replacement device.
+4. If locked out entirely, the class instructor or department administrator can grant an attendance override via the Teacher Dashboard.
+
+---
+
 ## Security Model & Limitations
 
 ### Defense-in-Depth Mechanisms

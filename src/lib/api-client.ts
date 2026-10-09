@@ -62,3 +62,62 @@ export async function apiFetch<T>(
 
   return payload.data as T;
 }
+
+// ----------------------------------------------------------------------------
+// WebAuthn Biometric & Passkey Client Methods
+// ----------------------------------------------------------------------------
+
+export async function getWebAuthnRegistrationOptions(): Promise<{
+  options: any;
+  challengeId: string;
+}> {
+  return apiFetch('/api/webauthn/register/options', { method: 'POST' });
+}
+
+export async function verifyWebAuthnRegistration(
+  challengeId: string,
+  response: any
+): Promise<{ verified: boolean; credentialId: string }> {
+  return apiFetch('/api/webauthn/register/verify', {
+    method: 'POST',
+    body: JSON.stringify({ challengeId, response }),
+  });
+}
+
+export async function getStudentWebAuthnCredentials(): Promise<{
+  credentials: Array<{
+    id: string;
+    credentialId: string;
+    deviceType: string;
+    backedUp: boolean;
+    createdAt: string;
+    lastUsedAt?: string | null;
+    isRevoked: boolean;
+    revokedAt?: string | null;
+  }>;
+  count: number;
+}> {
+  return apiFetch('/api/webauthn/credentials', { method: 'GET' });
+}
+
+export async function revokeWebAuthnCredential(
+  credentialId: string
+): Promise<{ success: boolean; credentialId: string }> {
+  return apiFetch(`/api/webauthn/credentials/${credentialId}/revoke`, {
+    method: 'POST',
+  });
+}
+
+export async function getAttendanceVerificationOptions(challengeToken: string): Promise<{
+  options?: any;
+  challengeId?: string;
+  requiresRegistration: boolean;
+  message?: string;
+  sessionId?: string;
+  className?: string;
+}> {
+  return apiFetch('/api/attendance/verification/options', {
+    method: 'POST',
+    body: JSON.stringify({ challengeToken }),
+  });
+}

@@ -26,6 +26,7 @@ import {
 } from '@/lib/attendance/security-guards';
 import { verifyCampusIp, type IpVerificationStatus } from '@/lib/security/ip-service';
 import { logSecurityEvent } from '@/lib/security/audit-service';
+import { verifyWebAuthnAuthentication } from '@/lib/security/webauthn-service';
 
 export interface CheckInParams {
   studentId: string;
@@ -40,6 +41,8 @@ export interface CheckInParams {
     longitude?: number;
     accuracyMeters?: number;
   } | null;
+  webauthnChallengeId?: string | null;
+  webauthnResponse?: any | null;
 }
 
 export interface CheckInResult {
@@ -59,7 +62,16 @@ export interface CheckInResult {
  * Executes the complete multi-layer attendance verification pipeline with IP verification, anti-replay, and concurrency protection.
  */
 export async function processStudentCheckIn(params: CheckInParams): Promise<CheckInResult> {
-  const { studentId, challengeToken, deviceFingerprint, ipAddress, userAgent, location } = params;
+  const {
+    studentId,
+    challengeToken,
+    deviceFingerprint,
+    ipAddress,
+    userAgent,
+    location,
+    webauthnChallengeId,
+    webauthnResponse,
+  } = params;
 
   if (!challengeToken || typeof challengeToken !== 'string') {
     throw new ValidationError('A challengeToken string is required.');
@@ -330,7 +342,66 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   }
 
   // ----------------------------------------------------------------------------
-  // GATE 6: Campus IP / Network Verification Policy Enforcement
+  // GATE 6: WebAuthn Cryptographic Biometric / Passkey Verification
+  // ----------------------------------------------------------------------------
+  let hasRegisteredWebAuthn = false;
+  try {
+    const credTable = adminDb?.from?.('webauthn_credentials');
+    if (credTable && typeof credTable.select === 'function') {
+      const { data: activeWebAuthnCreds } = await credTable
+        .select('id')
+        .eq('user_id', studentId)
+        .is('revoked_at', null)
+        .limit(1);
+      hasRegisteredWebAuthn = Boolean(activeWebAuthnCreds && activeWebAuthnCreds.length > 0);
+    }
+  } catch {
+    hasRegisteredWebAuthn = false;
+  }
+
+  if (hasRegisteredWebAuthn) {
+    if (!webauthnChallengeId || !webauthnResponse) {
+      await logSecurityEvent(
+        {
+          eventType: 'WEBAUTHN_AUTH_FAILED',
+          studentId,
+          sessionId,
+          verificationStatus: 'rejected',
+          reason: 'Attendance check-in rejected: WebAuthn biometric assertion required but not provided',
+          ipAddress,
+        },
+        adminDb
+      );
+      throw new ForbiddenError(
+        'WebAuthn biometric/passkey verification is required for this account before attendance can be recorded.',
+        'WEBAUTHN_REQUIRED' as any
+      );
+    }
+
+    await verifyWebAuthnAuthentication({
+      studentId,
+      sessionId,
+      tokenFingerprint,
+      challengeId: webauthnChallengeId,
+      response: webauthnResponse,
+      ipAddress,
+      adminClient: adminDb,
+    });
+  } else if (webauthnChallengeId && webauthnResponse) {
+    // If student provided an assertion even without prior enrolled check, verify cryptographically
+    await verifyWebAuthnAuthentication({
+      studentId,
+      sessionId,
+      tokenFingerprint,
+      challengeId: webauthnChallengeId,
+      response: webauthnResponse,
+      ipAddress,
+      adminClient: adminDb,
+    });
+  }
+
+  // ----------------------------------------------------------------------------
+  // GATE 7: Campus IP / Network Verification Policy Enforcement
   // ----------------------------------------------------------------------------
   const ipResult = verifyCampusIp(ipAddress);
 

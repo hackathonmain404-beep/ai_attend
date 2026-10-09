@@ -101,3 +101,30 @@ export interface AuditLog {
   ipAddress: string | null;
   createdAt: string;
 }
+
+export interface WebAuthnCredential {
+  id: string;
+  userId: string;
+  credentialId: string;
+  publicKey: string;
+  counter: number;
+  deviceType?: string | null;
+  backedUp: boolean;
+  transports?: string[] | null;
+  createdAt: string;
+  lastUsedAt?: string | null;
+  revokedAt?: string | null;
+}
+
+export interface WebAuthnChallenge {
+  id: string;
+  userId: string;
+  sessionId?: string | null;
+  challenge: string;
+  purpose: 'registration' | 'attendance_authentication';
+  tokenFingerprint?: string | null;
+  expiresAt: string;
+  consumedAt?: string | null;
+  createdAt: string;
+}
+

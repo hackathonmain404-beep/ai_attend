@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Menu, CheckCircle2 } from "lucide-react";
+import { Menu, CheckCircle2, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,16 @@ export function StudentTopHeader({
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>OPERATIONAL</span>
           </div>
+
+          {/* Passkey Security Navigation Link */}
+          <Link
+            href="/student/security"
+            className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-300 bg-white/[0.03] border border-white/[0.08] px-2.5 py-1 rounded-lg hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all duration-200"
+            title="Biometric & Passkey Attendance Verification"
+          >
+            <Fingerprint className="h-3 w-3 text-emerald-400" />
+            <span>PASSKEY SECURITY</span>
+          </Link>
 
           {/* Compact User Profile Capsule */}
           <div
