@@ -53,7 +53,8 @@ describe('Google Gemini Client & Credential Interception', () => {
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe('MISSING_API_KEY');
     expect(response.error?.message).toContain('Gemini API key is not configured');
-    const expectedModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const rawModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const expectedModel = rawModel === 'gemini-2.5-flash' ? 'gemini-flash-lite-latest' : rawModel;
     expect(response.modelUsed).toBe(expectedModel);
   });
 
@@ -70,7 +71,8 @@ describe('Google Gemini Client & Credential Interception', () => {
   }, 10000);
 
   it('correctly resolves model from environment or default', async () => {
-    const expectedModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const rawModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const expectedModel = rawModel === 'gemini-2.5-flash' ? 'gemini-flash-lite-latest' : rawModel;
     const response = await generateAIResponse(
       { prompt: 'Hello' },
       { apiKey: '' }

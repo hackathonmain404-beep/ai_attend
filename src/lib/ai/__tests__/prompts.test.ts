@@ -53,7 +53,7 @@ describe('AI Advisor — Prompts & Input Sanitization', () => {
       expect(prompt).toContain('[OVERALL ATTENDANCE SUMMARY]');
       expect(prompt).toContain('Overall Attendance: 78.5%');
       expect(prompt).toContain('[COURSE DETAILS (ORDERED BY URGENCY)]');
-      expect(prompt).toContain('1. C Programming: Attended 17/25 (68%)');
+      expect(prompt).toContain('1. C Programming (CS101): Attended 17/25 (68%)');
       expect(prompt).toContain('Classes needed to reach 75%: 7');
       expect(prompt).toContain('[STUDENT QUESTION]');
       expect(prompt).toContain('How many C Programming classes do I need to attend?');

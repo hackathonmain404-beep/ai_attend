@@ -52,7 +52,7 @@ export async function startAttendanceSession(params: StartSessionParams) {
   // 1. Verify that the teacher owns this class
   const { data: targetClass, error: classError } = await supabase
     .from('classes')
-    .select('id, code, name, teacher_id')
+    .select('id, code, name, teacher_id, is_archived')
     .eq('id', classId)
     .single();
 
@@ -62,6 +62,10 @@ export async function startAttendanceSession(params: StartSessionParams) {
 
   if (targetClass.teacher_id !== teacherId) {
     throw new ForbiddenError('You are not authorized to start attendance for this class.');
+  }
+
+  if ((targetClass as any).is_archived) {
+    throw new ConflictError('Cannot start an attendance session for an archived course.');
   }
 
   const now = new Date().toISOString();

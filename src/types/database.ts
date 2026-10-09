@@ -15,6 +15,8 @@ export interface Profile {
   fullName: string;
   role: UserRole;
   identifier: string; // Roll number or faculty ID
+  isActive?: boolean;
+  deactivatedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +28,8 @@ export interface Class {
   teacherId: string;
   schedule: string; // e.g. "Mon/Wed 10:00 - 11:30"
   semester: string; // e.g. "Fall 2026"
+  isArchived?: boolean;
+  archivedAt?: string | null;
   createdAt: string;
 }
 
@@ -44,6 +48,8 @@ export interface AttendanceSession {
   qrRotationIntervalSec: number;
   activeTokenHash: string | null;
   tokenExpiresAt: string | null;
+  isArchived?: boolean;
+  archivedAt?: string | null;
   startedAt: string;
   endedAt: string | null;
 }

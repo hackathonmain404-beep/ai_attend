@@ -1,6 +1,6 @@
 "use client";
 
-import gsap from "gsap";
+import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 let isRegistered = false;
@@ -23,3 +23,4 @@ if (typeof window !== "undefined") {
 }
 
 export { gsap, ScrollTrigger };
+export default gsap;

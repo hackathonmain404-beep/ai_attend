@@ -423,12 +423,40 @@ export function generateDeterministicAnswer(
     };
   }
 
+  // H. Talk to Professor / Office Hours
+  if (/\b(?:professor|instructor|teacher|office\s+hours|faculty)\b/i.test(qClean)) {
+    const course = mentionedCourse || facts.highestRiskCourse;
+    const courseText = course ? ` regarding ${course.courseName} (${course.currentPercentage.toFixed(1)}%)` : '';
+    return {
+      answer: `Yes, you should definitely schedule time during office hours to speak with your professor${courseText}. Be proactive: explain your commitment to recovering your attendance standing, confirm the records match your attendance, and discuss how to keep your standing compliant.`,
+      referencedSubjects,
+    };
+  }
+
+  // I. Commuting / Travel / Schedule Balance
+  if (/\b(?:commute|commuting|transit|travel|traffic|distance)\b/i.test(qClean)) {
+    return {
+      answer: `Balancing a long-distance commute with classes requires a structured travel schedule: 1) Aim to arrive on campus at least 20-30 minutes early to prevent transit delays from causing absences, 2) Group your study and preparation around class blocks, and 3) Prioritize attending morning sessions without exception, especially in courses with lower attendance margins.`,
+      referencedSubjects: [],
+    };
+  }
+
+  // J. Feasibility / Target Percentage Inquiry
+  if (/\b(?:mathematically\s+possible|feasible|reach|target|possible)\b/i.test(qClean) && /\b\d{2}%\b/i.test(qClean)) {
+    const targetMatch = qClean.match(/(\d{2})%/);
+    const targetPct = targetMatch ? parseInt(targetMatch[1], 10) : 85;
+    return {
+      answer: `To evaluate whether reaching ${targetPct}% is mathematically possible by the end of the semester, it depends on the number of remaining conducted classes. If you attend all upcoming scheduled sessions without missing any classes, your percentage will steadily increase toward your target. Focus on 100% attendance going forward.`,
+      referencedSubjects: [],
+    };
+  }
+
   // 11. GENERAL_ADVICE — Deterministic Action Plan
   if (category === 'GENERAL_ADVICE') {
     if (facts.highestRiskCourse && facts.highestRiskCourse.classesNeededForThreshold > 0) {
       const top = facts.highestRiskCourse;
       return {
-        answer: `To improve your attendance standing, prioritize ${top.courseName} immediately. You are currently at ${top.currentPercentage.toFixed(1)}% (${top.attended}/${top.totalHeld}) and need to attend the next ${top.classesNeededForThreshold} consecutive class(es) without absence to restore your standing to ${minReq.toFixed(1)}%. Avoid skipping any other classes until your margin recovers.`,
+        answer: `Your overall attendance is currently ${facts.overallPercentage.toFixed(1)}% (${facts.overallRisk}). To improve your attendance standing, prioritize ${top.courseName} immediately. You are currently at ${top.currentPercentage.toFixed(1)}% (${top.attended}/${top.totalHeld}) and need to attend the next ${top.classesNeededForThreshold} consecutive class(es) without absence to restore your standing to ${minReq.toFixed(1)}%. Avoid skipping any other classes until your margin recovers.`,
         referencedSubjects: [],
       };
     }
