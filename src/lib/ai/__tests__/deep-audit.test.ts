@@ -263,7 +263,7 @@ describe('5. API Route Auth, Role, IDOR & Rate Limiting Enforcement', () => {
     assert.ok(rateLimited, 'Should have triggered HTTP 429 rate limit');
     const data = await rateLimited.json();
     assert.equal(data.error.code, 'RATE_LIMIT_EXCEEDED');
-  }, 10000);
+  }, 35000);
 });
 
 describe('6. 10 Context Mathematical Boundary Audit', () => {

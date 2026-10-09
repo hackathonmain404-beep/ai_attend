@@ -148,11 +148,50 @@ export async function getStudentAttendanceHistory(
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (sessionFilterIds) {
-    query = query.in('session_id', sessionFilterIds);
+  let { data, error } = await query;
+  if (error) {
+    try {
+      const admin = createAdminClient();
+      let adminQuery = admin
+        .from('attendance_records')
+        .select(`
+          id,
+          session_id,
+          status,
+          re_verified,
+          re_verified_at,
+          check_in_time,
+          created_at,
+          device:registered_devices!attendance_records_device_id_fkey(
+            device_name,
+            device_fingerprint
+          ),
+          session:attendance_sessions!attendance_records_session_id_fkey(
+            id,
+            started_at,
+            class:classes!attendance_sessions_class_id_fkey(
+              id,
+              name,
+              code
+            )
+          )
+        `)
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (sessionFilterIds) {
+        adminQuery = adminQuery.in('session_id', sessionFilterIds);
+      }
+
+      const adminRes = await adminQuery;
+      if (!adminRes.error && adminRes.data) {
+        data = adminRes.data;
+        error = null;
+      }
+    } catch {}
   }
 
-  const { data, error } = await query;
   if (error) {
     throw new Error(`Failed to fetch student attendance history: ${error.message}`);
   }

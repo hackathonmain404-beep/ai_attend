@@ -63,8 +63,32 @@ export async function requireAuth(client?: SupabaseClient): Promise<AuthContext>
     (typeof queryError?.message === 'string' && queryError.message.includes('JSON object requested, multiple (or no) rows returned'));
 
   if (queryError && !isNoRowsError) {
-    console.error(`[requireAuth] Database lookup error for user ${user.id}:`, queryError.message || queryError);
-    throw new DatabaseError(`Database error while retrieving profile: ${queryError.message || 'Lookup failed'}`);
+    console.warn(`[requireAuth] Database lookup error for user ${user.id}:`, queryError.message || queryError);
+
+    // If an RLS policy recursion or transient lookup error occurs, attempt authoritative admin resolution
+    if (UUID_REGEX.test(user.id)) {
+      try {
+        const resolution = await ensureUserProfile(user);
+        if (resolution?.profile) {
+          profile = {
+            id: resolution.profile.id,
+            email: resolution.profile.email,
+            full_name: resolution.profile.fullName,
+            role: resolution.profile.role,
+            identifier: resolution.profile.identifier,
+            created_at: resolution.profile.createdAt,
+            updated_at: resolution.profile.updatedAt,
+          };
+          queryError = null;
+        }
+      } catch (fallbackErr: any) {
+        console.error(`[requireAuth] Admin fallback profile lookup failed:`, fallbackErr?.message || fallbackErr);
+      }
+    }
+
+    if (queryError) {
+      throw new DatabaseError(`Database error while retrieving profile: ${queryError.message || 'Lookup failed'}`);
+    }
   }
 
   // If profile is genuinely missing from public.profiles, attempt authoritative provisioning
