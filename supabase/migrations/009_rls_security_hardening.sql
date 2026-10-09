@@ -23,7 +23,7 @@ USING (
             SELECT 1 FROM public.class_enrollments ce
             JOIN public.classes c ON ce.class_id = c.id
             WHERE c.teacher_id = auth.uid() 
-            AND ce.student_id::text = audit_logs.entity_id
+            AND ce.student_id = audit_logs.entity_id
         )
     )
 );
