@@ -54,7 +54,7 @@ describe("Mobile Navbar Component", () => {
 });
 
 describe("Mobile Hero Component", () => {
-  it("renders layout in exact required order: status badge, headline, copy, CTAs, and security token", () => {
+  it("renders layout in exact required order: status badge, headline, copy, and CTAs", () => {
     const html = renderToString(<Hero destinationHref="/login" />);
 
     expect(html).toContain("LIVE ZERO-TRUST PROTOCOL");
@@ -63,9 +63,6 @@ describe("Mobile Hero Component", () => {
     expect(html).toContain("Launch Command Center");
     expect(html).toContain("Explore Security Pillars");
     expect(html).toContain("href=\"#security\"");
-    expect(html).toContain("TOKEN VALID");
-    expect(html).toContain("DEVICE BOUND");
-    expect(html).toContain("CHALLENGE ACTIVE");
   });
 });
 
