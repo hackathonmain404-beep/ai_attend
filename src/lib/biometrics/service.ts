@@ -13,10 +13,14 @@ import {
   FaceVerificationRequest,
   FaceVerificationResult,
 } from './types';
+import { faceEnrollmentService } from '@/modules/biometrics/services/face-enrollment.service';
+import { faceVerificationService } from '@/modules/biometrics/services/face-verification.service';
+import { FaceNotDetectedError } from '@/modules/biometrics/services/face-feature-extractor.service';
+import { ValidationError, NotFoundError } from '@/lib/errors';
 
 /**
  * Default production biometric service adapter.
- * Interacts with database for enrollment state and delegates verification to the model engine.
+ * Interacts with database for enrollment state and delegates verification to Member 1's model engine.
  */
 export class DefaultBiometricService implements BiometricVerificationService {
   /**
@@ -27,9 +31,25 @@ export class DefaultBiometricService implements BiometricVerificationService {
     client?: SupabaseClient
   ): Promise<BiometricEnrollmentStatus> {
     try {
+      // 1. Check Member 1's authoritative enrollment service
+      try {
+        const status = await faceEnrollmentService.getStudentEnrollmentStatus(studentId, client);
+        if (status.isEnrolled) {
+          return {
+            isEnrolled: true,
+            hasConsent: Boolean(status.consentGiven ?? true),
+            enrolledAt: status.enrolledAt,
+            biometricType: 'face',
+            templateVersion: status.templateVersion || 'v1-128d',
+          };
+        }
+      } catch {
+        // Fall through to fallback checks
+      }
+
       const supabase = client || (await createServerSupabaseClient());
 
-      // 1. Check dedicated biometric_enrollments table if present
+      // 2. Check dedicated biometric_enrollments table if present
       try {
         const { data: enrollment, error } = await supabase
           .from('biometric_enrollments')
@@ -48,10 +68,10 @@ export class DefaultBiometricService implements BiometricVerificationService {
           };
         }
       } catch {
-        // Table may not exist yet if Member 1's migration hasn't run in this environment
+        // Table may not exist yet
       }
 
-      // 2. Check profiles table for biometric enrollment flags
+      // 3. Check profiles table for biometric enrollment flags
       try {
         const { data: profile } = await supabase
           .from('profiles')
@@ -156,14 +176,78 @@ export class DefaultBiometricService implements BiometricVerificationService {
         }
       }
 
-      // When no remote endpoint is configured, return service_unavailable unless mocked
-      return {
-        success: false,
-        status: 'service_unavailable',
-        attemptId: request.attemptId,
-        timestamp,
-        error: 'Biometric verification engine is not configured.',
-      };
+      // Member 1 In-Process Biometric Verification Engine
+      try {
+        const res = await faceVerificationService.verifyStudentFace({
+          studentId: request.studentId,
+          image: request.imageBase64,
+          sessionId: request.sessionId,
+          client: request.client,
+        });
+
+        if (res.status === 'match') {
+          return {
+            success: true,
+            status: 'match',
+            confidence: res.confidenceTier === 'high' ? 0.95 : 0.85,
+            threshold: 0.80,
+            attemptId: request.attemptId,
+            timestamp: res.verifiedAt,
+          };
+        } else if (res.status === 'inconclusive') {
+          return {
+            success: false,
+            status: 'inconclusive',
+            confidence: 0.72,
+            threshold: 0.80,
+            attemptId: request.attemptId,
+            timestamp: res.verifiedAt,
+            error: res.reason || 'Biometric similarity falls within inconclusive boundary.',
+          };
+        } else {
+          return {
+            success: false,
+            status: 'mismatch',
+            confidence: 0.40,
+            threshold: 0.80,
+            attemptId: request.attemptId,
+            timestamp: res.verifiedAt,
+            error: res.reason || 'Face signature does not match enrolled student template.',
+          };
+        }
+      } catch (engineErr: any) {
+        if (
+          engineErr instanceof FaceNotDetectedError ||
+          engineErr?.name === 'FaceNotDetectedError' ||
+          engineErr instanceof ValidationError
+        ) {
+          return {
+            success: false,
+            status: 'no_face_detected',
+            attemptId: request.attemptId,
+            timestamp,
+            error: engineErr.message,
+          };
+        }
+
+        if (engineErr instanceof NotFoundError) {
+          return {
+            success: false,
+            status: 'service_unavailable',
+            attemptId: request.attemptId,
+            timestamp,
+            error: engineErr.message,
+          };
+        }
+
+        return {
+          success: false,
+          status: 'service_unavailable',
+          attemptId: request.attemptId,
+          timestamp,
+          error: engineErr.message || 'An unexpected biometric verification error occurred.',
+        };
+      }
     } catch (err: any) {
       console.error('[BiometricService.verifyFace Exception]:', err);
       return {
