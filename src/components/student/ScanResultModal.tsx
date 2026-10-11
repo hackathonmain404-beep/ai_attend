@@ -198,15 +198,34 @@ export function ScanResultModal({
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mb-2">
-                Confirmed by Server
-              </span>
-              <h3 className="text-2xl font-bold text-white tracking-tight">
-                Attendance Verified
-              </h3>
-              <p className="text-zinc-400 text-xs mt-1 font-mono">
-                {result.className}
-              </p>
+              {result.status === "review_required" ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-2">
+                    Awaiting Instructor Review
+                  </span>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">
+                    Check-In Flagged for Review
+                  </h3>
+                  <p className="text-zinc-400 text-xs mt-1 font-mono">
+                    {result.className}
+                  </p>
+                  <p className="text-amber-300/80 text-[11px] mt-1.5 font-mono">
+                    Observed network is outside the campus allowlist. Attendance recorded but pending teacher confirmation.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mb-2">
+                    Confirmed by Server
+                  </span>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">
+                    Attendance Verified
+                  </h3>
+                  <p className="text-zinc-400 text-xs mt-1 font-mono">
+                    {result.className}
+                  </p>
+                </>
+              )}
             </div>
             <div className="p-3.5 rounded-xl border border-zinc-800 bg-[#06080A] text-xs text-zinc-300 space-y-1.5 text-left font-mono">
               <div className="flex justify-between">
@@ -218,6 +237,12 @@ export function ScanResultModal({
                 <span className="text-zinc-300 truncate max-w-[200px]">{result.sessionId}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-zinc-500">Status:</span>
+                <span className={result.status === "review_required" ? "text-amber-400 font-bold" : "text-emerald-400 font-bold"}>
+                  {result.status === "review_required" ? "Review Required" : "Confirmed Present"}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-zinc-500">Recorded At:</span>
                 <span className="text-emerald-400 font-bold">
                   {new Date(result.checkInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -225,7 +250,9 @@ export function ScanResultModal({
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Authenticator:</span>
-                <span className="text-blue-400 font-semibold">WebAuthn Verified</span>
+                <span className={result.webauthnVerified === false ? "text-zinc-400 font-semibold" : "text-blue-400 font-semibold"}>
+                  {result.webauthnVerified === false ? "Device Binding Only" : "WebAuthn Verified"}
+                </span>
               </div>
             </div>
             <div className="flex flex-col gap-2 pt-2">

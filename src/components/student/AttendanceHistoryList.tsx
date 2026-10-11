@@ -178,6 +178,12 @@ export function AttendanceHistoryList({ initialRecords }: AttendanceHistoryListP
                         LATE
                       </span>
                     )}
+                    {record.status === "review_required" && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono font-semibold text-amber-400 uppercase">
+                        <Clock className="h-3 w-3 text-amber-400" />
+                        AWAITING REVIEW
+                      </span>
+                    )}
                     {record.status === "absent" && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/30 text-[10px] font-mono font-semibold text-rose-400 uppercase">
                         <XCircle className="h-3 w-3 text-rose-400" />

@@ -44,6 +44,7 @@ export interface CheckInParams {
   webauthnChallengeId?: string | null;
   webauthnResponse?: any | null;
   request?: Request | { headers?: any };
+  requireWebauthn?: boolean;
 }
 
 export interface CheckInResult {
@@ -57,6 +58,8 @@ export interface CheckInResult {
   verificationReason?: string | null;
   attendanceRecorded?: boolean;
   isConfirmed?: boolean;
+  webauthnVerified?: boolean;
+  webauthnStatus?: 'verified' | 'unregistered_fallback' | 'skipped';
 }
 
 /**
@@ -361,6 +364,10 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     hasRegisteredWebAuthn = false;
   }
 
+  const isWebAuthnMandatory = params.requireWebauthn ?? (config.webauthn.enforcementPolicy === 'required');
+  let webauthnVerified = false;
+  let webauthnStatus: 'verified' | 'unregistered_fallback' | 'skipped' = 'skipped';
+
   if (hasRegisteredWebAuthn) {
     if (!webauthnChallengeId || !webauthnResponse) {
       await logSecurityEvent(
@@ -390,6 +397,8 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       adminClient: adminDb,
       request,
     });
+    webauthnVerified = true;
+    webauthnStatus = 'verified';
   } else if (webauthnChallengeId && webauthnResponse) {
     // If student provided an assertion even without prior enrolled check, verify cryptographically
     await verifyWebAuthnAuthentication({
@@ -402,6 +411,29 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       adminClient: adminDb,
       request,
     });
+    webauthnVerified = true;
+    webauthnStatus = 'verified';
+  } else if (isWebAuthnMandatory) {
+    await logSecurityEvent(
+      {
+        eventType: 'WEBAUTHN_AUTH_FAILED',
+        studentId,
+        sessionId,
+        verificationStatus: 'rejected',
+        reason: 'Attendance check-in rejected: WebAuthn passkey enrollment is required before attendance can be recorded',
+        ipAddress,
+      },
+      adminDb
+    );
+    throw new ForbiddenError(
+      'WebAuthn enrollment is mandatory. Please register a device passkey in Security Settings before recording attendance.',
+      'WEBAUTHN_REQUIRED' as any
+    );
+  } else {
+    // Explicit fallback under optional policy:
+    // Attendance is allowed, but we explicitly do NOT claim WebAuthn verification
+    webauthnVerified = false;
+    webauthnStatus = 'unregistered_fallback';
   }
 
   // ----------------------------------------------------------------------------
@@ -557,6 +589,8 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
           ipVerificationStatus: ipResult.status,
           verificationReason: ipResult.reason,
           isConfirmed,
+          webauthnVerified,
+          webauthnStatus,
         },
         ipAddress: ipAddress || null,
       },
@@ -574,6 +608,8 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       verificationReason: ipResult.reason,
       attendanceRecorded: true,
       isConfirmed,
+      webauthnVerified,
+      webauthnStatus,
     };
   } finally {
     releaseLock();

@@ -28,9 +28,15 @@ export interface CheckInResult {
   recordId: string;
   sessionId: string;
   className: string;
-  status: "present" | "late" | "flagged";
+  status: "present" | "late" | "flagged" | "review_required";
   checkInTime: string;
   reVerified: boolean;
+  ipVerificationStatus?: string;
+  verificationReason?: string | null;
+  attendanceRecorded?: boolean;
+  isConfirmed?: boolean;
+  webauthnVerified?: boolean;
+  webauthnStatus?: "verified" | "unregistered_fallback" | "skipped";
 }
 
 export type CheckInErrorCode =

@@ -50,6 +50,7 @@ export const config = {
     rpID: process.env.WEBAUTHN_RP_ID || 'localhost',
     origin: process.env.WEBAUTHN_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     challengeTtlSeconds: parseInt(process.env.WEBAUTHN_CHALLENGE_TTL_SECONDS || '120', 10),
+    enforcementPolicy: (process.env.WEBAUTHN_ENFORCEMENT_POLICY?.toLowerCase() === 'required' ? 'required' : 'optional') as 'required' | 'optional',
   },
   ai: {
     baseUrl: process.env.AI_INFERENCE_BASE_URL || 'https://api.groq.com/openai/v1',

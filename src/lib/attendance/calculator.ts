@@ -49,9 +49,10 @@ export interface StudentAttendanceSummary {
  * Edge cases: Returns 100.0% if totalHeld is 0.
  */
 export function calculateSubjectAttendance(attended: number, totalHeld: number): number {
-  const t = Math.max(0, Math.floor(totalHeld));
+  const t = Number.isFinite(totalHeld) ? Math.max(0, Math.floor(totalHeld)) : 0;
   if (t === 0) return 100.0;
-  const a = Math.min(t, Math.max(0, Math.floor(attended)));
+  const rawA = Number.isFinite(attended) ? Math.floor(attended) : 0;
+  const a = Math.min(t, Math.max(0, rawA));
   return Math.round(((a / t) * 100) * 10) / 10;
 }
 
@@ -69,25 +70,29 @@ export function calculateConsecutiveClassesNeeded(
   totalHeld: number,
   thresholdPercent: number = ATTENDANCE_THRESHOLD
 ): number {
-  const t = Math.max(0, Math.floor(totalHeld));
-  const a = Math.min(t, Math.max(0, Math.floor(attended)));
+  const t = Number.isFinite(totalHeld) ? Math.max(0, Math.floor(totalHeld)) : 0;
+  const rawA = Number.isFinite(attended) ? Math.floor(attended) : 0;
+  const a = Math.min(t, Math.max(0, rawA));
 
   if (t === 0) return 0;
 
+  const threshold = Number.isFinite(thresholdPercent) ? thresholdPercent : ATTENDANCE_THRESHOLD;
+  if (threshold <= 0) return 0;
+
   const currentPct = (a / t) * 100;
-  if (currentPct >= thresholdPercent) {
+  if (currentPct >= threshold) {
     return 0;
   }
 
-  if (thresholdPercent >= 100) {
+  if (threshold >= 100) {
     // If threshold is 100% and any class was missed, 100% is mathematically unachievable
     return a === t ? 0 : Infinity;
   }
 
   // Exact arithmetic eliminating IEEE-754 precision loss:
   // ceil((threshold * t - 100 * a) / (100 - threshold))
-  const numerator = thresholdPercent * t - 100 * a;
-  const denominator = 100 - thresholdPercent;
+  const numerator = threshold * t - 100 * a;
+  const denominator = 100 - threshold;
   const needed = Math.ceil(numerator / denominator);
   return Math.max(0, needed);
 }
@@ -106,21 +111,23 @@ export function calculateMaxSafeAbsences(
   totalHeld: number,
   thresholdPercent: number = ATTENDANCE_THRESHOLD
 ): number {
-  const t = Math.max(0, Math.floor(totalHeld));
-  const a = Math.min(t, Math.max(0, Math.floor(attended)));
+  const t = Number.isFinite(totalHeld) ? Math.max(0, Math.floor(totalHeld)) : 0;
+  const rawA = Number.isFinite(attended) ? Math.floor(attended) : 0;
+  const a = Math.min(t, Math.max(0, rawA));
 
   if (t === 0) return 0;
 
+  const threshold = Number.isFinite(thresholdPercent) ? thresholdPercent : ATTENDANCE_THRESHOLD;
+  if (threshold <= 0) return Infinity;
+
   const currentPct = (a / t) * 100;
-  if (currentPct < thresholdPercent) {
+  if (currentPct < threshold) {
     return 0;
   }
 
-  if (thresholdPercent <= 0) return Infinity;
-
   // Exact arithmetic eliminating IEEE-754 precision loss
-  const numerator = 100 * a - thresholdPercent * t;
-  const canMiss = Math.floor(numerator / thresholdPercent);
+  const numerator = 100 * a - threshold * t;
+  const canMiss = Math.floor(numerator / threshold);
   return Math.max(0, canMiss);
 }
 
@@ -133,8 +140,10 @@ export function calculateSubjectStats(
   totalHeld: number,
   thresholdPercent: number = ATTENDANCE_THRESHOLD
 ): SubjectStats {
-  const a = Math.max(0, Math.floor(attended));
-  const t = Math.max(0, Math.floor(totalHeld));
+  const t = Number.isFinite(totalHeld) ? Math.max(0, Math.floor(totalHeld)) : 0;
+  const rawA = Number.isFinite(attended) ? Math.floor(attended) : 0;
+  const a = Math.min(t, Math.max(0, rawA));
+  const threshold = Number.isFinite(thresholdPercent) ? thresholdPercent : ATTENDANCE_THRESHOLD;
 
   if (t === 0) {
     return {
@@ -147,16 +156,15 @@ export function calculateSubjectStats(
     };
   }
 
-  const effectiveAttended = Math.min(a, t);
-  const percentage = calculateSubjectAttendance(effectiveAttended, t);
-  const isSafe = percentage >= thresholdPercent;
+  const percentage = calculateSubjectAttendance(a, t);
+  const isSafe = percentage >= threshold;
 
-  const classesNeeded = calculateConsecutiveClassesNeeded(effectiveAttended, t, thresholdPercent);
-  const canMissNext = calculateMaxSafeAbsences(effectiveAttended, t, thresholdPercent);
+  const classesNeeded = calculateConsecutiveClassesNeeded(a, t, threshold);
+  const canMissNext = calculateMaxSafeAbsences(a, t, threshold);
 
   return {
     totalHeld: t,
-    attended: effectiveAttended,
+    attended: a,
     percentage,
     status: isSafe ? 'safe' : 'at_risk',
     classesNeededFor75: classesNeeded,
@@ -176,8 +184,9 @@ export function calculateOverallStats(items: Array<{ attended: number; totalHeld
   let totalHeld = 0;
 
   for (const item of items) {
-    const t = Math.max(0, Math.floor(item.totalHeld));
-    const a = Math.min(t, Math.max(0, Math.floor(item.attended)));
+    const t = Number.isFinite(item?.totalHeld) ? Math.max(0, Math.floor(item.totalHeld)) : 0;
+    const rawA = Number.isFinite(item?.attended) ? Math.floor(item.attended) : 0;
+    const a = Math.min(t, Math.max(0, rawA));
     totalAttended += a;
     totalHeld += t;
   }
@@ -188,4 +197,56 @@ export function calculateOverallStats(items: Array<{ attended: number; totalHeld
 
   const raw = (totalAttended / totalHeld) * 100;
   return Math.round(raw * 10) / 10;
+}
+
+/**
+ * Attendance Record Lifecycle Categorization Helpers
+ * Distinguishes Confirmed, Awaiting Review, and Rejected attendance records.
+ */
+export interface AttendanceRecordLike {
+  status: string;
+  reVerified?: boolean;
+}
+
+export interface AttendanceCategorizationResult {
+  confirmedPresent: number;
+  awaitingReview: number;
+  rejectedOrAbsent: number;
+  totalRecords: number;
+}
+
+export function filterConfirmedAttendance<T extends AttendanceRecordLike>(records: T[]): T[] {
+  return (records || []).filter((r) => r && r.status === 'present');
+}
+
+export function filterAwaitingReviewAttendance<T extends AttendanceRecordLike>(records: T[]): T[] {
+  return (records || []).filter((r) => r && r.status === 'review_required');
+}
+
+export function filterRejectedAttendance<T extends AttendanceRecordLike>(records: T[]): T[] {
+  return (records || []).filter((r) => r && (r.status === 'absent' || r.status === 're_verify_failed'));
+}
+
+export function categorizeAttendanceRecords(records: AttendanceRecordLike[]): AttendanceCategorizationResult {
+  let confirmedPresent = 0;
+  let awaitingReview = 0;
+  let rejectedOrAbsent = 0;
+
+  for (const r of records || []) {
+    if (!r) continue;
+    if (r.status === 'present') {
+      confirmedPresent++;
+    } else if (r.status === 'review_required') {
+      awaitingReview++;
+    } else {
+      rejectedOrAbsent++;
+    }
+  }
+
+  return {
+    confirmedPresent,
+    awaitingReview,
+    rejectedOrAbsent,
+    totalRecords: (records || []).length,
+  };
 }

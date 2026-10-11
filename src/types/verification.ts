@@ -9,7 +9,7 @@ export interface AttendanceRecord {
   classId: string;
   className: string;
   sessionDate: string;
-  status: "present" | "late" | "absent" | "flagged";
+  status: "present" | "late" | "absent" | "flagged" | "review_required" | "re_verify_failed";
   reVerified: boolean;
   reVerifiedAt?: string;
   deviceFingerprintHash?: string;

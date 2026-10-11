@@ -58,6 +58,7 @@ export default function StudentAttendanceHistoryPage() {
   const presentCount = records.filter(
     (r) => r.status === "present" || r.status === "late"
   ).length;
+  const awaitingReviewCount = records.filter((r) => r.status === "review_required").length;
   const reverifiedCount = records.filter((r) => r.reVerified).length;
   const proxyBlockedCount = records.filter((r) => r.status === "flagged").length;
   const attendanceRate = totalRecords > 0 ? ((presentCount / totalRecords) * 100).toFixed(0) : "100";
@@ -149,7 +150,7 @@ export default function StudentAttendanceHistoryPage() {
                 {loading ? <Loader2 className="h-7 w-7 animate-spin text-zinc-600" /> : presentCount}
               </div>
               <p className="text-[11px] font-mono text-blue-400">
-                {attendanceRate}% compliance rate
+                {attendanceRate}% compliance rate {awaitingReviewCount > 0 && `(${awaitingReviewCount} pending review)`}
               </p>
             </div>
 
