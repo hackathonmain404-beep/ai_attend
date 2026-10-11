@@ -25,6 +25,8 @@ export default function StudentDashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useStudentSummary();
   const [activeChallenge, setActiveChallenge] = React.useState<ReVerifyChallenge | null>(null);
 
+  const hasAutoRetriedRef = React.useRef(false);
+
   React.useEffect(() => {
     let isMounted = true;
     const check = async () => {
@@ -45,6 +47,23 @@ export default function StudentDashboardPage() {
       clearInterval(interval);
     };
   }, []);
+
+  // Self-heal transient or outdated client auth state on 403 Forbidden
+  React.useEffect(() => {
+    if (isError && !hasAutoRetriedRef.current) {
+      const status = (error as any)?.status;
+      const code = (error as any)?.code;
+      const msg = (error as any)?.message || "";
+      if (status === 403 || code === "FORBIDDEN" || msg.toLowerCase().includes("role")) {
+        hasAutoRetriedRef.current = true;
+        import("@/lib/auth/auth-client").then(({ resolveCurrentUserProfile }) => {
+          resolveCurrentUserProfile(true).then(() => {
+            refetch();
+          }).catch(() => {});
+        }).catch(() => {});
+      }
+    }
+  }, [isError, error, refetch]);
 
   if (isLoading) {
     return <StudentDashboardSkeleton />;

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { MOCK_STUDENT_SUMMARY } from "@/mocks/student";
 import {
@@ -154,6 +154,7 @@ export async function getStudentAttendanceSummary(
  * Defers execution during initial auth resolution to prevent unauthenticated flash errors.
  */
 export function useStudentSummary() {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = React.useState<MockUserProfile | null>(() => {
     return typeof window !== "undefined" ? getCurrentUserProfile() : null;
   });
@@ -166,10 +167,10 @@ export function useStudentSummary() {
     let isMounted = true;
 
     async function ensureProfile() {
-      if (!profile) {
+      if (!profile || profile.role !== "student") {
         setIsResolvingAuth(true);
         try {
-          const resolved = await resolveCurrentUserProfile();
+          const resolved = await resolveCurrentUserProfile(true);
           if (isMounted && resolved) {
             setProfile(resolved);
           }
@@ -179,6 +180,8 @@ export function useStudentSummary() {
           }
         }
       } else {
+        // SWR background refresh to verify live session
+        resolveCurrentUserProfile(true).catch(() => {});
         setIsResolvingAuth(false);
       }
     }
@@ -190,6 +193,7 @@ export function useStudentSummary() {
       if (isMounted) {
         setProfile(custom.detail);
         setIsResolvingAuth(false);
+        queryClient.invalidateQueries({ queryKey: ["student-attendance-summary"] });
       }
     };
 
@@ -198,7 +202,7 @@ export function useStudentSummary() {
       isMounted = false;
       window.removeEventListener("attendguard-user-changed", handleUserChange);
     };
-  }, []);
+  }, [profile, queryClient]);
 
   const userKey = profile?.id || profile?.email || "authenticated-session";
 

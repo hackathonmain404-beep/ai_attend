@@ -59,10 +59,18 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     const explicitRoleCookie = request.cookies.get('attendguard-role')?.value;
-    if (explicitRoleCookie === 'teacher' || explicitRoleCookie === 'student') {
-      authRole = explicitRoleCookie;
-    } else if (profile?.role) {
+    if (profile?.role) {
       authRole = profile.role;
+      if (explicitRoleCookie !== profile.role) {
+        response.cookies.set('attendguard-role', profile.role, {
+          path: '/',
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: 'lax',
+        });
+      }
+    } else if (explicitRoleCookie === 'teacher' || explicitRoleCookie === 'student') {
+      authRole = explicitRoleCookie;
     } else {
       authRole = user.user_metadata?.role === 'teacher' ? 'teacher' : 'student';
     }
