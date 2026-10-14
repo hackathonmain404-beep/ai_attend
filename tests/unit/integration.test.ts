@@ -177,8 +177,9 @@ describe("AttendGuard End-to-End System Integration Suite (Phase 10)", () => {
       const status = await fetchStudentDeviceStatus();
       expect(status.isRegistered).toBe(true);
       expect(status.deviceName).toBe("Jane's iPhone 15 Pro");
-      expect(status.deviceFingerprint).toContain("fp_hash_jane");
+      expect(status.deviceFingerprint).toBeUndefined();
     });
+
 
     it("handles student reset request followed by audit log record", async () => {
       const targetStudentId = "00000000-0000-0000-0000-000000000002";

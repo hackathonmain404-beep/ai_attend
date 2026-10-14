@@ -65,7 +65,9 @@ export interface RegisteredDevice {
   isActive: boolean;
   registeredAt: string;
   lastUsedAt: string;
+  isMismatch?: boolean;
 }
+
 
 export interface AttendanceRecord {
   id: string;

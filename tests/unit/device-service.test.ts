@@ -142,7 +142,33 @@ describe('Device Service & Validation (src/lib/device/service.ts)', () => {
     expect(device.deviceName).toBe('Student Phone');
   });
 
-  it('should throw DEVICE_MISMATCH when fingerprint does not match registered device', async () => {
+  it('should return device with isMismatch: true when fingerprint does not match registered device under default review policy', async () => {
+    const mockSupabase = {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            id: 'dev-1',
+            device_fingerprint: 'expected_hash_value_123',
+            is_active: true,
+          },
+          error: null,
+        }),
+      })),
+    } as unknown as SupabaseClient;
+
+    const device = await validateDeviceBinding({
+      studentId: 'stu-1',
+      deviceFingerprint: 'attacker_fraudulent_fingerprint_456',
+      client: mockSupabase,
+    });
+
+    expect(device.id).toBe('dev-1');
+    expect(device.isMismatch).toBe(true);
+  });
+
+  it('should throw DEVICE_MISMATCH when fingerprint does not match registered device under reject policy', async () => {
     const mockSupabase = {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -163,6 +189,7 @@ describe('Device Service & Validation (src/lib/device/service.ts)', () => {
         studentId: 'stu-1',
         deviceFingerprint: 'attacker_fraudulent_fingerprint_456',
         client: mockSupabase,
+        policy: 'reject',
       });
       expect.fail('Should have thrown ForbiddenError');
     } catch (err: any) {

@@ -70,7 +70,7 @@ flowchart LR
 
 1. **Teacher-Controlled Live Sessions**: Attendance cannot be logged unless an authorized teacher has an active, monitored session running.
 2. **Time-Bound Dynamic QR Challenges**: The classroom screen displays a rotating QR code backed by a cryptographically signed, short-lived server token (15–30 second TTL). Forwarded screenshots expire before remote peers can scan them.
-3. **Single Registered Device Enforcement**: Students bind their student account to one trusted mobile device. Multiple logins from unregistered hardware trigger security alerts and require teacher authorization.
+3. **Single Registered Device Enforcement**: Students register their primary browser profile. Mismatches act as a supplementary risk signal (flagging review or requiring teacher reset under policy) while mandatory WebAuthn passkey assertion cryptographically verifies student identity.
 4. **Authoritative Server Validation**: All timestamps, token validity, enrollment checks, and duplicate verifications occur exclusively within Next.js Route Handlers and PostgreSQL constraint layers.
 5. **Random In-Class Re-Verification**: During the lecture, the teacher can trigger a surprise short-window re-verification prompt on student devices, thwarting check-in-and-leave tactics.
 6. **AI Attendance Advisor**: An integrated open-weight LLM processes trusted backend calculations to provide students with actionable academic attendance advice (e.g., classes needed to maintain 75% eligibility).
@@ -82,7 +82,7 @@ flowchart LR
 | Feature | Description | Target User |
 | :--- | :--- | :--- |
 | **Dynamic QR Projection** | Rotates cryptographically signed challenge tokens every 15–30 seconds. Prevents photo forwarding. | Teacher |
-| **Single Registered Device** | Restricts student accounts to a single verified device hardware/browser fingerprint. Prevents credential lending. | Student / System |
+| **Single Registered Device** | Restricts student accounts to a single registered browser profile. Provides supplementary risk signals against credential lending alongside mandatory WebAuthn passkeys. | Student / System |
 | **Realtime Headcount** | Live Supabase Realtime dashboard reflecting verified check-ins against classroom capacity. | Teacher |
 | **Random Re-Verification** | Timed, unexpected 60-second micro-challenge mid-lecture to confirm sustained physical presence. | Teacher & Student |
 | **Server-Side Authority** | Attendance calculations, unique database constraints, and signed HMAC/JWT verification done strictly server-side. | Backend |
@@ -365,6 +365,22 @@ CAMPUS_IP_ALLOWLIST=127.0.0.1, ::1
 TRUST_PROXY=true
 TRUSTED_PROXY_COUNT=1
 
+# Policy for handling browser profile / device fingerprint mismatches:
+# 'review' (default, flag for teacher audit) or 'reject' (strict 403 denial)
+DEVICE_MISMATCH_POLICY=review
+
+# ==========================================
+# WEBAUTHN / PASSKEY AUTHENTICATION
+# ==========================================
+WEBAUTHN_RP_NAME=AttendGuard
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_ORIGIN=http://localhost:3000
+WEBAUTHN_CHALLENGE_TTL_SECONDS=120
+# Institutional WebAuthn enforcement policy:
+# - 'required': Passkey enrollment is mandatory; unregistered accounts cannot check in (default & required for production)
+# - 'optional': Enrolled passkeys are strictly enforced; unregistered accounts use registered device fallback
+WEBAUTHN_ENFORCEMENT_POLICY=required
+
 # Optional Campus Geolocation (Untrusted supporting signal)
 CAMPUS_LAT=37.7749
 CAMPUS_LON=-122.4194
@@ -614,14 +630,16 @@ If a student loses or damages their registered device:
 
 ### Defense-in-Depth Mechanisms
 1. **Dynamic Short-Lived Tokens**: QR codes are valid for only 15–30 seconds. Screenshots sent via chat apps expire before recipients can load and scan them.
-2. **Device Hardware Association**: Student profiles are bound to a single registered device fingerprint. Proxies cannot be logged from a second phone.
+2. **WebAuthn Passkeys & Profile Tracking**: Mandatory WebAuthn assertion cryptographically confirms credential possession with local user verification (PIN, Touch ID, Face ID), while registered browser profile matching acts as a supplementary device-risk signal.
 3. **Database Uniqueness**: A composite unique index on `(session_id, student_id)` prevents concurrent or duplicate check-in submissions.
 4. **Server Timestamp Integrity**: Server-side clock checks reject attempts to manipulate client system time.
 5. **Random In-Class Re-Verification**: Unscheduled micro-prompts prevent the "scan and leave" exploit.
 
 ### Honest Limitations
-- **No Continuous Physical Guarantee**: Software running on standard commercial smartphones cannot guarantee with 100% certainty that a student remained in the classroom for the entire period without continuous monitoring.
-- **Device Fingerprint Spoofing**: While browser/device fingerprinting raises the barrier against casual proxy attempts, advanced actors possessing developer tools could theoretically emulate fingerprints. It is treated as an obstruction layer, not an unbreakable biometric lock.
+- **No Physical Hardware Identity**: Software running on standard commercial smartphones and browsers cannot guarantee physical-device identity or continuous classroom presence with 100% mathematical certainty.
+- **Browser Profile Heuristics**: The SHA-256 browser profile hash is derived from five standard browser attributes (User-Agent, language, screen dimensions, color depth, timezone offset). It is a heuristic risk signal rather than cryptographic proof of hardware; it does not access hardware enclaves or attributes (no Canvas, WebGL, AudioContext, `hardwareConcurrency`, or `deviceMemory`), and can collide, change on ordinary browser updates, or be spoofed in API requests.
+- **WebAuthn & Synced Passkeys**: WebAuthn passkeys provide strong cryptographic proof of credential possession and require local user verification, but multi-device credentials (synced passkeys) sync across Apple, Google, and Microsoft clouds. Passkey possession proves credential control, but does not guarantee a single physical device.
+- **Device Status Privacy**: The device status endpoint (`/api/auth/device/status`) protects stored fingerprints server-side and never exposes them to client responses.
 - **Display Proximity**: If a student is physically outside the classroom window with a high-zoom camera, they could theoretically scan the projector screen. In-class re-verifications mitigate this exposure.
 
 For a comprehensive threat breakdown, see [docs/SECURITY.md](docs/SECURITY.md).

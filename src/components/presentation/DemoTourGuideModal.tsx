@@ -54,7 +54,7 @@ export const TOUR_STEPS: TourStep[] = [
     testInstructions: [
       "Review the Active Session monitor showing current TTL countdown and headcount.",
       "Click 'Start New Session' to see the rotation interval picker (15s, 20s, 30s).",
-      "Notice the teacher hardware perimeter status and pending device resets.",
+      "Notice the teacher device perimeter status and pending device resets.",
     ],
   },
   {
@@ -79,7 +79,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 3,
     title: "Student Camera Scanner & Check-In",
-    subtitle: "Hardware-Bound Device Fingerprint Verification",
+    subtitle: "Browser Profile & Supplementary Risk Signal Verification",
     targetUrl: "/student/scanner",
     targetLabel: "Launch Student Scanner",
     badgeText: "Step 3 • Check-In",
@@ -88,11 +88,11 @@ export const TOUR_STEPS: TourStep[] = [
     story:
       "A student opens AttendGuard's mobile scanner on their registered smartphone to check in for class.",
     antiProxyMechanism:
-      "The scanner silently captures the device's hardware fingerprint (Canvas, WebGL, Screen, AudioContext hash). If a student logs in on a classmate's phone to check in for them, the system rejects it as a 'Device Mismatch Proxy Attempt'.",
+      "The scanner evaluates a browser profile fingerprint (user agent, language, screen dimensions, timezone offset) as a supplementary risk signal. WebAuthn passkey assertion verifies user presence cryptographically, while profile mismatches trigger teacher review or policy rejection.",
     testInstructions: [
       "Click 'Simulate Valid QR' to test successful 200 OK attendance confirmation.",
       "Click 'Simulate Expired Token' to verify strict 410 Gone rejection handling.",
-      "Click 'Simulate Device Mismatch' to test instant 403 Forbidden proxy blocking.",
+      "Click 'Simulate Device Mismatch' to test policy-based mismatch handling and review logging.",
     ],
   },
   {
@@ -107,7 +107,7 @@ export const TOUR_STEPS: TourStep[] = [
     story:
       "Back on the faculty console, attendance events arrive instantly over a real-time channel without refreshing the page.",
     antiProxyMechanism:
-      "Suspicious proxy attempts flash in rose red on the live security ticker with student ID, MAC/fingerprint signature, and timestamp for faculty audit.",
+      "Suspicious proxy attempts flash in rose red on the live security ticker with student ID, device/fingerprint signature, and timestamp for faculty audit.",
     testInstructions: [
       "Scroll down to the 'Live Attendance Stream' widget on the teacher page.",
       "Use the 'Stream Simulator Controls' to inject simulated check-in bursts.",
@@ -126,12 +126,13 @@ export const TOUR_STEPS: TourStep[] = [
     story:
       "At minute 35 of the lecture, the professor fires a surprise re-verification challenge to catch students who scanned the QR and left the room.",
     antiProxyMechanism:
-      "Students receive an urgent 60-second hardware presence challenge on their screen. Absent students cannot respond from outside the classroom before the deadline expires.",
+      "Students receive an urgent 60-second presence challenge on their screen. Absent students cannot respond from outside the classroom before the deadline expires.",
     testInstructions: [
       "Observe the re-verification trigger controls on the teacher portal.",
       "Check the student dashboard where active challenges pop up with audio-visual urgency.",
       "Inspect the Student Attendance History ledger (/student/history) for verification proof.",
     ],
+
   },
   {
     id: 6,

@@ -44,7 +44,7 @@ export default function StudentDevicePage() {
       <div className="py-24 flex flex-col items-center justify-center space-y-3">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
         <p className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
-          Syncing hardware security perimeter...
+          Syncing device security perimeter...
         </p>
       </div>
     );
@@ -59,7 +59,7 @@ export default function StudentDevicePage() {
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
             <span className="text-xs font-mono uppercase tracking-widest text-blue-400 font-semibold">
-              HARDWARE PERIMETER
+              DEVICE PERIMETER
             </span>
             <span className="text-zinc-600 font-mono text-xs">/</span>
             <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
@@ -74,7 +74,7 @@ export default function StudentDevicePage() {
 
           {/* Supporting Copy */}
           <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
-            AttendGuard cryptographically couples your attendance verification to this physical phone to prevent proxy scanning.
+            AttendGuard couples your attendance verification to this registered browser profile as a supplementary security signal alongside cryptographic WebAuthn passkeys.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export default function StudentDevicePage() {
 
           <div className="px-3 py-1 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs font-mono text-zinc-400 flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            <span>1:1 HARDWARE COUPLING</span>
+            <span>1:1 PROFILE BINDING</span>
           </div>
         </div>
       </div>
@@ -124,11 +124,11 @@ export default function StudentDevicePage() {
                 <Lock className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-white group-hover:text-blue-100 transition-colors">
-                Single Active Hardware Policy
+                Single Active Device Policy
               </h4>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed font-normal pl-12">
-              Each student account may only bind one primary hardware phone at any time. Scanning tokens from a friend&apos;s phone or unauthorized secondary browser is blocked by the cryptographic perimeter.
+              Each student account may only bind one primary browser profile at any time. Scanning tokens from a friend&apos;s phone or an unrecognized secondary browser is flagged or restricted by the security perimeter.
             </p>
           </div>
 
@@ -138,15 +138,16 @@ export default function StudentDevicePage() {
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-white group-hover:text-blue-100 transition-colors">
-                Emergency Hardware Reset Procedure
+                Device Profile Reset Procedure
               </h4>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed font-normal pl-12">
-              If your phone is damaged, lost, or upgraded, visit your faculty instructor during designated office hours. Instructors can issue an authorized administrative reset logged to the security ledger.
+              If your browser environment changes or your device is upgraded, visit your faculty instructor during designated office hours. Instructors can issue an authorized administrative reset logged to the security audit ledger.
             </p>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

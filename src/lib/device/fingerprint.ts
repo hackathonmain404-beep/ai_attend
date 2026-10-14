@@ -1,6 +1,15 @@
 /**
- * Client Device Fingerprinting Utility
- * Computes deterministic SHA-256 hardware/browser signal hash for device binding.
+ * Client Browser Profile Fingerprinting Utility
+ * Computes deterministic SHA-256 browser profile signal hash for supplementary risk analysis.
+ *
+ * Security Semantics:
+ * - Browser profile fingerprints are heuristic signals derived from browser attributes
+ *   (user agent, language, screen dimensions, color depth, timezone offset).
+ * - They do NOT constitute cryptographic proof of a physical device.
+ * - Browser attributes can collide across identical hardware, change across browser updates,
+ *   and be spoofed in developer tools.
+ * - This signal is used solely as a supplementary risk indicator. Strong cryptographic
+ *   authentication is provided exclusively by WebAuthn passkey assertion.
  */
 
 async function sha256(str: string): Promise<string> {
@@ -22,28 +31,40 @@ async function sha256(str: string): Promise<string> {
 }
 
 /**
- * Collects stable browser and hardware properties.
+ * Collects stable browser profile attributes (user agent, language, screen resolution, timezone offset).
+ * Returns a SHA-256 digest prefixed with 'fp_'.
  */
 export async function getClientDeviceFingerprint(simulatedMismatch = false): Promise<string> {
   if (simulatedMismatch) {
     return "fp_unregistered_mismatch_device_" + Math.random().toString(16).substring(2, 8);
   }
 
-  // In headless Node / Vitest test environments, return deterministic baseline
+  // In headless Node / Vitest test environments, return deterministic baseline.
+  // In production, server-side SSR execution cannot generate a client device fingerprint.
   if (typeof window === "undefined") {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("getClientDeviceFingerprint cannot be executed in a production server-side environment.");
+    }
     return "fp_hash_jane_iphone_15_pro_abc123";
   }
 
-  // Allow explicit demo persona override only if requested
-  if (typeof window !== "undefined" && window.localStorage?.getItem("attendguard_mock_device") === "jane") {
+  // Allow explicit demo persona override ONLY in non-production environments
+  if (
+    process.env.NODE_ENV !== "production" &&
+    typeof window !== "undefined" &&
+    window.localStorage?.getItem("attendguard_mock_device") === "jane"
+  ) {
     return "fp_hash_jane_iphone_15_pro_abc123";
   }
+
+  const nav = typeof navigator !== "undefined" ? navigator : undefined;
+  const scr = typeof screen !== "undefined" ? screen : (typeof window !== "undefined" ? (window as any).screen : undefined);
 
   const signals = [
-    navigator.userAgent || "ua",
-    navigator.language || "en",
-    screen.width + "x" + screen.height,
-    screen.colorDepth || 24,
+    nav?.userAgent || "ua",
+    nav?.language || "en",
+    scr ? `${scr.width}x${scr.height}` : "1920x1080",
+    scr?.colorDepth || 24,
     new Date().getTimezoneOffset(),
   ].join("|");
 

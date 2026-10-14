@@ -27,7 +27,7 @@
 AttendGuard approaches attendance verification using a multi-layered **Defense-in-Depth** model. Rather than relying on any single mechanism—such as a static QR code, a GPS ping, or client assertion—the system forces an attacker to simultaneously compromise multiple independent controls:
 
 1. **Cryptographic Time-Bound Challenges**: Challenges expire faster than typical human distribution channels.
-2. **Device Hardware Association**: Stolen credentials cannot mark attendance from unauthorized hardware.
+2. **WebAuthn Cryptographic Assertions & Profile Verification**: Mandatory passkey assertion confirms possession of registered credentials with local user verification, while registered browser profile tracking acts as a supplementary device-risk signal.
 3. **Server-Side Authority**: The backend alone commits attendance state; client assertions are completely untrusted.
 4. **Relational Schema Constraints**: The database itself guarantees uniqueness and referential integrity.
 5. **Continuous Unannounced Verification**: Randomized in-class micro-prompts penalize check-in-and-leave behavior.
@@ -89,8 +89,8 @@ AttendGuard approaches attendance verification using a multi-layered **Defense-i
 #### Threat 2.1: Account Sharing / Credential Lending
 - **Attack Scenario**: An absent student shares their username and password with an attending friend. The attending friend logs into the absent student's account on their phone or laptop.
 - **Risk Level**: **High**.
-- **Mitigation**: **Single Registered Device Binding**. Each student account is bound to a single verified device fingerprint. If the attending friend tries to log in on their personal device, the system detects a device mismatch and blocks attendance check-in (`DEVICE_MISMATCH`). The attending friend cannot simply unbind the device; device resets require teacher or administrator authorization.
-- **Remaining Limitation**: If the absent student physically lends their actual smartphone to their friend, software cannot detect that a different human is holding the phone. Physical in-class teacher spot-checks or roll confirmation resolve this edge case.
+- **Mitigation**: **Mandatory WebAuthn Verification & Supplementary Profile Tracking**. Passkey assertion verification is mandatory and cryptographically unforgeable, requiring local user verification (biometrics or device PIN) to sign attendance challenges. Furthermore, the registered browser profile acts as a supplementary risk signal. If the incoming browser profile does not match the registered profile, the system logs `DEVICE_MISMATCH` and applies the configured mismatch policy (`review` sets attendance status to `review_required` for teacher inspection without locking the student out, while `reject` returns `403 DEVICE_MISMATCH`). A missing or invalid WebAuthn assertion strictly blocks attendance check-in regardless of fingerprint.
+- **Remaining Limitation**: If the absent student physically lends their unlocked phone with enrolled platform authenticator, or if synced passkeys exist across multiple devices in the student's cloud account (e.g. iCloud Keychain, Google Password Manager), software alone cannot guarantee single physical device uniqueness. Heuristic browser profile matching helps flag unfamiliar browser environments.
 
 #### Threat 2.2: Device Registration Forgery
 - **Attack Scenario**: A student tries to register multiple devices simultaneously or forge an unregistered device ID via developer tools.
@@ -159,7 +159,7 @@ AttendGuard approaches attendance verification using a multi-layered **Defense-i
 | :--- | :--- | :--- | :--- | :--- |
 | **QR Sharing** | Photo forwarded to chat app | High | 15–20s Rotating Dynamic Token with HMAC | Ultra-low latency video stream (<15s) |
 | **QR Replay** | Resending old QR screenshots | Critical | Server timestamp + sequence check | None |
-| **Credential Lending** | Friend logs in on second phone | High | Single registered device fingerprint | Attender physically carries 2 phones |
+| **Credential Lending** | Friend logs in on second phone | High | Mandatory WebAuthn assertion + browser profile check | Synced passkeys across cloud ecosystem; physical phone sharing |
 | **Clock Spoofing** | Student rewinds phone time | Medium | Authoritative server clock (`NOW()`) | None |
 | **Check-in & Leave**| Leaves 5 min into lecture | High | Random in-class 60s re-verification | Attender leaves phone with peer |
 | **API Scripting** | Submitting via curl | High | Signed challenge payload required | Still requires physical sight of QR |
@@ -201,11 +201,13 @@ const challengeToken = `${encodedPayload}.${signature}`;
 
 ## Critical Real-World Limitations
 
-1. **Hardware-Free Constraint**: AttendGuard is designed to operate on standard web browsers and smartphones without requiring proprietary biometrics, turnstiles, or Bluetooth beacons. Consequently, physical co-location cannot be guaranteed with 100% certainty if a student physically gives their unlocked phone to an accomplice.
-2. **Classroom Layout & Windows**: If a lecture hall has ground-floor glass windows, a student outside could theoretically zoom in and scan the projector screen. In-class re-verifications help detect if the student leaves campus immediately after.
-3. **Browser Fingerprint Stability**: Browser updates or private browsing sessions can sometimes alter browser fingerprints. The teacher device-reset workflow accommodates legitimate student hardware changes while recording audit entries.
-4. **No Absolute Physical Proof**: No software-only system can prove continuous, physical in-seat classroom presence with 100% mathematical certainty. Rotating QR challenges and registered device binding raise the barrier against casual proxy check-ins, but cannot replace observant human proctoring.
-5. **AI Is Not the Legal Record**: The AI Attendance Advisor is an educational decision-support layer. The PostgreSQL database maintained by the backend remains the sole legal source of attendance records.
+1. **Hardware-Free Constraint & No Physical Device Guarantee**: AttendGuard is designed to operate on standard web browsers and smartphones without requiring proprietary biometrics, turnstiles, or Bluetooth beacons. AttendGuard does not claim physical-device identity or hardware binding. If an absent student physically lends their unlocked phone with enrolled passkey to an accomplice, software alone cannot distinguish the physical user.
+2. **Browser Profile Fingerprint Heuristics**: The browser profile hash is computed from 5 standard browser properties (User-Agent, language, screen dimensions, color depth, timezone offset). It is NOT cryptographic proof of hardware, does not query hardware enclaves or hardware attributes (no Canvas, WebGL, AudioContext, `hardwareConcurrency`, or `deviceMemory`), and can collide, change on ordinary browser updates, or be spoofed in API requests. Client-supplied fingerprints are treated strictly as heuristic risk signals, never as strong authentication.
+3. **WebAuthn & Synced Passkeys**: WebAuthn passkeys verify possession of a registered cryptographic credential with local user verification (PIN, Touch ID, Face ID), but modern multi-device credentials (synced passkeys) sync across Apple, Google, and Microsoft ecosystems. Consequently, passkey possession verifies control of the account credential, but does not guarantee a single physical piece of hardware.
+4. **Device Status Protection**: To prevent fingerprint harvesting and credential targeting, the device status endpoint (`/api/auth/device/status`) protects the stored fingerprint and never exposes it to client responses.
+5. **Browser Attribute Stability & Risk Policy**: Ordinary browser updates, display zoom, or timezone changes can alter browser attributes. AttendGuard's `DEVICE_MISMATCH_POLICY` (`review` by default) treats mismatches as a risk signal requiring instructor review (`review_required`) rather than locking students out, while preserving mandatory WebAuthn verification.
+6. **Classroom Layout & Windows**: If a lecture hall has ground-floor glass windows, a student outside could theoretically zoom in and scan the projector screen. In-class re-verifications help detect if the student leaves campus immediately after.
+7. **AI Is Not the Legal Record**: The AI Attendance Advisor is an educational decision-support layer. The PostgreSQL database maintained by the backend remains the sole legal source of attendance records.
 
 ---
 

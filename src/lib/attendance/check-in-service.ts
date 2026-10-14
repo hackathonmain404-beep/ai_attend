@@ -3,11 +3,13 @@
  * Multi-layer server-authoritative verification pipeline:
  * 1. Cryptographic token & TTL check
  * 2. Active session state check
- * 3. Registered device hardware check
+ * 3. Registered device profile & risk signal check
  * 4. Course enrollment check
- * 5. Campus IP / network verification check (review vs reject policy)
- * 6. Anti-duplicate attendance record insertion with forensic audit logging
+ * 5. WebAuthn biometric / passkey verification check (primary cryptographic auth)
+ * 6. Campus IP / network verification check (review vs reject policy)
+ * 7. Anti-duplicate attendance record insertion with forensic audit logging
  */
+
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -45,6 +47,7 @@ export interface CheckInParams {
   webauthnResponse?: any | null;
   request?: Request | { headers?: any };
   requireWebauthn?: boolean;
+  deviceMismatchPolicy?: 'review' | 'reject';
 }
 
 export interface CheckInResult {
@@ -60,7 +63,9 @@ export interface CheckInResult {
   isConfirmed?: boolean;
   webauthnVerified?: boolean;
   webauthnStatus?: 'verified' | 'unregistered_fallback' | 'skipped';
+  deviceMismatch?: boolean;
 }
+
 
 /**
  * Executes the complete multi-layer attendance verification pipeline with IP verification, anti-replay, and concurrency protection.
@@ -236,15 +241,48 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
   }
 
   // ----------------------------------------------------------------------------
-  // GATE 3: Single Active Registered Device Verification
+  // GATE 3: Registered Browser Profile & Supplementary Risk Signal Verification
   // ----------------------------------------------------------------------------
-  let activeDevice;
+  const effectiveDevicePolicy = params.deviceMismatchPolicy ?? config.security.deviceMismatchPolicy;
+  let activeDevice: any;
+  let deviceMismatch = false;
+
   try {
     activeDevice = await validateDeviceBinding({
       studentId,
       deviceFingerprint,
       client: supabase,
+      policy: effectiveDevicePolicy,
     });
+
+    if (activeDevice?.isMismatch) {
+      deviceMismatch = true;
+      await logSecurityEvent(
+        {
+          eventType: 'DEVICE_MISMATCH',
+          studentId,
+          sessionId,
+          verificationStatus: 'review_required',
+          reason: 'Browser profile fingerprint mismatch (Review Policy) - teacher review required',
+          ipAddress,
+          metadata: {
+            policy: 'review',
+            incomingFingerprintSnippet: deviceFingerprint.slice(0, 16),
+          },
+        },
+        adminDb
+      );
+
+      await logVerificationAttempt(adminDb, {
+        sessionId,
+        studentId,
+        verificationType: 'initial_qr',
+        status: 'device_mismatch',
+        tokenSnippet: challengeToken.slice(0, 32),
+        ipAddress,
+        userAgent,
+      });
+    }
   } catch (err: any) {
     await logSecurityEvent(
       {
@@ -269,6 +307,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
     });
     throw err;
   }
+
 
   // ----------------------------------------------------------------------------
   // GATE 4: Course Academic Enrollment Check
@@ -488,7 +527,8 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
 
   const now = new Date().toISOString();
 
-  const attendanceStatus = ipResult.status === 'review_required' ? 'review_required' : 'present';
+  const hasReviewSignal = ipResult.status === 'review_required' || deviceMismatch;
+  const attendanceStatus = hasReviewSignal ? 'review_required' : 'present';
   const isConfirmed = attendanceStatus === 'present';
 
   // Commit authoritative attendance record using service-role adminDb (bypass RLS write block)
@@ -588,6 +628,7 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
           tokenSnippet: challengeToken.slice(0, 32),
           ipVerificationStatus: ipResult.status,
           verificationReason: ipResult.reason,
+          deviceMismatch,
           isConfirmed,
           webauthnVerified,
           webauthnStatus,
@@ -610,7 +651,9 @@ export async function processStudentCheckIn(params: CheckInParams): Promise<Chec
       isConfirmed,
       webauthnVerified,
       webauthnStatus,
+      deviceMismatch,
     };
+
   } finally {
     releaseLock();
   }

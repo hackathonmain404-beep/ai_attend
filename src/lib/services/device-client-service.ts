@@ -16,7 +16,8 @@ import type {
 } from "@/types/device-ui";
 
 /**
- * Retrieves the student's active hardware device binding status.
+ * Retrieves the student's active device binding status.
+ * Note: Stored device fingerprint is protected on the server and not exposed to the client.
  */
 export async function fetchStudentDeviceStatus(): Promise<StudentDeviceStatus> {
   if (typeof window !== "undefined") {
@@ -27,7 +28,6 @@ export async function fetchStudentDeviceStatus(): Promise<StudentDeviceStatus> {
           isRegistered: true,
           deviceId: data.deviceId,
           deviceName: data.deviceName,
-          deviceFingerprint: data.deviceFingerprint,
           registeredAt: data.registeredAt,
           lastUsedAt: data.lastUsedAt,
         };
@@ -38,9 +38,15 @@ export async function fetchStudentDeviceStatus(): Promise<StudentDeviceStatus> {
     }
   }
 
-  // Headless test runner fallback
-  return getMockStudentDeviceStatus();
+  // Headless test runner fallback (strip fingerprint to match production status API)
+  const mock = getMockStudentDeviceStatus();
+  if (mock && mock.isRegistered) {
+    const { deviceFingerprint: _fp, ...safeMock } = mock;
+    return safeMock;
+  }
+  return mock;
 }
+
 
 /**
  * Registers an initial device for the student account.
@@ -135,7 +141,7 @@ export async function fetchDeviceAuditLog(): Promise<DeviceAuditEntry[]> {
           id: log.id,
           studentName: log.studentName,
           rollNumber: log.rollNumber,
-          previousDeviceName: "Bound Hardware Phone",
+          previousDeviceName: "Registered Device",
           reason: log.reason,
           resetBy: log.authorizedBy,
           resetAt: log.timestamp,

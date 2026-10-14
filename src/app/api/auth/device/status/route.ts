@@ -1,7 +1,8 @@
 /**
  * Student Active Device Status Endpoint
  * GET /api/auth/device/status
- * Queries Supabase registered_devices table for the student's active hardware binding.
+ * Queries Supabase registered_devices table for the student's active device binding.
+ * Note: Stored fingerprint hash is never exposed to the client to prevent fingerprint harvesting.
  */
 
 import { NextRequest } from 'next/server';
@@ -15,7 +16,7 @@ export const GET = withErrorHandler(async (_request: NextRequest) => {
 
   const { data: activeDevice, error } = await supabase
     .from('registered_devices')
-    .select('id, device_name, device_fingerprint, registered_at, last_used_at, is_active')
+    .select('id, device_name, registered_at, last_used_at, is_active')
     .eq('student_id', user.id)
     .eq('is_active', true)
     .maybeSingle();
@@ -30,7 +31,6 @@ export const GET = withErrorHandler(async (_request: NextRequest) => {
         isRegistered: true,
         deviceId: activeDevice.id,
         deviceName: activeDevice.device_name,
-        deviceFingerprint: activeDevice.device_fingerprint,
         registeredAt: activeDevice.registered_at,
         lastUsedAt: activeDevice.last_used_at,
       },

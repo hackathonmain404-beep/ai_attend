@@ -36,8 +36,8 @@ import type { CheckInResult } from "@/types/qr";
 interface ActiveDeviceStatus {
   isRegistered: boolean;
   deviceName?: string;
-  deviceFingerprint?: string;
 }
+
 
 export function StudentScanner() {
   const queryClient = useQueryClient();
@@ -653,9 +653,10 @@ export function StudentScanner() {
             <Smartphone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
             <span className="text-zinc-300">
               {deviceStatus?.isRegistered
-                ? `HARDWARE BOUND: ${deviceStatus.deviceName || "REGISTERED DEVICE"}`
-                : "HARDWARE BINDING: REGISTER PHONE IN SETTINGS"}
+                ? `DEVICE BOUND: ${deviceStatus.deviceName || "REGISTERED DEVICE"}`
+                : "DEVICE BINDING: REGISTER BROWSER IN SETTINGS"}
             </span>
+
           </div>
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-emerald-400 shrink-0" />

@@ -50,13 +50,13 @@ export function DeviceRegisterForm({ onRegistered }: DeviceRegisterFormProps) {
         </div>
         <div>
           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-blue-600/15 border border-blue-500/30 text-blue-400 font-semibold mb-1">
-            Initial Hardware Binding
+            Browser Profile Registration
           </div>
           <h2 className="text-xl font-semibold text-white tracking-tight">
-            Register Primary Device
+            Register Browser Profile
           </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Bind this smartphone to your AttendGuard student profile
+            Bind this browser profile to your AttendGuard student account
           </p>
         </div>
       </div>
@@ -70,22 +70,22 @@ export function DeviceRegisterForm({ onRegistered }: DeviceRegisterFormProps) {
             id="device-name-input"
             value={deviceName}
             onChange={(e) => setDeviceName(e.target.value)}
-            placeholder="e.g. Pixel 8 Pro or iPhone 15"
+            placeholder="e.g. Pixel 8 Pro (Chrome) or MacBook (Safari)"
             disabled={isSubmitting}
             className="text-xs sm:text-sm bg-[#06080A] border-zinc-800 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500 text-white placeholder:text-zinc-600 font-mono h-11 rounded-lg"
           />
           <p className="text-[11px] font-mono text-zinc-500">
-            A friendly name to identify your smartphone on attendance rosters.
+            A friendly name to identify your registered browser on attendance records.
           </p>
         </div>
 
         <div className="p-4 rounded-xl border border-zinc-800/80 bg-[#06080A] text-xs text-zinc-400 space-y-1.5">
           <div className="flex items-center gap-2 text-zinc-200 font-mono text-xs font-semibold">
             <Fingerprint className="h-4 w-4 text-blue-400" />
-            <span>Automated Hardware Fingerprint Generation</span>
+            <span>Browser Profile Signal — Not Hardware Identity</span>
           </div>
           <p className="text-[11px] text-zinc-500 font-normal leading-relaxed pl-6">
-            Upon submission, AttendGuard computes a unique SHA-256 hash from your device hardware properties. This binds your account so that attendance can only be scanned from this phone.
+            Upon submission, AttendGuard computes a SHA-256 hash of browser profile attributes (user agent, language, screen dimensions, timezone offset) as a supplementary risk signal. This browser profile signal is heuristic and can change across browser updates or be spoofed; it does not provide physical hardware identity. Cryptographic user authentication is provided exclusively by WebAuthn passkeys.
           </p>
         </div>
 
@@ -104,12 +104,12 @@ export function DeviceRegisterForm({ onRegistered }: DeviceRegisterFormProps) {
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              <span>Binding Device Hardware...</span>
+              <span>Registering Browser Profile...</span>
             </>
           ) : (
             <>
               <ShieldCheck className="h-4 w-4 mr-2" />
-              <span>Bind This Device to Account</span>
+              <span>Register This Browser Profile</span>
             </>
           )}
         </Button>

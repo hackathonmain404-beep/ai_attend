@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Smartphone, ShieldCheck, Copy, Check, Calendar, Fingerprint, AlertTriangle } from "lucide-react";
+import { Smartphone, ShieldCheck, Calendar, Fingerprint, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import type { StudentDeviceStatus } from "@/types/device-ui";
 
 interface DeviceStatusCardProps {
@@ -12,20 +11,6 @@ interface DeviceStatusCardProps {
 }
 
 export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusCardProps) {
-  const [copied, setCopied] = React.useState(false);
-
-  const handleCopyHash = () => {
-    if (!status.deviceFingerprint) return;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(status.deviceFingerprint);
-      setCopied(true);
-      toast.success("Fingerprint Hash Copied", {
-        description: "Cryptographic device signature copied to clipboard.",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <div className="rounded-2xl border border-zinc-800/80 bg-[#0B0D10] p-6 sm:p-8 space-y-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-950/20">
       {/* Top Identity Banner */}
@@ -37,7 +22,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h2 className="text-xl sm:text-2xl font-semibold text-white tracking-tight">
-                {status.deviceName || "Primary Hardware Device"}
+                {status.deviceName || "Primary Registered Device"}
               </h2>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -45,7 +30,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono">
-              DEVICE ID: <span className="text-zinc-200">{status.deviceId || "Active Hardware Unit"}</span>
+              DEVICE ID: <span className="text-zinc-200">{status.deviceId || "Active Device Profile"}</span>
             </p>
           </div>
         </div>
@@ -62,7 +47,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
         )}
       </div>
 
-      {/* Telemetry & Hash Grid */}
+      {/* Telemetry & Security Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Registration Timestamp */}
         <div className="p-4 sm:p-5 rounded-xl border border-zinc-800/80 bg-[#06080A] space-y-2 transition-all duration-200 hover:border-zinc-700">
@@ -83,7 +68,7 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
                     hour: "2-digit",
                     minute: "2-digit",
                   })
-                : "Active Hardware Binding"}
+                : "Active Device Profile"}
             </span>
           </div>
           <p className="text-[11px] font-mono text-zinc-500">
@@ -98,41 +83,28 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
           </span>
           <div className="flex items-center gap-2 text-sm font-semibold text-white font-mono">
             <ShieldCheck className="h-4 w-4 text-blue-400 shrink-0" />
-            <span>1 STUDENT : 1 HARDWARE RATIO</span>
+            <span>1 STUDENT : 1 REGISTERED BROWSER PROFILE</span>
           </div>
           <p className="text-[11px] font-mono text-zinc-500">
-            Unregistered devices rejected with 403 Forbidden
+            Unregistered profiles flagged or restricted by policy
           </p>
         </div>
       </div>
 
-      {/* SHA-256 Fingerprint Preview & Copy */}
+      {/* Browser Profile Security Signal */}
       <div className="p-4 sm:p-5 rounded-xl border border-zinc-800/80 bg-[#06080A] space-y-2.5">
         <div className="flex items-center justify-between text-xs">
           <span className="flex items-center gap-2 font-mono text-zinc-300 font-semibold">
             <Fingerprint className="h-4 w-4 text-blue-400" />
-            HARDWARE FINGERPRINT HASH (SHA-256)
+            Browser Profile Signal — Not Hardware Identity
           </span>
-          <button
-            onClick={handleCopyHash}
-            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors font-mono font-medium px-2 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                <span>COPIED</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                <span>COPY HASH</span>
-              </>
-            )}
-          </button>
+          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-medium">
+            PROTECTED SERVER-SIDE
+          </span>
         </div>
 
-        <div className="p-3 rounded-lg bg-[#0B0D10] border border-zinc-800 font-mono text-xs text-zinc-300 break-all select-all selection:bg-blue-600/40 tracking-wider">
-          {status.deviceFingerprint || "Hardware fingerprint securely coupled"}
+        <div className="p-3 rounded-lg bg-[#0B0D10] border border-zinc-800 font-mono text-xs text-zinc-400 leading-relaxed">
+          The browser profile signal is a supplementary risk indicator derived from browser attributes. It is not cryptographic proof of a physical device and can change across browser updates or be spoofed. Raw fingerprint values are protected server-side to prevent harvesting. Strong authentication is provided exclusively by WebAuthn passkeys.
         </div>
       </div>
 
@@ -144,15 +116,15 @@ export function DeviceStatusCard({ status, onSimulateUnregister }: DeviceStatusC
         </div>
       )}
 
-      {/* Warning Notice on Lost Phones */}
+      {/* Notice on Profile Resets */}
       <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs text-amber-200/90 flex items-start gap-3">
         <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <span className="font-semibold text-amber-300 font-mono uppercase tracking-wider block">
-            Need to change or upgrade your phone?
+            Need to change or upgrade your phone or browser?
           </span>
           <p className="text-zinc-400 text-xs leading-relaxed font-normal">
-            To prevent proxy attendance, students cannot self-reset their registered hardware. If your phone is lost, damaged, or replaced, ask your class professor or department administrator to authorize a device reset logged to the security ledger.
+            To prevent proxy attendance, students cannot self-reset their registered browser profile. If you change browsers, clear your environment, or replace your phone, ask your course instructor or administrator to authorize a profile reset logged to the security audit ledger.
           </p>
         </div>
       </div>

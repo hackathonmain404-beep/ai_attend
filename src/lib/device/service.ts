@@ -29,7 +29,9 @@ export interface ValidateDeviceParams {
   studentId: string;
   deviceFingerprint: string;
   client?: SupabaseClient;
+  policy?: 'review' | 'reject';
 }
+
 
 /**
  * Registers an initial device for a student.
@@ -169,11 +171,11 @@ export async function resetStudentDevice(params: ResetDeviceParams) {
 }
 
 /**
- * Validates that an incoming attendance check-in request matches the student's active device.
- * Used by Phase 6 attendance check-in route handler.
+ * Validates that an incoming attendance check-in request matches the student's active device profile.
+ * Policy can be 'reject' (strict 403 denial) or 'review' (returns device with isMismatch: true for review flagging).
  */
 export async function validateDeviceBinding(params: ValidateDeviceParams): Promise<RegisteredDevice> {
-  const { studentId, deviceFingerprint } = params;
+  const { studentId, deviceFingerprint, policy = 'review' } = params;
 
   if (!deviceFingerprint || deviceFingerprint.trim().length === 0) {
     throw new ForbiddenError(
@@ -196,7 +198,23 @@ export async function validateDeviceBinding(params: ValidateDeviceParams): Promi
     throw err;
   }
 
-  if (activeDevice.device_fingerprint !== deviceFingerprint.trim()) {
+  const isMatch = activeDevice.device_fingerprint === deviceFingerprint.trim();
+
+  if (!isMatch) {
+    if (policy === 'review') {
+      return {
+        id: activeDevice.id,
+        studentId: activeDevice.student_id,
+        deviceFingerprint: activeDevice.device_fingerprint,
+        deviceName: activeDevice.device_name,
+        userAgent: activeDevice.user_agent,
+        isActive: activeDevice.is_active,
+        registeredAt: activeDevice.registered_at,
+        lastUsedAt: activeDevice.last_used_at,
+        isMismatch: true,
+      };
+    }
+
     const err = new ForbiddenError('Attendance must be submitted from your registered device. Switch devices or request a reset.');
     (err as any).code = 'DEVICE_MISMATCH';
     throw err;
@@ -211,5 +229,6 @@ export async function validateDeviceBinding(params: ValidateDeviceParams): Promi
     isActive: activeDevice.is_active,
     registeredAt: activeDevice.registered_at,
     lastUsedAt: activeDevice.last_used_at,
+    isMismatch: false,
   };
 }

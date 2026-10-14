@@ -14,12 +14,12 @@ import {
 import { ApiError } from "@/lib/api-client";
 
 describe("Student Device Binding Status & Verification", () => {
-  it("retrieves the active hardware device binding status", async () => {
+  it("retrieves the active device binding status without exposing raw fingerprint", async () => {
     const status = await fetchStudentDeviceStatus();
     expect(status).toBeDefined();
     expect(status.isRegistered).toBe(true);
     expect(status.deviceName).toBe("Jane's iPhone 15 Pro");
-    expect(status.deviceFingerprint).toContain("fp_hash_jane");
+    expect(status.deviceFingerprint).toBeUndefined();
   });
 
   it("rejects registering a second device when active binding exists (409 Conflict)", async () => {
@@ -44,9 +44,10 @@ describe("Student Device Binding Status & Verification", () => {
 
     const updated = await fetchStudentDeviceStatus();
     expect(updated.deviceName).toBe("Jane's Replacement Pixel 8");
-    expect(updated.deviceFingerprint).toBe("fp_new_pixel_8_hash");
+    expect(updated.deviceFingerprint).toBeUndefined();
   });
 });
+
 
 describe("Teacher Administrative Device Reset & Audit Perimeter", () => {
   it("authorizes device reset with administrative justification and revokes binding", async () => {

@@ -280,17 +280,18 @@ export function AttendanceHistoryList({ initialRecords }: AttendanceHistoryListP
                 </div>
               )}
               <div className="flex justify-between items-center py-1 border-b border-zinc-800/60">
-                <span className="text-zinc-500">Hardware Device:</span>
+                <span className="text-zinc-500">Registered Device:</span>
                 <span className="text-zinc-300">
-                  {activeAuditRecord.deviceName || "Primary Hardware Device"}
+                  {activeAuditRecord.deviceName || "Primary Registered Device"}
                 </span>
               </div>
               <div className="flex flex-col py-1">
-                <span className="text-zinc-500 mb-1">Hardware Fingerprint Hash:</span>
+                <span className="text-zinc-500 mb-1">Browser Profile Signal Hash:</span>
                 <span className="text-[10px] text-zinc-400 break-all bg-[#0B0D10] p-2.5 rounded-lg border border-zinc-800/80">
-                  {activeAuditRecord.deviceFingerprintHash || "fp_hash_device_hardware_lock"}
+                  {activeAuditRecord.deviceFingerprintHash || "fp_hash_registered_browser_profile"}
                 </span>
               </div>
+
             </div>
 
             <Button

@@ -65,6 +65,7 @@ describe('Security Attack Simulation: Identity & Device Abuse (SEC-02, SEC-03, S
           studentId,
           challengeToken: validToken,
           deviceFingerprint: spoofedFp, // Mismatch!
+          deviceMismatchPolicy: 'reject',
           client: mockSupabase as any,
         })
       ).rejects.toThrow(ForbiddenError);
