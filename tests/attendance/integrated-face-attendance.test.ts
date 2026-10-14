@@ -7,7 +7,7 @@
  * Runs without biometric mocking to prove seamless inter-feature collaboration.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { processFaceStudentCheckIn } from '@/lib/attendance/face-attendance-service';
 import { processStudentCheckIn } from '@/lib/attendance/check-in-service';
 import { faceEnrollmentService } from '@/modules/biometrics/services/face-enrollment.service';
@@ -121,7 +121,11 @@ describe('Integrated Biometric Attendance (Member 1 + Member 2 E2E Integration)'
     };
   }
 
+  const originalEnv = { ...process.env };
+
   beforeEach(() => {
+    process.env = { ...originalEnv };
+    process.env.ENABLE_FACE_ATTENDANCE = 'true';
     BiometricTemplateRepository.clearMemoryStore();
     resetSecurityGuardsForTesting();
     resetBiometricService(); // Ensure DefaultBiometricService connects to Member 1
@@ -143,6 +147,10 @@ describe('Integrated Biometric Attendance (Member 1 + Member 2 E2E Integration)'
       registered_at: new Date().toISOString(),
       last_used_at: new Date().toISOString(),
     } as any);
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
   });
 
   it('1. should complete check-in when face matches enrolled template via Member 1 engine', async () => {

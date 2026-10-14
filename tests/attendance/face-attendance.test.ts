@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { processFaceStudentCheckIn } from '@/lib/attendance/face-attendance-service';
@@ -131,7 +131,11 @@ describe('Face Verification & QR Attendance Integration (Member 2 Pipeline)', ()
     };
   }
 
+  const originalEnv = { ...process.env };
+
   beforeEach(() => {
+    process.env = { ...originalEnv };
+    process.env.ENABLE_FACE_ATTENDANCE = 'true';
     vi.restoreAllMocks();
     resetSecurityGuardsForTesting();
     resetBiometricService();
@@ -155,6 +159,10 @@ describe('Face Verification & QR Attendance Integration (Member 2 Pipeline)', ()
       registeredAt: '2026-10-01T00:00:00Z',
       lastUsedAt: '2026-10-09T00:00:00Z',
     });
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
   });
 
   // ============================================================================

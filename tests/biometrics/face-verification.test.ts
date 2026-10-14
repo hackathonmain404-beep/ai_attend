@@ -34,6 +34,7 @@ describe('Face Biometric Verification Engine (FaceVerificationService)', () => {
   const consentText = 'I consent to AttendGuard storing my encrypted biometric template.';
 
   beforeEach(() => {
+    process.env.ENABLE_FACE_ATTENDANCE = 'true';
     BiometricTemplateRepository.clearMemoryStore();
   });
 

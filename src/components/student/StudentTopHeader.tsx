@@ -76,7 +76,7 @@ export function StudentTopHeader({
           <Link
             href="/student/security"
             className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-300 bg-white/[0.03] border border-white/[0.08] px-2.5 py-1 rounded-lg hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all duration-200"
-            title="Biometric & Passkey Attendance Verification"
+            title="Device passkey — Face ID, fingerprint, or device PIN where supported"
           >
             <Fingerprint className="h-3 w-3 text-emerald-400" />
             <span>PASSKEY SECURITY</span>

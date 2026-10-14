@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   X,
   Smartphone,
+  Fingerprint,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,8 @@ export function StudentSidebar({
   onCloseMobile,
   userProfile,
 }: StudentSidebarProps) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || "";
   const [isHovered, setIsHovered] = React.useState<boolean>(false);
 
   // Expanded if pinned open OR temporarily hovered while collapsed
@@ -217,8 +219,26 @@ export function StudentSidebar({
           </div>
         </div>
 
-        {/* Bottom: Collapse Toggle & Quick Sign Out */}
+        {/* Bottom: Passkey Security, Collapse Toggle & Quick Sign Out */}
         <div className="p-2 border-t border-zinc-800/80 bg-[#0B0D10]/80 space-y-1">
+          {/* Passkey Security Utility Link */}
+          <Link
+            href="/student/security"
+            className={cn(
+              "flex items-center gap-2.5 h-8 px-2 rounded-lg font-mono text-xs transition-all",
+              pathname === "/student/security"
+                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                : "text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20",
+              isExpanded ? "justify-start w-full" : "justify-center px-0 w-full"
+            )}
+            title="Passkey Security — Device passkey (Face ID, fingerprint, or device PIN where supported)"
+          >
+            <Fingerprint className="h-4 w-4 text-emerald-400 shrink-0" />
+            {isExpanded && (
+              <span className="truncate text-[11px] font-medium">Passkey Security</span>
+            )}
+          </Link>
+
           {/* Collapse/Expand Toggle Button */}
           <Button
             onClick={onToggleCollapse}
@@ -358,8 +378,21 @@ export function StudentSidebar({
           })}
         </nav>
 
-        {/* Drawer Footer with Logout */}
-        <div className="p-3.5 border-t border-zinc-800/80 bg-zinc-950/80">
+        {/* Drawer Footer with Passkey Security & Logout */}
+        <div className="p-3.5 border-t border-zinc-800/80 bg-zinc-950/80 space-y-2">
+          <Link
+            href="/student/security"
+            onClick={onCloseMobile}
+            className={cn(
+              "flex items-center justify-center gap-2 w-full h-9 rounded-lg border font-mono text-xs font-semibold transition-colors",
+              pathname === "/student/security"
+                ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
+            )}
+          >
+            <Fingerprint className="h-4 w-4 text-emerald-400" />
+            <span>Passkey Security</span>
+          </Link>
           <LogoutButton
             variant="outline"
             size="sm"

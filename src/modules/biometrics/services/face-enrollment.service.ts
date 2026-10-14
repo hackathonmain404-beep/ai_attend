@@ -18,8 +18,9 @@ import {
 import { extractFaceBiometrics } from './face-feature-extractor.service';
 import { encryptBiometricVector } from './biometric-crypto.service';
 import { biometricRepository, BiometricTemplateRepository } from '../repositories/biometric-template.repository';
-import { ConflictError, NotFoundError } from '@/lib/errors';
+import { ConflictError, NotFoundError, FeatureDisabledError } from '@/lib/errors';
 import { logAuditEvent } from '@/lib/audit/logger';
+import { isFaceAttendanceEnabled } from '@/lib/config';
 
 export class FaceEnrollmentService {
   constructor(private readonly repository: BiometricTemplateRepository = biometricRepository) {}
@@ -37,6 +38,14 @@ export class FaceEnrollmentService {
    * - Never returns raw biometric vectors or embeddings in API responses.
    */
   async enrollStudentFace(params: BiometricEnrollmentParams): Promise<BiometricEnrollmentResult> {
+    // 0. Server-authoritative feature flag guard: rejects new enrollment and replacement
+    if (!isFaceAttendanceEnabled()) {
+      throw new FeatureDisabledError(
+        'Custom camera face enrollment is disabled until face-matching and anti-spoofing validation is complete.',
+        'FACE_ATTENDANCE_DISABLED'
+      );
+    }
+
     const {
       studentId,
       image,
@@ -44,6 +53,7 @@ export class FaceEnrollmentService {
       consentText,
       replaceExisting = false,
       client,
+      adminClient,
       userAgent,
       ipAddress,
     } = params;
@@ -96,9 +106,9 @@ export class FaceEnrollmentService {
           'ALREADY_CHECKED_IN'
         );
       }
-      savedTemplate = await this.repository.replaceEnrollment(studentId, templateData, client);
+      savedTemplate = await this.repository.replaceEnrollment(studentId, templateData, adminClient);
     } else {
-      savedTemplate = await this.repository.createEnrollment(templateData, client);
+      savedTemplate = await this.repository.createEnrollment(templateData, adminClient);
     }
 
     // 6. Security Audit Event
@@ -116,7 +126,7 @@ export class FaceEnrollmentService {
         },
         ipAddress: ipAddress || null,
       },
-      client
+      client || adminClient
     );
 
     // 7. Return Sanitized Response (Zero sensitive biometric vector exposure)
@@ -165,16 +175,17 @@ export class FaceEnrollmentService {
   async revokeStudentEnrollment(
     studentId: string,
     reason?: string,
-    client?: SupabaseClient
+    client?: SupabaseClient,
+    adminClient?: SupabaseClient
   ): Promise<boolean> {
     validateStudentId(studentId);
 
-    const active = await this.repository.findActiveByStudentId(studentId, client);
+    const active = await this.repository.findActiveByStudentId(studentId, client || adminClient);
     if (!active) {
       throw new NotFoundError('No active biometric enrollment found to revoke.', 'NOT_ENROLLED');
     }
 
-    await this.repository.revokeEnrollment(studentId, reason, client);
+    await this.repository.revokeEnrollment(studentId, reason, adminClient);
 
     await logAuditEvent(
       {
@@ -184,7 +195,7 @@ export class FaceEnrollmentService {
         entityId: active.id,
         details: { reason: reason || 'Student requested consent withdrawal' },
       },
-      client
+      client || adminClient
     );
 
     return true;
@@ -195,11 +206,12 @@ export class FaceEnrollmentService {
    */
   async deleteStudentBiometrics(
     studentId: string,
-    client?: SupabaseClient
+    client?: SupabaseClient,
+    adminClient?: SupabaseClient
   ): Promise<boolean> {
     validateStudentId(studentId);
 
-    await this.repository.deleteEnrollment(studentId, client);
+    await this.repository.deleteEnrollment(studentId, adminClient);
 
     await logAuditEvent(
       {
@@ -209,7 +221,7 @@ export class FaceEnrollmentService {
         entityId: studentId,
         details: { reason: 'GDPR Right to Erasure' },
       },
-      client
+      client || adminClient
     );
 
     return true;

@@ -87,9 +87,19 @@ export function VerificationStatusCard({ isDeviceBound }: VerificationStatusCard
           </p>
         </div>
 
-        <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider self-start sm:self-auto shrink-0">
-          FOUR LAYERS ACTIVE
-        </span>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+          <Link
+            href="/student/security"
+            className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 hover:text-emerald-300 bg-white/[0.03] hover:bg-emerald-500/10 border border-white/[0.08] hover:border-emerald-500/30 px-2.5 py-1 rounded-lg transition-all duration-150"
+            title="Device passkey — Face ID, fingerprint, or device PIN where supported"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span>PASSKEY SECURITY</span>
+          </Link>
+          <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+            FOUR LAYERS ACTIVE
+          </span>
+        </div>
       </div>
 
       {/* 4 Cards Grid */}

@@ -59,10 +59,11 @@ export class BiometricTemplateRepository {
 
   /**
    * Creates a new biometric enrollment record.
+   * Requires privileged admin client to write to student_face_biometrics table under RLS.
    */
   async createEnrollment(
     template: Omit<StoredBiometricTemplate, 'id' | 'createdAt' | 'updatedAt'>,
-    client?: SupabaseClient
+    adminClient?: SupabaseClient
   ): Promise<StoredBiometricTemplate> {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -74,7 +75,7 @@ export class BiometricTemplateRepository {
       updatedAt: now,
     };
 
-    const supabase = this.resolveClient(client);
+    const supabase = this.resolveAdminClient(adminClient);
 
     if (supabase) {
       try {
@@ -112,31 +113,31 @@ export class BiometricTemplateRepository {
 
   /**
    * Replaces an existing template for a student (updates active template or archives previous).
+   * Requires privileged admin client to mutate student_face_biometrics table under RLS.
    */
   async replaceEnrollment(
     studentId: string,
     newTemplate: Omit<StoredBiometricTemplate, 'id' | 'createdAt' | 'updatedAt'>,
-    client?: SupabaseClient
+    adminClient?: SupabaseClient
   ): Promise<StoredBiometricTemplate> {
-    const supabase = this.resolveClient(client);
-
     // Revoke previous active templates first
-    await this.revokeEnrollment(studentId, 'Replaced with newer face capture', client);
+    await this.revokeEnrollment(studentId, 'Replaced with newer face capture', adminClient);
 
     // Create the new active enrollment
-    return this.createEnrollment(newTemplate, client);
+    return this.createEnrollment(newTemplate, adminClient);
   }
 
   /**
    * Revokes biometric consent / shreds the template.
+   * Requires privileged admin client to update student_face_biometrics table under RLS.
    */
   async revokeEnrollment(
     studentId: string,
     reason?: string,
-    client?: SupabaseClient
+    adminClient?: SupabaseClient
   ): Promise<boolean> {
     const now = new Date().toISOString();
-    const supabase = this.resolveClient(client);
+    const supabase = this.resolveAdminClient(adminClient);
 
     if (supabase) {
       try {
@@ -179,12 +180,13 @@ export class BiometricTemplateRepository {
 
   /**
    * Permanently deletes a student's biometric template record (GDPR/Right-to-be-forgotten).
+   * Requires privileged admin client to delete from student_face_biometrics table under RLS.
    */
   async deleteEnrollment(
     studentId: string,
-    client?: SupabaseClient
+    adminClient?: SupabaseClient
   ): Promise<boolean> {
-    const supabase = this.resolveClient(client);
+    const supabase = this.resolveAdminClient(adminClient);
 
     if (supabase) {
       try {
@@ -232,6 +234,15 @@ export class BiometricTemplateRepository {
   private resolveClient(client?: SupabaseClient): SupabaseClient | null {
     if (client) return client;
     if (this.isTestEnv()) return null;
+    try {
+      return createAdminClient();
+    } catch {
+      return null;
+    }
+  }
+
+  private resolveAdminClient(adminClient?: SupabaseClient): SupabaseClient | null {
+    if (adminClient) return adminClient;
     try {
       return createAdminClient();
     } catch {

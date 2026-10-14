@@ -81,7 +81,14 @@ export function FaceVerificationModal({
 
       setErrorMessage(message);
 
-      if (code === "FACE_VERIFICATION_FAILED" || (status === 403 && message.toLowerCase().includes("mismatch"))) {
+      if (
+        code === "FACE_ATTENDANCE_DISABLED" ||
+        code === "FEATURE_DISABLED" ||
+        message.toLowerCase().includes("face attendance is disabled")
+      ) {
+        setFailureReason("feature_disabled");
+        setUiState("unavailable");
+      } else if (code === "FACE_VERIFICATION_FAILED" || (status === 403 && message.toLowerCase().includes("mismatch"))) {
         setFailureReason("mismatch");
         setUiState("not_verified");
       } else if (code === "FACE_INCONCLUSIVE" || status === 422) {

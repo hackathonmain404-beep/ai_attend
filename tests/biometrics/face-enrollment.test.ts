@@ -31,6 +31,7 @@ describe('Face Biometric Enrollment Engine (FaceEnrollmentService)', () => {
   const validConsentText = 'I consent to AttendGuard storing my encrypted biometric template.';
 
   beforeEach(() => {
+    process.env.ENABLE_FACE_ATTENDANCE = 'true';
     // Clear in-memory mock repository before each test
     BiometricTemplateRepository.clearMemoryStore();
   });

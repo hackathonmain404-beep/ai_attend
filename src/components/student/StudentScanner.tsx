@@ -52,8 +52,8 @@ export function StudentScanner() {
   const [deviceStatus, setDeviceStatus] = React.useState<ActiveDeviceStatus | null>(null);
   const [lastScannedToken, setLastScannedToken] = React.useState<string | null>(null);
 
-  // Biometric verification integration states
-  const [verificationMode, setVerificationMode] = React.useState<"face_and_qr" | "qr_only">("face_and_qr");
+  // Biometric verification integration states (defaults to qr_only until face pipeline is validated)
+  const [verificationMode, setVerificationMode] = React.useState<"face_and_qr" | "qr_only">("qr_only");
   const [isFaceModalOpen, setIsFaceModalOpen] = React.useState(false);
   const [pendingChallengeToken, setPendingChallengeToken] = React.useState<string>("");
   const [pendingDeviceFingerprint, setPendingDeviceFingerprint] = React.useState<string>("");
@@ -835,20 +835,20 @@ export function StudentScanner() {
               <div className="h-8 w-8 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 group-hover:border-blue-400/50 transition-colors">
                 <ScanFace className="h-4 w-4" />
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                201 CREATED (DUAL MODALITY)
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                PENDING CERTIFICATION
               </span>
             </div>
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-white tracking-tight group-hover:text-blue-300 transition-colors">
-                5. Live Face Biometric + Dynamic QR Check-In
+                5. Experimental Face Biometric + Dynamic QR Check-In
               </h4>
               <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
-                Fetches dynamic HMAC challenge token and opens the facial biometric viewfinder modal for live camera capture and authoritative verification.
+                Direct camera face matching is disabled in production pending model and anti-spoofing certification. Opens the viewfinder to demonstrate server feature-flag enforcement.
               </p>
             </div>
             <div className="flex items-center text-[11px] font-mono text-blue-400 group-hover:text-blue-300 font-medium pt-1">
-              <span>{activeVector === "face" ? "Initializing..." : "Launch Face Attendance Flow"}</span>
+              <span>{activeVector === "face" ? "Initializing..." : "Launch Viewfinder (Flag-Gated)"}</span>
               <ArrowRight className="h-3 w-3 ml-1.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>

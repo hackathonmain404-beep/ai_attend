@@ -103,3 +103,21 @@ export class VerificationAttemptReplayedError extends AppError {
     super(message, 409, 'VERIFICATION_ATTEMPT_REPLAYED');
   }
 }
+
+export class FeatureDisabledError extends AppError {
+  constructor(
+    message = 'This feature is currently disabled.',
+    code: StandardErrorCode = 'FEATURE_DISABLED'
+  ) {
+    super(message, 403, code);
+  }
+}
+
+export class BiometricConfigurationError extends AppError {
+  constructor(
+    message = 'Biometric encryption key is missing or invalid.',
+    code: StandardErrorCode = 'INTERNAL_SERVER_ERROR'
+  ) {
+    super(message, 500, code);
+  }
+}

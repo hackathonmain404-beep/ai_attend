@@ -65,7 +65,26 @@ export const config = {
     apiKey: process.env.AI_INFERENCE_API_KEY || '',
     modelName: process.env.AI_MODEL_NAME || 'llama-3.1-8b-instant',
   },
+  biometrics: {
+    get faceAttendanceEnabled(): boolean {
+      return isFaceAttendanceEnabled();
+    },
+  },
 };
+
+/**
+ * Server-authoritative check determining whether custom facial-recognition attendance is enabled.
+ * Defaults strictly to false in production and development unless explicitly enabled via environment variable.
+ */
+export function isFaceAttendanceEnabled(): boolean {
+  if (process.env.ENABLE_FACE_ATTENDANCE !== undefined) {
+    return process.env.ENABLE_FACE_ATTENDANCE === 'true' || process.env.ENABLE_FACE_ATTENDANCE === '1';
+  }
+  if (process.env.FACE_ATTENDANCE_ENABLED !== undefined) {
+    return process.env.FACE_ATTENDANCE_ENABLED === 'true' || process.env.FACE_ATTENDANCE_ENABLED === '1';
+  }
+  return false;
+}
 
 export type AppConfig = typeof config;
 

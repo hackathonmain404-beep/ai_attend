@@ -39,6 +39,7 @@ export type FailureReason =
   | "device_mismatch"
   | "rate_limited"
   | "service_unavailable"
+  | "feature_disabled"
   | "network_error"
   | "unknown";
 
@@ -334,34 +335,42 @@ export function FaceAttendanceStatusPanel({
   }
 
   // ----------------------------------------------------------------------------
-  // 7. STATE: UNAVAILABLE (503 Service Unavailable / Network Outage)
+  // 7. STATE: UNAVAILABLE (503 Service Unavailable / 403 Feature Disabled)
   // ----------------------------------------------------------------------------
+  const isFeatureDisabled = failureReason === "feature_disabled";
+
   return (
     <div className={`p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-[#0B0D10] text-center space-y-4 shadow-xl ${className}`}>
       <div className="mx-auto h-14 w-14 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center">
-        <ServerCrash className="h-7 w-7 text-amber-400" />
+        {isFeatureDisabled ? (
+          <ShieldAlert className="h-7 w-7 text-amber-400" />
+        ) : (
+          <ServerCrash className="h-7 w-7 text-amber-400" />
+        )}
       </div>
       <div className="space-y-1.5">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-zinc-800 border border-zinc-700 text-zinc-400">
-          TEMPORARILY UNAVAILABLE
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
+          {isFeatureDisabled ? "FEATURE DISABLED" : "TEMPORARILY UNAVAILABLE"}
         </span>
         <h3 className="text-xl font-bold text-white tracking-tight">
-          Biometric Service Unavailable
+          {isFeatureDisabled ? "Camera Face Attendance Disabled" : "Biometric Service Unavailable"}
         </h3>
         <p className="text-xs text-zinc-400 max-w-sm mx-auto font-mono leading-relaxed">
           {errorMessage ||
-            "The face verification service is temporarily undergoing maintenance or unreachable. Please try again shortly."}
+            (isFeatureDisabled
+              ? "Custom camera face attendance is disabled until face-matching and anti-spoofing validation is complete. Please use standard dynamic QR check-in."
+              : "The face verification service is temporarily undergoing maintenance or unreachable. Please try again shortly.")}
         </p>
       </div>
 
       <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 text-left text-xs font-mono text-zinc-400 space-y-1">
         <p className="font-semibold text-zinc-300">Supported Alternatives:</p>
-        <p>• Submit standard dynamic QR check-in where permitted by institutional policy.</p>
-        <p>• Notify your instructor to manually record your verified classroom attendance.</p>
+        <p>• Submit standard dynamic QR check-in using your enrolled device passkey.</p>
+        <p>• Notify your instructor if you encounter any authentication issues.</p>
       </div>
 
       <div className="pt-2 flex flex-wrap gap-2.5 justify-center">
-        {onRetry && (
+        {onRetry && !isFeatureDisabled && (
           <Button
             onClick={onRetry}
             className="text-xs font-mono bg-blue-600 hover:bg-blue-500 text-white"
@@ -373,9 +382,13 @@ export function FaceAttendanceStatusPanel({
 
         {onFallbackToQr && (
           <Button
-            variant="outline"
+            variant={isFeatureDisabled ? "default" : "outline"}
             onClick={onFallbackToQr}
-            className="text-xs font-mono border-zinc-700 bg-zinc-900 text-zinc-300"
+            className={`text-xs font-mono ${
+              isFeatureDisabled
+                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                : "border-zinc-700 bg-zinc-900 text-zinc-300"
+            }`}
           >
             <QrCode className="h-3.5 w-3.5 mr-1.5" />
             Switch to Standard QR Check-In

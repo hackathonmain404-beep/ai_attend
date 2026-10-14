@@ -273,7 +273,7 @@ export default function StudentSecurityPage() {
                 {hasActiveCredential ? "Enrolled Device Passkey" : "Register Device Authenticator"}
               </h2>
               <p className="text-xs text-zinc-400 font-mono mt-1">
-                Cryptographic FIDO2 / WebAuthn user verification
+                Device passkey — Face ID, fingerprint, or device PIN where supported
               </p>
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function StudentSecurityPage() {
         )}
 
         {/* Informative Explanatory Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-zinc-800/80 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-zinc-800/80 text-xs">
           <div className="p-4 rounded-xl border border-zinc-800 bg-[#06080A]/60 space-y-1.5">
             <div className="flex items-center gap-2 text-zinc-200 font-semibold font-mono text-[11px]">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
@@ -377,6 +377,16 @@ export default function StudentSecurityPage() {
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
               When scanning attendance, a real-time cryptographic challenge is signed by this authenticator, proving your physical presence.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-zinc-800 bg-[#06080A]/60 space-y-1.5">
+            <div className="flex items-center gap-2 text-zinc-200 font-semibold font-mono text-[11px]">
+              <ShieldAlert className="h-3.5 w-3.5 text-purple-400" />
+              <span>Distinct from Camera Face Recognition</span>
+            </div>
+            <p className="text-zinc-400 text-[11px] leading-relaxed">
+              Passkeys use W3C WebAuthn hardware cryptography. They are completely separate from experimental camera face matching and require no camera enrollment.
             </p>
           </div>
         </div>

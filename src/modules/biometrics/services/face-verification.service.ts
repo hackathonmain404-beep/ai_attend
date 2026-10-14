@@ -27,8 +27,9 @@ import {
   computeCosineSimilarity,
 } from './biometric-crypto.service';
 import { biometricRepository, BiometricTemplateRepository } from '../repositories/biometric-template.repository';
-import { NotFoundError } from '@/lib/errors';
+import { NotFoundError, FeatureDisabledError } from '@/lib/errors';
 import { logAuditEvent } from '@/lib/audit/logger';
+import { isFaceAttendanceEnabled } from '@/lib/config';
 
 export interface VerificationThresholdConfig {
   matchThreshold: number;
@@ -73,6 +74,14 @@ export class FaceVerificationService {
    * @returns Structured FaceVerificationResult with status ('match' | 'no_match' | 'inconclusive')
    */
   async verifyStudentFace(params: VerifyFaceParams): Promise<FaceVerificationResult> {
+    // 0. Server-authoritative feature flag guard
+    if (!isFaceAttendanceEnabled()) {
+      throw new FeatureDisabledError(
+        'Custom camera face verification is disabled until face-matching and anti-spoofing validation is complete.',
+        'FACE_ATTENDANCE_DISABLED'
+      );
+    }
+
     const { studentId, image, sessionId, client, ipAddress } = params;
 
     // 1. Validate Student UUID

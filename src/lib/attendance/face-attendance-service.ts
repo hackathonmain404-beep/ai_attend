@@ -31,6 +31,7 @@ import {
   NotFoundError,
   ForbiddenError,
   ConflictError,
+  FeatureDisabledError,
   BiometricEnrollmentRequiredError,
   FaceVerificationFailedError,
   FaceInconclusiveError,
@@ -41,7 +42,7 @@ import { verifyQrChallengeToken, computeTokenFingerprint } from '@/lib/qr/crypto
 import { validateDeviceBinding } from '@/lib/device/service';
 import { broadcastStudentCheckIn } from '@/lib/realtime/broadcast';
 import { logAuditEvent } from '@/lib/audit/logger';
-import { config } from '@/lib/config';
+import { config, isFaceAttendanceEnabled } from '@/lib/config';
 import {
   acquireSubmissionLock,
   assertAndConsumeToken,
@@ -130,6 +131,16 @@ export async function processFaceStudentCheckIn(
     userAgent,
     location,
   } = params;
+
+  // ----------------------------------------------------------------------------
+  // Feature Flag Guard: Custom face attendance is disabled by default in production
+  // ----------------------------------------------------------------------------
+  if (!isFaceAttendanceEnabled()) {
+    throw new FeatureDisabledError(
+      'Custom camera face attendance is disabled until face-matching and anti-spoofing validation is complete. Please use standard dynamic QR check-in.',
+      'FACE_ATTENDANCE_DISABLED'
+    );
+  }
 
   // ----------------------------------------------------------------------------
   // Input Validation

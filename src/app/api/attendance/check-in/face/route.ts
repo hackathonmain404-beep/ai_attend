@@ -16,10 +16,19 @@ import { apiSuccess, withErrorHandler } from '@/lib/utils/api';
 import { requireStudent } from '@/lib/auth/guards';
 import { processFaceStudentCheckIn } from '@/lib/attendance/face-attendance-service';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { ValidationError } from '@/lib/errors';
+import { FeatureDisabledError, ValidationError } from '@/lib/errors';
 import { extractClientIp } from '@/lib/security/ip-service';
+import { isFaceAttendanceEnabled } from '@/lib/config';
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  // 0. Feature flag policy enforcement: custom face attendance is disabled by default in production
+  if (!isFaceAttendanceEnabled()) {
+    throw new FeatureDisabledError(
+      'Custom camera face attendance is disabled until face-matching and anti-spoofing validation is complete. Please use standard dynamic QR check-in.',
+      'FACE_ATTENDANCE_DISABLED'
+    );
+  }
+
   const supabase = await createServerSupabaseClient();
 
   // 1. Authenticate student strictly through server session context
